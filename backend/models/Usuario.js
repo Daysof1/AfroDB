@@ -94,6 +94,7 @@ const Usuario = sequelize.define('Usuario', {
   rol: {
     type: DataTypes.ENUM(              // ENUM en MySQL → solo permite estos valores exactos
       'cliente',                       // Cliente: compra productos, tiene carrito y pedidos
+      'profesional',                    // Profesional: ve las citas programadas, puede gestionar su agenda
       'auxiliar',                      // Auxiliar: acceso parcial al panel de administración
       'administrador'                  // Administrador: control total del sistema
     ),
@@ -101,8 +102,8 @@ const Usuario = sequelize.define('Usuario', {
     defaultValue: 'cliente',           // Por defecto se registra como cliente
     validate: {
       isIn: {                          // Doble validación: a nivel de Sequelize
-        args: [['cliente', 'auxiliar', 'administrador']],
-        msg: 'El rol debe ser cliente, auxiliar o administrador'
+        args: [['cliente', 'profesional', 'auxiliar', 'administrador']],
+        msg: 'El rol debe ser cliente, profesional, auxiliar o administrador'
       }
     }
   },
