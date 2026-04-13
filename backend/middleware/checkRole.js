@@ -277,10 +277,51 @@ const soloAdministrador = (req, res, next) => {
   }
 };
 
+/**
+ * esProfesional — Solo permite acceso a profesionales
+ * 
+ * Verifica que req.usuario.rol === 'profesional'.
+ * Se usa en rutas exclusivas para profesionales como ver sus citas y servicios.
+ * 
+ * Uso en rutas de profesional (routes/Profesional.routes.js):
+ *   router.get('/profesional/citas', verificarAuth, esProfesional, controlador);
+ */
+const esProfesional = (req, res, next) => {
+  try {
+    // Verifica que haya un usuario autenticado en req.usuario
+    if (!req.usuario) {
+      return res.status(401).json({
+        success: false,
+        message: 'No autorizado. Debes iniciar sesión primero'
+      });
+    }
+    
+    // Verifica que el rol sea exactamente 'profesional'
+    if (req.usuario.rol !== 'profesional') {
+      return res.status(403).json({    // 403 = Tiene sesión pero no es profesional
+        success: false,
+        message: 'Acceso denegado. Esta función es solo para profesionales'
+      });
+    }
+    
+    // Es profesional → continúa al controlador
+    next();
+    
+  } catch (error) {
+    console.error('Error en middleware esProfesional:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al verificar permisos',
+      error: error.message
+    });
+  }
+};
+
 // Exporta todos los middlewares de roles para usarlos en las rutas (routes/*.routes.js)
 module.exports = {
   esAdministrador,          // Solo admin → rutas CRUD de admin
   esCliente,                // Solo cliente → carrito, pedidos propios
+  esProfesional,            // Solo profesional → citas y servicios del profesional
   tieneRol,                 // Múltiples roles → flexible, recibe array
   esPropioUsuarioOAdmin,    // Dueño de los datos o admin → datos personales
   esAdminOAuxiliar,         // Admin o auxiliar → panel de gestión
