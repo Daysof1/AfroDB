@@ -19,6 +19,8 @@ const Categoria = require('../models/Categoria');
 // Representa la tabla 'Subcategoria' en la BD.
 const Subcategoria = require('../models/Subcategoria');
 
+const Servicio = require('../models/Servicio');
+
 /**
  * Obtener catálogo de productos (público)
  * 
@@ -405,11 +407,190 @@ const getProductosDestacados = async (req, res) => {
   }
 };
 
+/**
+ * Obtener servicios (público)
+ * 
+ * Ruta: GET /api/catalogo/servicios
+ */
+const getServicios = async (req, res) => {
+  try {
+    const {
+      subcategoriaId,
+      buscar,
+      precioMin,
+      precioMax,
+      orden = 'reciente'
+    } = req.query;
+
+    const { Op } = require('sequelize');
+
+    const where = {
+      activo: true
+    };
+
+    if (subcategoriaId) where.subcategoriaId = subcategoriaId;
+
+    if (buscar) {
+      where[Op.or] = [
+        { nombre: { [Op.like]: `%${buscar}%` } },
+        { descripcion: { [Op.like]: `%${buscar}%` } }
+      ];
+    }
+
+    if (precioMin || precioMax) {
+      where.precio = {};
+      if (precioMin) where.precio[Op.gte] = parseFloat(precioMin);
+      if (precioMax) where.precio[Op.lte] = parseFloat(precioMax);
+    }
+
+    let order;
+    switch (orden) {
+      case 'precio_asc':
+        order = [['precio', 'ASC']];
+        break;
+      case 'precio_desc':
+        order = [['precio', 'DESC']];
+        break;
+      case 'nombre':
+        order = [['nombre', 'ASC']];
+        break;
+      default:
+        order = [['createdAt', 'DESC']];
+    }
+
+    const servicios = await Servicio.findAll({
+      where,
+      include: [
+        {
+          model: Subcategoria,
+          as: 'subcategoria',
+          attributes: ['id', 'nombre'],
+          where: { activo: true }
+        }
+      ],
+      order
+    });
+
+    res.json({
+      success: true,
+      data: {
+        servicios
+      }
+    });
+
+  } catch (error) {
+    console.error('Error en getServicios:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener servicios',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Obtener un servicio por ID (público)
+ * 
+ * Ruta: GET /api/catalogo/servicios/:id
+ */
+const getServicioById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const servicio = await Servicio.findOne({
+      where: {
+        id,
+        activo: true
+      },
+      include: [
+        {
+          model: Subcategoria,
+          as: 'subcategoria',
+          attributes: ['id', 'nombre'],
+          where: { activo: true }
+        }
+      ]
+    });
+
+    if (!servicio) {
+      return res.status(404).json({
+        success: false,
+        message: 'Servicio no encontrado o no disponible'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        servicio
+      }
+    });
+
+  } catch (error) {
+    console.error('Error en getServicioById:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener servicio',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Obtener servicios destacados/recientes (público)
+ * 
+ * Ruta: GET /api/catalogo/servicios/destacados
+ * Query: ?limite=8
+ */
+const getServiciosDestacados = async (req, res) => {
+  try {
+    const { limite = 8 } = req.query;
+
+    const servicios = await Servicio.findAll({
+      where: {
+        activo: true
+      },
+      include: [
+        {
+          model: Subcategoria,
+          as: 'subcategoria',
+          attributes: ['id', 'nombre'],
+          where: { activo: true }
+        }
+      ],
+      limit: parseInt(limite),
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      data: {
+        servicios
+      }
+    });
+
+  } catch (error) {
+    console.error('Error en getServiciosDestacados:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener servicios destacados',
+      error: error.message
+    });
+  }
+};
+
+
 // Exporta las funciones del controlador para usarlas en las rutas públicas.
 module.exports = {
+  // Productos
   getProductos,                  // GET /api/catalogo/productos - Catálogo con filtros
   getProductoById,               // GET /api/catalogo/productos/:id - Detalle de producto
   getCategorias,                 // GET /api/catalogo/categorias - Listar categorías
   getSubcategoriasPorCategoria,  // GET /api/catalogo/categorias/:id/subcategorias
-  getProductosDestacados         // GET /api/catalogo/destacados - Productos recientes
+  getProductosDestacados,
+
+  // Servicios
+  getServicios,
+  getServicioById,
+  getServiciosDestacados        // GET /api/catalogo/destacados - Productos recientes
 };
