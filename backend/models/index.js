@@ -41,6 +41,16 @@ const Pedido = require('./Pedido');
 // Importa el modelo DetallePedido desde models/DetallePedido.js → tabla 'detalle_pedidos'
 const DetallePedido = require('./DetallePedido');
 
+const Servicio = require('./Servicio');
+
+const Cita = require('./Cita');
+
+const CitaServicio = require('./CitaServicio');
+
+const Especialidad = require('./Especialidad');
+
+const ProfesionalEspecialidad = require('./ProfesionalEspecialidad');
+
 /**
  * ============================================
  * DEFINIR ASOCIACIONES (RELACIONES)
@@ -130,6 +140,112 @@ Producto.belongsTo(Subcategoria, {
   as: 'subcategoria',              // Alias → Producto.findAll({ include: ['subcategoria'] })
   onDelete: 'CASCADE',
   onUpdate: 'CASCADE'
+});
+
+// Servivios //
+
+Categoria.hasMany(Servicio, {
+  foreignKey: 'categoriaId'
+});
+
+Subcategoria.hasMany(Servicio, {
+  foreignKey: 'subcategoriaId'
+});
+
+Servicio.belongsTo(Categoria, {
+  foreignKey: 'categoriaId'
+});
+
+Servicio.belongsTo(Subcategoria, {
+  foreignKey: 'subcategoriaId'
+});
+
+// Citas // 
+
+// Un usuario (cliente) puede tener muchas citas
+Usuario.hasMany(Cita, {
+  foreignKey: 'usuarioId',
+  as: 'citasCliente'
+});
+
+Cita.belongsTo(Usuario, {
+  foreignKey: 'usuarioId',
+  as: 'cliente'
+});
+
+// Un profesional (usuario con rol profesional) atiende muchas citas
+Usuario.hasMany(Cita, {
+  foreignKey: 'profesionalId',
+  as: 'citasProfesional'
+});
+
+Cita.belongsTo(Usuario, {
+  foreignKey: 'profesionalId',
+  as: 'profesional'
+});
+
+//Cita servicio //
+
+Cita.belongsToMany(Servicio, {
+  through: CitaServicio,
+  foreignKey: 'citaId',
+  otherKey: 'servicioId'
+});
+
+Servicio.belongsToMany(Cita, {
+  through: CitaServicio,
+  foreignKey: 'servicioId',
+  otherKey: 'citaId'
+});
+
+// Relaciones directas con la tabla intermedia (útil para queries)
+Cita.hasMany(CitaServicio, {
+  foreignKey: 'citaId'
+});
+
+CitaServicio.belongsTo(Cita, {
+  foreignKey: 'citaId'
+});
+
+Servicio.hasMany(CitaServicio, {
+  foreignKey: 'servicioId'
+});
+
+CitaServicio.belongsTo(Servicio, {
+  foreignKey: 'servicioId'
+});
+
+//Especialidades //
+
+Usuario.belongsToMany(Especialidad, {
+  through: ProfesionalEspecialidad,
+  foreignKey: 'usuarioId',
+  otherKey: 'especialidadId',
+  as: 'especialidades'
+});
+
+Especialidad.belongsToMany(Usuario, {
+  through: ProfesionalEspecialidad,
+  foreignKey: 'especialidadId',
+  otherKey: 'usuarioId',
+  as: 'profesionales'
+});
+
+// Relaciones directas (opcional pero PRO)
+Usuario.hasMany(ProfesionalEspecialidad, {
+  foreignKey: 'usuarioId'
+});
+
+ProfesionalEspecialidad.belongsTo(Usuario, {
+  foreignKey: 'usuarioId'
+});
+
+Especialidad.hasMany(ProfesionalEspecialidad, {
+  foreignKey: 'especialidadId'
+});
+
+ProfesionalEspecialidad.belongsTo(Especialidad, {
+  foreignKey: 'especialidadId'
 });
 
 // ==========================================
@@ -302,6 +418,11 @@ module.exports = {
   Carrito,                           // Modelo de carrito → tabla 'carritos'
   Pedido,                            // Modelo de pedidos → tabla 'pedidos'
   DetallePedido,                     // Modelo de detalles de pedido → tabla 'detalle_pedidos'
+  Servicio,
+  Cita,
+  CitaServicio,
+  Especialidad,
+  ProfesionalEspecialidad,
   initAssociations                   // Función para confirmar asociaciones en consola
 };
 
