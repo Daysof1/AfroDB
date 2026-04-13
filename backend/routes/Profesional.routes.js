@@ -1,9 +1,9 @@
 /**
  * ============================================
- * RUTAS DEL CLIENTE (cliente.routes.js)
+ * RUTAS DEL PROFESIONAL (profesional.routes.js)
  * ============================================
- * Define las rutas que usan los clientes del e-commerce.
- * Prefijo base: /api (configurado en server.js → app.use('/api', clienteRoutes))
+ * Define las rutas que usan los profesionales del e-commerce.
+ * Prefijo base: /api (configurado en server.js → app.use('/api', profesionalRoutes))
  * 
  * Este archivo tiene DOS tipos de rutas:
  * 
