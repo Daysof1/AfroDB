@@ -72,6 +72,10 @@ const usuarioController = require('../controllers/usuario.controller');
 // Funciones: getAllPedidos, getPedidoById, getEstadisticasPedidos, actualizarEstadoPedido
 const pedidoController = require('../controllers/pedido.controller');
 
+// Controlador de profesionales → desde controllers/profesional.controller.js
+// Funciones: getProfesionales, getProfesionalById, asignarEspecialidades, eliminarEspecialidad
+const profesionalController = require('../controllers/profesional.controller');
+
 // ==========================================
 // MIDDLEWARE GLOBAL DEL ROUTER
 // ==========================================
@@ -240,8 +244,27 @@ router.patch('/usuarios/:id/toggle', soloAdministrador, usuarioController.toggle
 // Controlador: eliminarUsuario → RESTRICT en pedidos impide eliminar si tiene pedidos
 router.delete('/usuarios/:id', soloAdministrador, usuarioController.eliminarUsuario);
 
+// ==========================================// RUTAS DE PROFESIONALES - ADMIN (/api/admin/profesionales)
 // ==========================================
-// RUTAS DE PEDIDOS - ADMIN (/api/admin/pedidos)
+
+// GET /api/admin/profesionales → Obtiene todos los profesionales registrados
+// Controlador: getProfesionales → retorna usuarios con rol 'profesional' e incluye sus especialidades
+router.get('/profesionales', profesionalController.getProfesionales);
+
+// GET /api/admin/profesionales/:id → Obtiene un profesional por ID
+// Controlador: getProfesionalById → retorna profesional con sus especialidades
+router.get('/profesionales/:id', profesionalController.getProfesionalById);
+
+// POST /api/admin/profesionales/:id/especialidades → Asigna especialidades a un profesional
+// Body: { especialidadesIds: [1,2,3] }
+// Controlador: asignarEspecialidades → reemplaza las especialidades del profesional
+router.post('/profesionales/:id/especialidades', profesionalController.asignarEspecialidades);
+
+// DELETE /api/admin/profesionales/:id/especialidades/:especialidadId → Elimina una especialidad de un profesional
+// Controlador: eliminarEspecialidad → borra el registro de la tabla intermedia
+router.delete('/profesionales/:id/especialidades/:especialidadId', profesionalController.eliminarEspecialidad);
+
+// ==========================================// RUTAS DE PEDIDOS - ADMIN (/api/admin/pedidos)
 // ==========================================
 
 // GET /api/admin/pedidos/estadisticas → Obtiene estadísticas globales de pedidos
