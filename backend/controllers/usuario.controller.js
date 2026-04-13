@@ -139,10 +139,10 @@ const crearUsuario = async (req, res) => {
     }
     
     // VALIDACIÓN 2: El rol debe ser uno de los permitidos
-    if (!['cliente', 'auxiliar', 'administrador'].includes(rol)) {
+    if (!['cliente', 'auxiliar', 'administrador', 'profesional'].includes(rol)) {
       return res.status(400).json({
         success: false,
-        message: 'Rol inválido. Debe ser: cliente, auxiliar o administrador'
+        message: 'Rol inválido. Debe ser: cliente, auxiliar, administrador o profesional'
       });
     }
     
