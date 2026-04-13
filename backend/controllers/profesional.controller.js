@@ -11,7 +11,7 @@
  */
 
 const Usuario = require('../models/Usuario');
-const Especialidad = require('../models/Especialidad');
+const Especialidad = require('../models/Especialidades');
 const ProfesionalEspecialidad = require('../models/ProfesionalEspecialidad');
 
 /**
