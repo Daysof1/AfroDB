@@ -1,134 +1,130 @@
 /**
  * ============================================
- * CONTROLLER CITA
+ * CONTROLADOR DE CITAS
  * ============================================
- * Maneja la lógica principal del sistema:
- * - creación de citas
- * - asignación de servicios
- * - cálculo de total y duración
- * - asignación de profesional
+ * Gestiona el agendamiento de citas.
+ * Funciones de CLIENTE: crear cita, ver mis citas, cancelar.
+ * Funciones de ADMIN: ver todas, cambiar estado, estadísticas.
  */
 
-const { Op } = require('sequelize');
-
-const {
-  Cita,
-  Servicio,
-  CitaServicio,
-  Usuario
-} = require('../models');
+const Cita = require('../models/Cita');
+const Servicio = require('../models/Servicio');
+const CitaServicio = require('../models/CitaServicio');
+const Usuario = require('../models/Usuario');
 
 
 // ==========================================
-// 📅 CREAR CITA
+// 📅 CREAR CITA - CLIENTE
 // ==========================================
 
-exports.crearCita = async (req, res) => {
+const crearCita = async (req, res) => {
+  const { sequelize } = require('../config/database');
+  const t = await sequelize.transaction();
+
   try {
-    const {
-      usuarioId,
-      servicios, // array de IDs
-      fecha,
-      hora,
-      profesionalId // opcional
-    } = req.body;
+    const { fecha, hora, servicios, profesionalId } = req.body;
 
-    // Validar usuario
-    const usuario = await Usuario.findByPk(usuarioId);
-    if (!usuario) {
-      return res.status(404).json({ msg: 'Usuario no existe' });
+    // VALIDACIÓN 1: servicios obligatorios
+    if (!servicios || servicios.length === 0) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Debe seleccionar al menos un servicio'
+      });
     }
 
-    // 🔥 VALIDAR SERVICIOS
+    // VALIDACIÓN 2: obtener servicios
     const serviciosDB = await Servicio.findAll({
-      where: {
-        id: servicios,
-        activo: true
-      }
+      where: { id: servicios, activo: true },
+      transaction: t
     });
 
     if (serviciosDB.length !== servicios.length) {
-      return res.status(400).json({ msg: 'Uno o más servicios no son válidos' });
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Uno o más servicios no son válidos'
+      });
     }
 
-    // 🔥 CALCULAR DURACIÓN TOTAL
-    const duracionTotal = serviciosDB.reduce(
-      (sum, s) => sum + s.duracion,
-      0
-    );
+    // 🔥 CALCULAR DURACIÓN Y TOTAL
+    let duracionTotal = 0;
+    let total = 0;
+
+    for (const s of serviciosDB) {
+      duracionTotal += s.duracion;
+      total += parseFloat(s.precio);
+    }
 
     // 🔥 ASIGNAR PROFESIONAL
     let profesionalAsignado = profesionalId;
 
     if (!profesionalAsignado) {
       const profesional = await Usuario.findOne({
-        where: { rol: 'profesional' }
+        where: { rol: 'profesional' },
+        transaction: t
       });
 
       if (!profesional) {
-        return res.status(400).json({ msg: 'No hay profesionales disponibles' });
+        await t.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'No hay profesionales disponibles'
+        });
       }
 
       profesionalAsignado = profesional.id;
     }
 
-    // 🔥 VALIDAR DISPONIBILIDAD (básico)
+    // VALIDAR DISPONIBILIDAD
     const citaExistente = await Cita.findOne({
       where: {
         profesionalId: profesionalAsignado,
         fecha,
         hora
-      }
+      },
+      transaction: t
     });
 
     if (citaExistente) {
-      return res.status(400).json({ msg: 'El profesional ya tiene una cita en ese horario' });
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'El profesional ya tiene una cita en ese horario'
+      });
     }
 
     // ==========================================
     // CREAR CITA
     // ==========================================
 
-    const nuevaCita = await Cita.create({
-      usuarioId,
+    const cita = await Cita.create({
+      usuarioId: req.usuario.id,
       profesionalId: profesionalAsignado,
       fecha,
       hora,
       duracionTotal,
+      total,
       estado: 'pendiente'
-    });
+    }, { transaction: t });
 
     // ==========================================
-    // GUARDAR SERVICIOS (TABLA INTERMEDIA)
+    // CREAR DETALLES (CitaServicio)
     // ==========================================
 
-    for (const servicio of serviciosDB) {
+    for (const s of serviciosDB) {
       await CitaServicio.create({
-        citaId: nuevaCita.id,
-        servicioId: servicio.id
-      });
+        citaId: cita.id,
+        servicioId: s.id,
+        precio: s.precio,
+        duracion: s.duracion,
+        cantidad: 1
+      }, { transaction: t });
     }
 
-    res.status(201).json({
-      msg: 'Cita creada correctamente',
-      cita: nuevaCita
-    });
+    await t.commit();
 
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ msg: 'Error al crear la cita' });
-  }
-};
-
-
-// ==========================================
-// 📄 LISTAR CITAS
-// ==========================================
-
-exports.listarCitas = async (req, res) => {
-  try {
-
-    const citas = await Cita.findAll({
+    await cita.reload({
       include: [
         {
           model: Usuario,
@@ -142,16 +138,62 @@ exports.listarCitas = async (req, res) => {
         },
         {
           model: Servicio,
-          attributes: ['id', 'nombre', 'precio'],
-          through: { attributes: [] }
+          through: { attributes: ['precio', 'duracion'] }
         }
       ]
     });
 
-    res.json(citas);
+    res.status(201).json({
+      success: true,
+      message: 'Cita creada exitosamente',
+      data: { cita }
+    });
 
   } catch (error) {
-    res.status(500).json({ msg: 'Error al listar citas' });
+    await t.rollback();
+    console.error('Error en crearCita:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al crear cita',
+      error: error.message
+    });
+  }
+};
+
+
+// ==========================================
+// 📄 MIS CITAS - CLIENTE
+// ==========================================
+
+const getMisCitas = async (req, res) => {
+  try {
+    const citas = await Cita.findAll({
+      where: { usuarioId: req.usuario.id },
+      include: [
+        {
+          model: Usuario,
+          as: 'profesional',
+          attributes: ['id', 'nombre']
+        },
+        {
+          model: Servicio,
+          through: { attributes: ['precio', 'duracion'] }
+        }
+      ],
+      order: [['fecha', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      data: { citas }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener citas',
+      error: error.message
+    });
   }
 };
 
@@ -160,12 +202,18 @@ exports.listarCitas = async (req, res) => {
 // 🔍 OBTENER CITA
 // ==========================================
 
-exports.obtenerCita = async (req, res) => {
+const getCitaById = async (req, res) => {
   try {
-
     const { id } = req.params;
 
-    const cita = await Cita.findByPk(id, {
+    const where = { id };
+
+    if (req.usuario.rol !== 'administrador') {
+      where.usuarioId = req.usuario.id;
+    }
+
+    const cita = await Cita.findOne({
+      where,
       include: [
         {
           model: Usuario,
@@ -177,71 +225,173 @@ exports.obtenerCita = async (req, res) => {
         },
         {
           model: Servicio,
-          through: {
-            attributes: ['precio', 'duracion', 'cantidad']
-          }
+          through: { attributes: ['precio', 'duracion'] }
         }
       ]
     });
 
     if (!cita) {
-      return res.status(404).json({ msg: 'Cita no encontrada' });
+      return res.status(404).json({
+        success: false,
+        message: 'Cita no encontrada'
+      });
     }
 
-    res.json(cita);
+    res.json({
+      success: true,
+      data: { cita }
+    });
 
   } catch (error) {
-    res.status(500).json({ msg: 'Error al obtener cita' });
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener cita',
+      error: error.message
+    });
   }
 };
 
 
 // ==========================================
-// ❌ CANCELAR CITA
+// ❌ CANCELAR CITA - CLIENTE
 // ==========================================
 
-exports.cancelarCita = async (req, res) => {
+const cancelarCita = async (req, res) => {
   try {
-
     const { id } = req.params;
+
+    const cita = await Cita.findOne({
+      where: {
+        id,
+        usuarioId: req.usuario.id
+      }
+    });
+
+    if (!cita) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cita no encontrada'
+      });
+    }
+
+    if (cita.estado !== 'pendiente') {
+      return res.status(400).json({
+        success: false,
+        message: 'Solo se pueden cancelar citas pendientes'
+      });
+    }
+
+    cita.estado = 'cancelada';
+    await cita.save();
+
+    res.json({
+      success: true,
+      message: 'Cita cancelada'
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al cancelar cita',
+      error: error.message
+    });
+  }
+};
+
+
+// ==========================================
+// 📊 TODAS LAS CITAS - ADMIN
+// ==========================================
+
+const getAllCitas = async (req, res) => {
+  try {
+    const citas = await Cita.findAll({
+      include: [
+        {
+          model: Usuario,
+          as: 'cliente'
+        },
+        {
+          model: Usuario,
+          as: 'profesional'
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      data: { citas }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener citas',
+      error: error.message
+    });
+  }
+};
+
+
+// ==========================================
+// 🔄 CAMBIAR ESTADO - ADMIN
+// ==========================================
+
+const actualizarEstadoCita = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estado } = req.body;
+
+    const estadosValidos = ['pendiente', 'confirmada', 'completada', 'cancelada'];
+
+    if (!estadosValidos.includes(estado)) {
+      return res.status(400).json({
+        success: false,
+        message: `Estado inválido: ${estadosValidos.join(', ')}`
+      });
+    }
 
     const cita = await Cita.findByPk(id);
 
     if (!cita) {
-      return res.status(404).json({ msg: 'Cita no encontrada' });
+      return res.status(404).json({
+        success: false,
+        message: 'Cita no encontrada'
+      });
     }
 
-    await cita.update({ estado: 'cancelada' });
+    cita.estado = estado;
+    await cita.save();
 
-    res.json({ msg: 'Cita cancelada correctamente' });
+    res.json({
+      success: true,
+      message: 'Estado actualizado',
+      data: { cita }
+    });
 
   } catch (error) {
-    res.status(500).json({ msg: 'Error al cancelar cita' });
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar estado',
+      error: error.message
+    });
   }
 };
 
 
 // ==========================================
-// 💸 CALCULAR TOTAL DE LA CITA
+// EXPORTS
 // ==========================================
 
-exports.calcularTotalCita = async (req, res) => {
-  try {
+module.exports = {
+  // CLIENTE
+  crearCita,
+  getMisCitas,
+  getCitaById,
+  cancelarCita,
 
-    const { id } = req.params;
-
-    const detalles = await CitaServicio.findAll({
-      where: { citaId: id }
-    });
-
-    const total = detalles.reduce(
-      (sum, d) => sum + (parseFloat(d.precio) * d.cantidad),
-      0
-    );
-
-    res.json({ total });
-
-  } catch (error) {
-    res.status(500).json({ msg: 'Error al calcular total' });
-  }
+  // ADMIN
+  getAllCitas,
+  actualizarEstadoCita
 };
