@@ -15,8 +15,9 @@
  *    /api/catalogo/destacados         → Ver productos destacados/recientes
  * 
  * 2. RUTAS PROTEGIDAS (requieren token JWT):
- *    /api/cliente/carrito             → Gestión del carrito de compras
- *    /api/cliente/pedidos             → Gestión de pedidos del cliente
+ *    /api/profesional/citas         → Ver citas del profesional
+ *   /api/profesional/citas/:id     → Ver detalle de una cita
+ *    /api/profesional/citas/:id/estado → Actualizar estado de una cita (confirmar, cancelar, completar)
  */
 
 // Importa express desde el paquete npm 'express'
