@@ -17,6 +17,8 @@ let subcategoriaId = 0;
 let productoId = 0;
 let usuarioId = 0;
 let pedidoId = 0;
+let especialidadId = 0;
+let profesionalId = 0;
 
 describe('🧪 TESTS DE API E-COMMERCE', () => {
 
@@ -462,9 +464,65 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
   });
 
   // ==========================================
-  // 6. TESTS DE CLIENTE - CATÁLOGO
+  // 6️⃣  ADMIN - ESPECIALIDADES Y PROFESIONALES
   // ==========================================
-  describe('6️⃣  CLIENTE - CATÁLOGO', () => {
+  describe('6️⃣  ADMIN - ESPECIALIDADES Y PROFESIONALES', () => {
+
+    test('✅ Admin debe listar todas las especialidades', async () => {
+      const response = await request(app)
+        .get('/api/admin/especialidades')
+        .set('Authorization', `Bearer ${adminToken}`);
+      
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data.especialidades)).toBe(true);
+      if (response.body.data.especialidades.length > 0) {
+        especialidadId = response.body.data.especialidades[0].id;
+      }
+    });
+
+    test('✅ Admin debe obtener una especialidad por ID', async () => {
+      if (especialidadId) {
+        const response = await request(app)
+          .get(`/api/admin/especialidades/${especialidadId}`)
+          .set('Authorization', `Bearer ${adminToken}`);
+        
+        expect(response.status).toBe(200);
+        expect(response.body.success).toBe(true);
+        expect(response.body.data).toHaveProperty('especialidad');
+      }
+    });
+
+    test('✅ Admin debe listar todos los profesionales', async () => {
+      const response = await request(app)
+        .get('/api/admin/profesionales')
+        .set('Authorization', `Bearer ${adminToken}`);
+      
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data.profesionales)).toBe(true);
+      if (response.body.data.profesionales.length > 0) {
+        profesionalId = response.body.data.profesionales[0].id;
+      }
+    });
+
+    test('✅ Admin debe obtener un profesional por ID', async () => {
+      if (profesionalId) {
+        const response = await request(app)
+          .get(`/api/admin/profesionales/${profesionalId}`)
+          .set('Authorization', `Bearer ${adminToken}`);
+        
+        expect(response.status).toBe(200);
+        expect(response.body.success).toBe(true);
+        expect(response.body.data).toHaveProperty('profesional');
+      }
+    });
+  });
+
+  // ==========================================
+  // 7. TESTS DE CLIENTE - CATÁLOGO
+  // ==========================================
+  describe('7️⃣  CLIENTE - CATÁLOGO', () => {
 
     test('✅ Cliente debe ver todas las categorías', async () => {
       const response = await request(app)
@@ -519,9 +577,9 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
   });
 
   // ==========================================
-  // 7. TESTS DE CLIENTE - CARRITO
+  // 8. TESTS DE CLIENTE - CARRITO
   // ==========================================
-  describe('7️⃣  CLIENTE - CARRITO', () => {
+  describe('8️⃣  CLIENTE - CARRITO', () => {
 
     test('✅ Cliente debe agregar producto al carrito', async () => {
       // Primero obtener un producto existente
