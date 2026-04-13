@@ -1,7 +1,20 @@
+/**
+ * ============================================
+ * MODELO SERVICIO
+ * ============================================
+ * Define la estructura de la tabla 'servicios' en MySQL usando Sequelize ORM.
+ * Cada servicio pertenece a una categoría y subcategoría de tipo 'servicio'.
+ * Puede ser usado en múltiples citas (relación muchos a muchos).
+ */
+
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
 const Servicio = sequelize.define('Servicio', {
+
+  // ==========================================
+  // COLUMNAS
+  // ==========================================
 
   id: {
     type: DataTypes.INTEGER,
@@ -11,52 +24,31 @@ const Servicio = sequelize.define('Servicio', {
   },
 
   nombre: {
-    type: DataTypes.STRING(120),
+    type: DataTypes.STRING(150),
     allowNull: false,
-    unique: {
-      msg: 'Este servicio ya existe'
-    },
     validate: {
-      notEmpty: { msg: 'El nombre no puede estar vacío' },
+      notEmpty: {
+        msg: 'El nombre del servicio no puede estar vacío'
+      },
       len: {
-        args: [2, 120],
-        msg: 'Debe tener entre 2 y 120 caracteres'
+        args: [3, 150],
+        msg: 'El nombre debe tener entre 3 y 150 caracteres'
       }
-    }
-  },
-
-  // ⚠️ Mejorable: luego puedes reemplazar esto por FK a Especialidad
-  categoria: {
-    type: DataTypes.ENUM(
-      'manicure',
-      'pedicure',
-      'cabello',
-      'barberia',
-      'cejas_pestañas',
-      'tratamientos'
-    ),
-    allowNull: false,
-    validate: {
-      notEmpty: { msg: 'La categoría es obligatoria' }
     }
   },
 
   descripcion: {
     type: DataTypes.TEXT,
-    allowNull: true,
-    validate: {
-      len: {
-        args: [0, 255],
-        msg: 'Máximo 255 caracteres'
-      }
-    }
+    allowNull: true
   },
 
   precio: {
-    type: DataTypes.DECIMAL(10,2),
+    type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
     validate: {
-      isDecimal: { msg: 'Debe ser un número válido' },
+      isDecimal: {
+        msg: 'El precio debe ser un número válido'
+      },
       min: {
         args: [0],
         msg: 'El precio no puede ser negativo'
@@ -67,16 +59,47 @@ const Servicio = sequelize.define('Servicio', {
   duracion: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    comment: 'Duración en minutos',
     validate: {
-      isInt: { msg: 'Debe ser un número entero' },
-      min: {
-        args: [5],
-        msg: 'Mínimo 5 minutos'
+      isInt: {
+        msg: 'La duración debe ser un número entero'
       },
-      max: {
-        args: [600],
-        msg: 'Máximo 10 horas'
+      min: {
+        args: [1],
+        msg: 'La duración debe ser mayor a 0 minutos'
+      }
+    }
+  },
+
+  // 🔹 FK categoría
+  categoriaId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'categorias',
+      key: 'id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+    validate: {
+      notNull: {
+        msg: 'Debe seleccionar una categoría'
+      }
+    }
+  },
+
+  // 🔹 FK subcategoría
+  subcategoriaId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'subcategorias',
+      key: 'id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+    validate: {
+      notNull: {
+        msg: 'Debe seleccionar una subcategoría'
       }
     }
   },
@@ -92,51 +115,116 @@ const Servicio = sequelize.define('Servicio', {
   tableName: 'servicios',
   timestamps: true,
 
-  defaultScope: {
-    where: { activo: true }
-  },
+  indexes: [
+    { fields: ['nombre'] },
+    { fields: ['categoriaId'] },
+    { fields: ['subcategoriaId'] },
+    { fields: ['activo'] }
+  ],
 
-  scopes: {
-    withInactive: {
-      where: {}
+  // ==========================================
+  // HOOKS
+  // ==========================================
+
+  hooks: {
+
+    /**
+     * beforeCreate → Validación completa de coherencia
+     */
+    beforeCreate: async (servicio) => {
+
+      const Categoria = require('./Categoria');
+      const Subcategoria = require('./Subcategoria');
+
+      const categoria = await Categoria.findByPk(servicio.categoriaId);
+      const subcategoria = await Subcategoria.findByPk(servicio.subcategoriaId);
+
+      // Existencia
+      if (!categoria) {
+        throw new Error('La categoría seleccionada no existe');
+      }
+
+      if (!subcategoria) {
+        throw new Error('La subcategoría seleccionada no existe');
+      }
+
+      // Activo
+      if (!categoria.activo) {
+        throw new Error('No se puede crear un servicio en una categoría inactiva');
+      }
+
+      if (!subcategoria.activo) {
+        throw new Error('No se puede crear un servicio en una subcategoría inactiva');
+      }
+
+      // 🔥 TIPO (CLAVE)
+      if (categoria.tipo !== 'servicio') {
+        throw new Error('La categoría no corresponde a servicios');
+      }
+
+      if (subcategoria.tipo !== 'servicio') {
+        throw new Error('La subcategoría no corresponde a servicios');
+      }
+
+      // Coherencia relacional
+      if (subcategoria.categoriaId !== servicio.categoriaId) {
+        throw new Error('La subcategoría no pertenece a la categoría seleccionada');
+      }
+
+      // Validación lógica de duración
+      if (servicio.duracion > 480) {
+        throw new Error('La duración del servicio es demasiado larga');
+      }
+    },
+
+    /**
+     * beforeUpdate → Validar cambios críticos
+     */
+    beforeUpdate: async (servicio) => {
+
+      if (
+        servicio.changed('categoriaId') ||
+        servicio.changed('subcategoriaId')
+      ) {
+
+        const Categoria = require('./Categoria');
+        const Subcategoria = require('./Subcategoria');
+
+        const categoria = await Categoria.findByPk(servicio.categoriaId);
+        const subcategoria = await Subcategoria.findByPk(servicio.subcategoriaId);
+
+        if (!categoria || categoria.tipo !== 'servicio') {
+          throw new Error('La categoría no corresponde a servicios');
+        }
+
+        if (!subcategoria || subcategoria.tipo !== 'servicio') {
+          throw new Error('La subcategoría no corresponde a servicios');
+        }
+
+        if (subcategoria.categoriaId !== servicio.categoriaId) {
+          throw new Error('La subcategoría no pertenece a la categoría');
+        }
+      }
     }
   }
-
 });
 
 
-// ===============================
-// MÉTODOS ESTÁTICOS
-// ===============================
-
-Servicio.obtenerPorCategoria = async function(categoria) {
-  return await this.findAll({
-    where: { categoria, activo: true }
-  });
-};
-
-Servicio.obtenerActivos = async function() {
-  return await this.findAll({
-    where: { activo: true }
-  });
-};
-
-
-// ===============================
+// ==========================================
 // MÉTODOS DE INSTANCIA
-// ===============================
+// ==========================================
 
-Servicio.prototype.esDisponible = function() {
+Servicio.prototype.obtenerDuracionHoras = function() {
+  return (this.duracion / 60).toFixed(2);
+};
+
+Servicio.prototype.estaActivo = function() {
   return this.activo;
 };
 
 Servicio.prototype.formatearPrecio = function() {
-  return `$${parseFloat(this.precio).toLocaleString()}`;
+  return `$${parseFloat(this.precio).toLocaleString('es-CO')}`;
 };
 
-
-// ===============================
-// EXPORTACIÓN
-// ===============================
 
 module.exports = Servicio;

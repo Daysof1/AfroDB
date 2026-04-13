@@ -218,6 +218,14 @@ const Producto = sequelize.define('Producto', {
       if (subcategoria.categoriaId !== producto.categoriaId) {
         throw new Error('La subcategoría no pertenece a la categoría seleccionada');
       }
+      
+      if (categoria.tipo !== 'producto') {
+      throw new Error('La categoría no corresponde a productos');
+      }
+
+      if (subcategoria.tipo !== 'producto') {
+      throw new Error('La subcategoría no corresponde a productos');
+    }
     },
 
     /**
