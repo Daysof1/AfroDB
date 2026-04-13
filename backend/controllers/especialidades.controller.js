@@ -17,8 +17,8 @@
  * - GENERAL: consultar
  */
 
-const Especialidad = require('../models/Especialidad');
-const Usuario = require('../models/Usuario');
+const Especialidad = require('../models/Especialidades');
+const Usuario = require('../models/Usuario'); 
 
 /**
  * Obtener todas las especialidades
