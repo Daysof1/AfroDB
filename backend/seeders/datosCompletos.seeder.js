@@ -1,390 +1,285 @@
 /**
  * ============================================
- * SEEDER COMPLETO - DATOS DE PRUEBA
+ * SEEDER PRINCIPAL - DATOS COMPLETOS
  * ============================================
- * Script para poblar la base de datos con datos de prueba completos
- * 
- * Crea:
- * - 1 Administrador
- * - 1 Auxiliar
- * - 5 Clientes
- * - 5 Categorías
- * - 15 Subcategorías (3 por categoría)
- * - 75 Productos (5 por subcategoría)
+ * Ejecuta todos los seeders en el orden correcto para crear
+ * datos de prueba completos para testing.
+ *
+ * Incluye:
+ * - Administrador
+ * - Categorías y subcategorías
+ * - Especialidades
+ * - Usuarios de prueba (profesionales, clientes, auxiliar)
+ * - Productos
+ * - Servicios
+ * - Asignaciones profesional-especialidad
  */
 
 const Usuario = require('../models/Usuario');
 const Categoria = require('../models/Categoria');
 const Subcategoria = require('../models/Subcategoria');
+const Especialidad = require('../models/Especialidades');
 const Producto = require('../models/Producto');
-const fs = require('fs').promises;
-const path = require('path');
+const Servicio = require('../models/Servicio');
+const ProfesionalEspecialidad = require('../models/ProfesionalEspecialidad');
 
-/**
- * Función principal del seeder
- */
-const seedDatosCompletos = async () => {
+const { sequelize } = require('../config/database');
+
+const datosCompletosSeeder = async () => {
   try {
-    console.log('\n🌱 ========================================');
-    console.log('   INICIANDO SEEDER DE DATOS COMPLETOS');
-    console.log('========================================\n');
+    console.log('🚀 Iniciando seeders completos para testing...\n');
 
-    // ==========================================
-    // 1. CREAR USUARIOS
-    // ==========================================
-    console.log('👥 1. CREANDO USUARIOS...\n');
+    // Desactivar restricciones de claves foráneas temporalmente
+    await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
 
-    // ADMINISTRADOR
-    const adminExistente = await Usuario.findOne({ where: { email: 'admin@ecommerce.com' } });
+    console.log('📋 Creando datos base...\n');
+
+    // 1. ADMINISTRADOR
+    console.log('1️⃣ Creando administrador...');
+    const adminExistente = await Usuario.findOne({ where: { rol: 'administrador' } });
     if (!adminExistente) {
       await Usuario.create({
-        nombre: 'Administrador',
-        apellido: 'Sistema',
-        email: 'admin@ecommerce.com',
-        password: 'admin1234',
+        tipo_documento: 'C.C.',
+        documento: '1234567890',
+        nombre: 'Administrador Sistema',
+        email: 'admin@afrodb.com',
+        password: 'Admin123!',
         rol: 'administrador',
         telefono: '3001234567',
-        direccion: 'SENA - Oficina Principal',
         activo: true
       });
       console.log('✅ Administrador creado');
-      console.log('   📧 Usuario: admin@ecommerce.com');
-      console.log('   🔑 Password: admin1234\n');
     } else {
-      console.log('✅ Administrador ya existe\n');
+      console.log('⚠️ Administrador ya existe');
     }
 
-    // AUXILIAR
-    const auxiliarExistente = await Usuario.findOne({ where: { email: 'auxiliar@ecommerce.com' } });
-    if (!auxiliarExistente) {
-      await Usuario.create({
-        nombre: 'Auxiliar',
-        apellido: 'Soporte',
-        email: 'auxiliar@ecommerce.com',
-        password: 'aux123',
-        rol: 'auxiliar',
-        telefono: '3009876543',
-        direccion: 'SENA - Oficina Auxiliar',
-        activo: true
+    // 2. CATEGORÍAS
+    console.log('\n2️⃣ Creando categorías...');
+    const categoriasData = [
+      { nombre: 'Belleza y Cuidado Personal', descripcion: 'Productos y servicios para el cuidado de la piel, cabello y belleza general' },
+      { nombre: 'Salud y Bienestar', descripcion: 'Productos naturales, suplementos y servicios de bienestar' },
+      { nombre: 'Hogar y Limpieza', descripcion: 'Productos para el hogar, limpieza y organización' },
+      { nombre: 'Alimentación', descripcion: 'Productos naturales, orgánicos y saludables' },
+      { nombre: 'Moda y Accesorios', descripcion: 'Ropa, accesorios y complementos con estilo afro' }
+    ];
+
+    const categorias = [];
+    for (const catData of categoriasData) {
+      const [categoria, created] = await Categoria.findOrCreate({
+        where: { nombre: catData.nombre },
+        defaults: catData
       });
-      console.log('✅ Auxiliar creado');
-      console.log('   📧 Usuario: auxiliar@ecommerce.com');
-      console.log('   🔑 Password: aux123\n');
-    } else {
-      console.log('✅ Auxiliar ya existe\n');
+      categorias.push(categoria);
+      if (created) console.log(`✅ Categoría: ${categoria.nombre}`);
     }
 
-    // CLIENTES (5)
-    console.log('👤 Creando 5 clientes...');
-    for (let i = 1; i <= 5; i++) {
-      const clienteExistente = await Usuario.findOne({ where: { email: `cliente${i}@ecommerce.com` } });
-      if (!clienteExistente) {
-        await Usuario.create({
-          nombre: `Cliente ${i}`,
-          apellido: `Apellido ${i}`,
-          email: `cliente${i}@ecommerce.com`,
-          password: `cliente${i}`,
-          rol: 'cliente',
-          telefono: `300${1000000 + i}`,
-          direccion: `Dirección del Cliente ${i}, Bogotá`,
-          activo: true
+    // 3. SUBCATEGORÍAS
+    console.log('\n3️⃣ Creando subcategorías...');
+    const subcategoriasData = [
+      // Belleza
+      { nombre: 'Cuidado del Cabello', categoriaNombre: 'Belleza y Cuidado Personal' },
+      { nombre: 'Cuidado de la Piel', categoriaNombre: 'Belleza y Cuidado Personal' },
+      { nombre: 'Maquillaje Natural', categoriaNombre: 'Belleza y Cuidado Personal' },
+      // Salud
+      { nombre: 'Suplementos Naturales', categoriaNombre: 'Salud y Bienestar' },
+      { nombre: 'Aceites Esenciales', categoriaNombre: 'Salud y Bienestar' },
+      { nombre: 'Productos de Masaje', categoriaNombre: 'Salud y Bienestar' },
+      // Alimentación
+      { nombre: 'Alimentos Orgánicos', categoriaNombre: 'Alimentación' },
+      { nombre: 'Tés e Infusiones', categoriaNombre: 'Alimentación' },
+      // Moda
+      { nombre: 'Accesorios Étnicos', categoriaNombre: 'Moda y Accesorios' },
+      { nombre: 'Bisutería Artesanal', categoriaNombre: 'Moda y Accesorios' }
+    ];
+
+    const subcategorias = [];
+    for (const subData of subcategoriasData) {
+      const categoria = categorias.find(c => c.nombre === subData.categoriaNombre);
+      if (categoria) {
+        const [subcategoria, created] = await Subcategoria.findOrCreate({
+          where: { nombre: subData.nombre, categoriaId: categoria.id },
+          defaults: { nombre: subData.nombre, categoriaId: categoria.id }
         });
-        console.log(`   ✅ Cliente ${i} - Email: cliente${i}@ecommerce.com - Pass: cliente${i}`);
+        subcategorias.push(subcategoria);
+        if (created) console.log(`✅ Subcategoría: ${subcategoria.nombre}`);
       }
     }
-    
-    const usuariosCreados = await Usuario.count();
-    console.log(`\n✅ Total: ${usuariosCreados} usuarios en la base de datos\n`);
 
-    // ==========================================
-    // 2. CREAR CATEGORÍAS
-    // ==========================================
-    console.log('📁 2. CREANDO CATEGORÍAS...\n');
+    // 4. ESPECIALIDADES
+    console.log('\n4️⃣ Creando especialidades...');
+    const especialidadesData = [
+      { nombre: 'Estilista Capilar', descripcion: 'Especialista en cortes, peinados y tratamientos capilares' },
+      { nombre: 'Terapeuta Natural', descripcion: 'Especialista en terapias naturales y bienestar' },
+      { nombre: 'Maquilladora Profesional', descripcion: 'Especialista en maquillaje para eventos y ocasiones especiales' },
+      { nombre: 'Masajista Terapéutica', descripcion: 'Especialista en masajes terapéuticos y relajantes' },
+      { nombre: 'Nutricionista Natural', descripcion: 'Especialista en alimentación saludable y nutrición natural' },
+      { nombre: 'Aromaterapeuta', descripcion: 'Especialista en terapias con aceites esenciales' },
+      { nombre: 'Cosmetóloga Natural', descripcion: 'Especialista en cosméticos naturales y tratamientos faciales' },
+      { nombre: 'Manicurista/Pedicurista', descripcion: 'Especialista en cuidado de uñas y manicura' }
+    ];
 
-    const categoriasExistentes = await Categoria.count();
-    
-    if (categoriasExistentes > 0) {
-      console.log('⚠️  Ya existen categorías en la base de datos.\n');
-    } else {
-      const categoriasData = [
-        {
-          nombre: 'Electrónica',
-          descripcion: 'Productos electrónicos y tecnología de última generación'
-        },
-        {
-          nombre: 'Ropa',
-          descripcion: 'Moda y vestimenta para toda la familia'
-        },
-        {
-          nombre: 'Hogar',
-          descripcion: 'Artículos para el hogar y decoración'
-        },
-        {
-          nombre: 'Deportes',
-          descripcion: 'Equipamiento deportivo y fitness'
-        },
-        {
-          nombre: 'Libros',
-          descripcion: 'Libros, revistas y material de lectura'
-        }
-      ];
+    const especialidades = [];
+    for (const espData of especialidadesData) {
+      const [especialidad, created] = await Especialidad.findOrCreate({
+        where: { nombre: espData.nombre },
+        defaults: espData
+      });
+      especialidades.push(especialidad);
+      if (created) console.log(`✅ Especialidad: ${especialidad.nombre}`);
+    }
 
-      const categorias = [];
-      for (const catData of categoriasData) {
-        const categoria = await Categoria.create(catData);
-        categorias.push(categoria);
-        console.log(`   ✅ ${categoria.nombre}`);
-      }
-      console.log('\n✅ Total: 5 categorías creadas\n');
+    // 5. USUARIOS DE PRUEBA
+    console.log('\n5️⃣ Creando usuarios de prueba...');
+    const usuariosData = [
+      // Profesionales
+      { tipo_documento: 'C.C.', documento: '1111111111', nombre: 'María González', email: 'maria.profesional@afrodb.com', password: 'Profe123!', rol: 'profesional', telefono: '3012345678', activo: true },
+      { tipo_documento: 'C.C.', documento: '2222222222', nombre: 'Carlos Rodríguez', email: 'carlos.profesional@afrodb.com', password: 'Profe123!', rol: 'profesional', telefono: '3023456789', activo: true },
+      { tipo_documento: 'C.C.', documento: '3333333333', nombre: 'Ana López', email: 'ana.profesional@afrodb.com', password: 'Profe123!', rol: 'profesional', telefono: '3034567890', activo: true },
+      // Clientes
+      { tipo_documento: 'C.C.', documento: '4444444444', nombre: 'Juan Pérez', email: 'juan.cliente@afrodb.com', password: 'Cliente123!', rol: 'cliente', telefono: '3045678901', activo: true },
+      { tipo_documento: 'C.C.', documento: '5555555555', nombre: 'Laura Martínez', email: 'laura.cliente@afrodb.com', password: 'Cliente123!', rol: 'cliente', telefono: '3056789012', activo: true },
+      // Auxiliar
+      { tipo_documento: 'C.C.', documento: '6666666666', nombre: 'Sofia Ramírez', email: 'sofia.auxiliar@afrodb.com', password: 'Auxiliar123!', rol: 'auxiliar', telefono: '3067890123', activo: true }
+    ];
 
-      // ==========================================
-      // 3. CREAR SUBCATEGORÍAS (3 por categoría)
-      // ==========================================
-      console.log('📂 3. CREANDO SUBCATEGORÍAS...\n');
+    const usuarios = [];
+    for (const userData of usuariosData) {
+      const [usuario, created] = await Usuario.findOrCreate({
+        where: { email: userData.email },
+        defaults: userData
+      });
+      usuarios.push(usuario);
+      if (created) console.log(`✅ Usuario: ${usuario.nombre} (${usuario.rol})`);
+    }
 
-      const subcategoriasData = {
-        'Electrónica': [
-          { nombre: 'Computadoras', descripcion: 'Laptops, PCs y accesorios' },
-          { nombre: 'Celulares', descripcion: 'Smartphones y tablets' },
-          { nombre: 'Audio', descripcion: 'Audífonos, parlantes y equipos de sonido' }
-        ],
-        'Ropa': [
-          { nombre: 'Hombre', descripcion: 'Ropa para caballero' },
-          { nombre: 'Mujer', descripcion: 'Ropa para dama' },
-          { nombre: 'Niños', descripcion: 'Ropa infantil' }
-        ],
-        'Hogar': [
-          { nombre: 'Cocina', descripcion: 'Utensilios y electrodomésticos de cocina' },
-          { nombre: 'Decoración', descripcion: 'Artículos decorativos' },
-          { nombre: 'Muebles', descripcion: 'Muebles para el hogar' }
-        ],
-        'Deportes': [
-          { nombre: 'Fitness', descripcion: 'Equipos de gimnasio y ejercicio' },
-          { nombre: 'Fútbol', descripcion: 'Artículos de fútbol' },
-          { nombre: 'Ciclismo', descripcion: 'Bicicletas y accesorios' }
-        ],
-        'Libros': [
-          { nombre: 'Ficción', descripcion: 'Novelas y cuentos' },
-          { nombre: 'Educación', descripcion: 'Libros educativos y académicos' },
-          { nombre: 'Infantil', descripcion: 'Libros para niños' }
-        ]
-      };
+    // 6. PRODUCTOS
+    console.log('\n6️⃣ Creando productos...');
+    const productosData = [
+      { nombre: 'Aceite de Argán Puro', descripcion: 'Aceite natural de argán 100% puro para cabello y piel', precio: 45000, stock: 25, categoriaNombre: 'Belleza y Cuidado Personal', subcategoriaNombre: 'Cuidado del Cabello' },
+      { nombre: 'Crema Hidratante Natural', descripcion: 'Crema hidratante elaborada con ingredientes naturales', precio: 35000, stock: 30, categoriaNombre: 'Belleza y Cuidado Personal', subcategoriaNombre: 'Cuidado de la Piel' },
+      { nombre: 'Aceite Esencial de Lavanda', descripcion: 'Aceite esencial 100% puro para aromaterapia', precio: 25000, stock: 40, categoriaNombre: 'Salud y Bienestar', subcategoriaNombre: 'Aceites Esenciales' },
+      { nombre: 'Miel Orgánica de Abejas', descripcion: 'Miel pura orgánica producida localmente', precio: 28000, stock: 35, categoriaNombre: 'Alimentación', subcategoriaNombre: 'Alimentos Orgánicos' },
+      { nombre: 'Té Verde Orgánico', descripcion: 'Té verde premium de cultivos orgánicos', precio: 18000, stock: 50, categoriaNombre: 'Alimentación', subcategoriaNombre: 'Tés e Infusiones' },
+      { nombre: 'Collar Étnico de Cuentas', descripcion: 'Collar artesanal con cuentas de colores africanos', precio: 35000, stock: 12, categoriaNombre: 'Moda y Accesorios', subcategoriaNombre: 'Accesorios Étnicos' }
+    ];
 
-      const subcategorias = [];
-      for (const categoria of categorias) {
-        console.log(`📁 ${categoria.nombre}:`);
-        const subsData = subcategoriasData[categoria.nombre];
-        
-        for (const subData of subsData) {
-          const subcategoria = await Subcategoria.create({
-            nombre: subData.nombre,
-            descripcion: subData.descripcion,
+    for (const prodData of productosData) {
+      const categoria = categorias.find(c => c.nombre === prodData.categoriaNombre);
+      const subcategoria = subcategorias.find(s => s.nombre === prodData.subcategoriaNombre && s.categoriaId === categoria?.id);
+
+      if (categoria && subcategoria) {
+        const [producto, created] = await Producto.findOrCreate({
+          where: { nombre: prodData.nombre },
+          defaults: {
+            nombre: prodData.nombre,
+            descripcion: prodData.descripcion,
+            precio: prodData.precio,
+            stock: prodData.stock,
             categoriaId: categoria.id,
-            activo: true
-          });
-          subcategorias.push(subcategoria);
-          console.log(`   ✅ ${subcategoria.nombre}`);
-        }
-        console.log('');
-      }
-      console.log('✅ Total: 15 subcategorías creadas\n');
-
-      // ==========================================
-      // 4. CREAR PRODUCTOS (5 por subcategoría)
-      // ==========================================
-      console.log('📦 4. CREANDO PRODUCTOS...\n');
-
-      const productosData = {
-        // ELECTRÓNICA - Computadoras
-        'Computadoras': [
-          { nombre: 'Laptop HP Pavilion', descripcion: 'Intel i5, 8GB RAM, 256GB SSD', precio: 1200000, stock: 15 },
-          { nombre: 'Laptop Dell Inspiron', descripcion: 'AMD Ryzen 5, 16GB RAM, 512GB SSD', precio: 1500000, stock: 10 },
-          { nombre: 'PC Gaming Asus', descripcion: 'Intel i7, 16GB RAM, RTX 3060', precio: 2500000, stock: 8 },
-          { nombre: 'MacBook Air M1', descripcion: 'Chip M1, 8GB RAM, 256GB SSD', precio: 3500000, stock: 5 },
-          { nombre: 'Laptop Lenovo ThinkPad', descripcion: 'Intel i7, 16GB RAM, 512GB SSD', precio: 1800000, stock: 12 }
-        ],
-        // ELECTRÓNICA - Celulares
-        'Celulares': [
-          { nombre: 'iPhone 13', descripcion: '128GB, Pantalla 6.1"', precio: 2800000, stock: 20 },
-          { nombre: 'Samsung Galaxy S21', descripcion: '256GB, Pantalla 6.2"', precio: 2200000, stock: 25 },
-          { nombre: 'Xiaomi Redmi Note 11', descripcion: '128GB, Pantalla 6.43"', precio: 800000, stock: 30 },
-          { nombre: 'Motorola Edge 30', descripcion: '256GB, Pantalla 6.5"', precio: 1500000, stock: 18 },
-          { nombre: 'Google Pixel 6', descripcion: '128GB, Pantalla 6.4"', precio: 2000000, stock: 15 }
-        ],
-        // ELECTRÓNICA - Audio
-        'Audio': [
-          { nombre: 'Audífonos Sony WH-1000XM4', descripcion: 'Bluetooth, Cancelación de ruido', precio: 800000, stock: 25 },
-          { nombre: 'Parlante JBL Flip 5', descripcion: 'Bluetooth portátil, resistente al agua', precio: 300000, stock: 35 },
-          { nombre: 'Audífonos AirPods Pro', descripcion: 'Bluetooth, cancelación activa de ruido', precio: 900000, stock: 20 },
-          { nombre: 'Barra de sonido Samsung', descripcion: '2.1 canales, 200W', precio: 600000, stock: 12 },
-          { nombre: 'Audífonos Gamer Razer', descripcion: 'RGB, sonido 7.1, micrófono', precio: 400000, stock: 18 }
-        ],
-        // ROPA - Hombre
-        'Hombre': [
-          { nombre: 'Camisa Formal Blanca', descripcion: 'Algodón, talla M', precio: 80000, stock: 50 },
-          { nombre: 'Jean Levi\'s 501', descripcion: 'Denim azul, talla 32', precio: 150000, stock: 40 },
-          { nombre: 'Chaqueta de Cuero', descripcion: 'Cuero genuino, talla L', precio: 350000, stock: 15 },
-          { nombre: 'Zapatos Deportivos Nike', descripcion: 'Air Max, talla 42', precio: 280000, stock: 30 },
-          { nombre: 'Camiseta Polo', descripcion: 'Algodón, varios colores, talla M', precio: 60000, stock: 60 }
-        ],
-        // ROPA - Mujer
-        'Mujer': [
-          { nombre: 'Vestido Floral', descripcion: 'Algodón, talla M, varios colores', precio: 120000, stock: 35 },
-          { nombre: 'Blusa de Seda', descripcion: 'Seda natural, talla S', precio: 150000, stock: 25 },
-          { nombre: 'Pantalón de Yoga', descripcion: 'Lycra, talla M', precio: 80000, stock: 45 },
-          { nombre: 'Chaqueta Acolchada', descripcion: 'Impermeable, talla L', precio: 200000, stock: 20 },
-          { nombre: 'Zapatos de Tacón', descripcion: 'Cuero, talla 37', precio: 180000, stock: 28 }
-        ],
-        // ROPA - Niños
-        'Niños': [
-          { nombre: 'Conjunto Deportivo', descripcion: 'Sudadera y pantalón, 8 años', precio: 70000, stock: 40 },
-          { nombre: 'Vestido de Niña', descripcion: 'Algodón, 6 años, varios colores', precio: 65000, stock: 35 },
-          { nombre: 'Jeans Infantil', descripcion: 'Denim elástico, 10 años', precio: 55000, stock: 50 },
-          { nombre: 'Chaqueta Escolar', descripcion: 'Poliéster, 12 años', precio: 85000, stock: 30 },
-          { nombre: 'Zapatos Escolares', descripcion: 'Cuero, talla 32', precio: 90000, stock: 45 }
-        ],
-        // HOGAR - Cocina
-        'Cocina': [
-          { nombre: 'Juego de Ollas', descripcion: '10 piezas, acero inoxidable', precio: 250000, stock: 20 },
-          { nombre: 'Licuadora Oster', descripcion: '600W, 3 velocidades', precio: 180000, stock: 25 },
-          { nombre: 'Cafetera Express', descripcion: 'Espresso 15 bares', precio: 350000, stock: 15 },
-          { nombre: 'Microondas Samsung', descripcion: '23L, 800W', precio: 300000, stock: 18 },
-          { nombre: 'Set de Cuchillos', descripcion: '6 piezas, acero alemán', precio: 120000, stock: 30 }
-        ],
-        // HOGAR - Decoración
-        'Decoración': [
-          { nombre: 'Lámpara de Mesa', descripcion: 'LED, diseño moderno', precio: 80000, stock: 35 },
-          { nombre: 'Espejo Decorativo', descripcion: '60x80cm, marco dorado', precio: 150000, stock: 20 },
-          { nombre: 'Cuadro Canvas', descripcion: '70x50cm, arte abstracto', precio: 100000, stock: 25 },
-          { nombre: 'Florero de Cerámica', descripcion: '30cm altura, varios colores', precio: 45000, stock: 40 },
-          { nombre: 'Reloj de Pared', descripcion: 'Silencioso, 40cm diámetro', precio: 70000, stock: 30 }
-        ],
-        // HOGAR - Muebles
-        'Muebles': [
-          { nombre: 'Sofá Moderno 3 Puestos', descripcion: 'Tela gris, 200x85x90cm', precio: 1200000, stock: 8 },
-          { nombre: 'Mesa de Centro', descripcion: 'Madera y vidrio, 100x60cm', precio: 350000, stock: 12 },
-          { nombre: 'Silla de Comedor', descripcion: 'Madera y tapizado, set x4', precio: 600000, stock: 15 },
-          { nombre: 'Estantería Modular', descripcion: '5 niveles, 180x80cm', precio: 450000, stock: 10 },
-          { nombre: 'Cama Queen Size', descripcion: 'Base y cabecero, 160x190cm', precio: 900000, stock: 6 }
-        ],
-        // DEPORTES - Fitness
-        'Fitness': [
-          { nombre: 'Pesas Ajustables', descripcion: 'Set 2.5kg a 25kg', precio: 450000, stock: 15 },
-          { nombre: 'Bicicleta Estática', descripcion: 'Resistencia ajustable', precio: 800000, stock: 8 },
-          { nombre: 'Colchoneta de Yoga', descripcion: '6mm espesor, antideslizante', precio: 80000, stock: 40 },
-          { nombre: 'Caminadora Eléctrica', descripcion: 'Motor 2.5HP, plegable', precio: 1500000, stock: 5 },
-          { nombre: 'Banda Elástica Set', descripcion: '5 resistencias diferentes', precio: 60000, stock: 50 }
-        ],
-        // DEPORTES - Fútbol
-        'Fútbol': [
-          { nombre: 'Balón Nike Profesional', descripcion: 'Talla 5, certificado FIFA', precio: 150000, stock: 30 },
-          { nombre: 'Guayos Adidas Predator', descripcion: 'Talla 42, suela FG', precio: 320000, stock: 25 },
-          { nombre: 'Canilleras Nike', descripcion: 'Talla M, con tobilleras', precio: 45000, stock: 40 },
-          { nombre: 'Camiseta de Fútbol', descripcion: 'Réplica oficial, talla M', precio: 80000, stock: 35 },
-          { nombre: 'Red de Arco', descripcion: '7.32x2.44m, nylon resistente', precio: 200000, stock: 10 }
-        ],
-        // DEPORTES - Ciclismo
-        'Ciclismo': [
-          { nombre: 'Bicicleta de Ruta', descripcion: '21 velocidades, aluminio', precio: 1800000, stock: 10 },
-          { nombre: 'Casco de Ciclismo', descripcion: 'Ventilado, ajustable', precio: 120000, stock: 25 },
-          { nombre: 'Kit de Herramientas', descripcion: '15 piezas, multiusos', precio: 80000, stock: 30 },
-          { nombre: 'Luces LED Bicicleta', descripcion: 'Delantera y trasera, recargables', precio: 60000, stock: 35 },
-          { nombre: 'Bomba de Aire Portátil', descripcion: 'Con manómetro, 120 PSI', precio: 45000, stock: 40 }
-        ],
-        // LIBROS - Ficción
-        'Ficción': [
-          { nombre: 'Cien Años de Soledad', descripcion: 'Gabriel García Márquez', precio: 45000, stock: 50 },
-          { nombre: 'El Código Da Vinci', descripcion: 'Dan Brown', precio: 40000, stock: 45 },
-          { nombre: 'Harry Potter Colección', descripcion: '7 libros, tapa dura', precio: 350000, stock: 15 },
-          { nombre: '1984', descripcion: 'George Orwell', precio: 35000, stock: 60 },
-          { nombre: 'El Hobbit', descripcion: 'J.R.R. Tolkien', precio: 42000, stock: 55 }
-        ],
-        // LIBROS - Educación
-        'Educación': [
-          { nombre: 'Cálculo: Una Variable', descripcion: 'James Stewart, 8va edición', precio: 120000, stock: 30 },
-          { nombre: 'Química General', descripcion: 'Raymond Chang, 11va edición', precio: 110000, stock: 25 },
-          { nombre: 'Fundamentos de Programación', descripcion: 'Luis Joyanes Aguilar', precio: 85000, stock: 35 },
-          { nombre: 'Atlas de Anatomía Humana', descripcion: 'Frank H. Netter', precio: 180000, stock: 20 },
-          { nombre: 'Historia Universal', descripcion: 'Enciclopedia completa', precio: 200000, stock: 15 }
-        ],
-        // LIBROS - Infantil
-        'Infantil': [
-          { nombre: 'El Principito', descripcion: 'Antoine de Saint-Exupéry, ilustrado', precio: 35000, stock: 70 },
-          { nombre: 'Cuentos de Buenas Noches', descripcion: 'Colección 20 cuentos', precio: 50000, stock: 60 },
-          { nombre: 'Aprende a Leer Jugando', descripcion: 'Libro interactivo 5-7 años', precio: 45000, stock: 55 },
-          { nombre: 'Enciclopedia Visual Niños', descripcion: 'Tapa dura, ilustraciones', precio: 90000, stock: 30 },
-          { nombre: 'La Oruga Muy Hambrienta', descripcion: 'Eric Carle, pop-up', precio: 40000, stock: 65 }
-        ]
-      };
-
-      let totalProductos = 0;
-      
-      for (const subcategoria of subcategorias) {
-        const productos = productosData[subcategoria.nombre];
-        
-        if (productos) {
-          console.log(`📦 ${subcategoria.nombre} (${subcategoria.categoria?.nombre || 'Sin categoría'}):`);
-          
-          for (const prodData of productos) {
-            await Producto.create({
-              nombre: prodData.nombre,
-              descripcion: prodData.descripcion,
-              precio: prodData.precio,
-              stock: prodData.stock,
-              categoriaId: subcategoria.categoriaId,
-              subcategoriaId: subcategoria.id,
-              imagen: 'producto-default.jpg', // Imagen por defecto
-              activo: true
-            });
-            console.log(`   ✅ ${prodData.nombre} - $${prodData.precio.toLocaleString()}`);
-            totalProductos++;
+            subcategoriaId: subcategoria.id
           }
-          console.log('');
-        }
+        });
+        if (created) console.log(`✅ Producto: ${producto.nombre} - $${producto.precio}`);
       }
-      
-      console.log(`✅ Total: ${totalProductos} productos creados\n`);
     }
 
-    // ==========================================
-    // RESUMEN FINAL
-    // ==========================================
-    console.log('\n🎉 ========================================');
-    console.log('   SEEDER COMPLETADO EXITOSAMENTE');
-    console.log('========================================\n');
+    // 7. SERVICIOS
+    console.log('\n7️⃣ Creando servicios...');
+    const serviciosData = [
+      { nombre: 'Corte y Peinado Afro', descripcion: 'Corte especializado para cabello afro con técnicas profesionales', precio: 45000, duracion_minutos: 90, categoriaNombre: 'Belleza y Cuidado Personal', subcategoriaNombre: 'Cuidado del Cabello' },
+      { nombre: 'Maquillaje para Eventos', descripcion: 'Maquillaje profesional para bodas, fiestas y ocasiones especiales', precio: 55000, duracion_minutos: 75, categoriaNombre: 'Belleza y Cuidado Personal', subcategoriaNombre: 'Maquillaje Natural' },
+      { nombre: 'Masaje Terapéutico Completo', descripcion: 'Masaje relajante con técnicas terapéuticas para todo el cuerpo', precio: 65000, duracion_minutos: 90, categoriaNombre: 'Salud y Bienestar', subcategoriaNombre: 'Productos de Masaje' },
+      { nombre: 'Sesión de Aromaterapia', descripcion: 'Terapia con aceites esenciales para relajación y bienestar', precio: 40000, duracion_minutos: 60, categoriaNombre: 'Salud y Bienestar', subcategoriaNombre: 'Aceites Esenciales' },
+      { nombre: 'Consulta Nutricional', descripcion: 'Asesoría nutricional personalizada con enfoque natural', precio: 50000, duracion_minutos: 45, categoriaNombre: 'Salud y Bienestar', subcategoriaNombre: 'Suplementos Naturales' }
+    ];
 
-    const totalUsuarios = await Usuario.count();
-    const totalCategorias = await Categoria.count();
-    const totalSubcategorias = await Subcategoria.count();
-    const totalProductos = await Producto.count();
+    for (const servData of serviciosData) {
+      const categoria = categorias.find(c => c.nombre === servData.categoriaNombre);
+      const subcategoria = subcategorias.find(s => s.nombre === servData.subcategoriaNombre && s.categoriaId === categoria?.id);
 
-    console.log('📊 RESUMEN:');
-    console.log(`   👥 Usuarios: ${totalUsuarios}`);
-    console.log(`   📁 Categorías: ${totalCategorias}`);
-    console.log(`   📂 Subcategorías: ${totalSubcategorias}`);
-    console.log(`   📦 Productos: ${totalProductos}\n`);
+      if (categoria && subcategoria) {
+        const [servicio, created] = await Servicio.findOrCreate({
+          where: { nombre: servData.nombre },
+          defaults: {
+            nombre: servData.nombre,
+            descripcion: servData.descripcion,
+            precio: servData.precio,
+            duracion_minutos: servData.duracion_minutos,
+            categoriaId: categoria.id,
+            subcategoriaId: subcategoria.id
+          }
+        });
+        if (created) console.log(`✅ Servicio: ${servicio.nombre} - $${servicio.precio}`);
+      }
+    }
 
-    console.log('🔑 CREDENCIALES DE ACCESO:\n');
-    console.log('   👨‍💼 ADMINISTRADOR');
-    console.log('      Email: admin@ecommerce.com');
-    console.log('      Password: admin1234\n');
-    console.log('   👤 AUXILIAR');
-    console.log('      Email: auxiliar@ecommerce.com');
-    console.log('      Password: aux123\n');
-    console.log('   🛍️  CLIENTES (5)');
-    console.log('      Email: cliente1@ecommerce.com - Password: cliente1');
-    console.log('      Email: cliente2@ecommerce.com - Password: cliente2');
-    console.log('      Email: cliente3@ecommerce.com - Password: cliente3');
-    console.log('      Email: cliente4@ecommerce.com - Password: cliente4');
-    console.log('      Email: cliente5@ecommerce.com - Password: cliente5\n');
+    // 8. ASIGNACIONES PROFESIONAL-ESPECIALIDAD
+    console.log('\n8️⃣ Asignando especialidades a profesionales...');
+    const asignaciones = [
+      { emailProfesional: 'maria.profesional@afrodb.com', especialidadesNombres: ['Estilista Capilar', 'Maquilladora Profesional'] },
+      { emailProfesional: 'carlos.profesional@afrodb.com', especialidadesNombres: ['Terapeuta Natural', 'Masajista Terapéutica', 'Aromaterapeuta'] },
+      { emailProfesional: 'ana.profesional@afrodb.com', especialidadesNombres: ['Nutricionista Natural', 'Cosmetóloga Natural'] }
+    ];
 
-    console.log('========================================\n');
+    for (const asignacion of asignaciones) {
+      const profesional = usuarios.find(u => u.email === asignacion.emailProfesional && u.rol === 'profesional');
+      if (profesional) {
+        const especialidadesProfesional = especialidades.filter(e =>
+          asignacion.especialidadesNombres.includes(e.nombre)
+        );
+
+        if (especialidadesProfesional.length > 0) {
+          await profesional.setEspecialidades(especialidadesProfesional.map(e => e.id));
+          console.log(`✅ Especialidades asignadas a ${profesional.nombre}: ${especialidadesProfesional.map(e => e.nombre).join(', ')}`);
+        }
+      }
+    }
+
+    // Reactivar restricciones
+    await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+
+    console.log('\n🎉 ¡Seeders completados exitosamente!');
+    console.log('\n📊 Resumen de datos creados:');
+    console.log('• 1 Administrador');
+    console.log('• 5 Categorías');
+    console.log('• 10 Subcategorías');
+    console.log('• 8 Especialidades');
+    console.log('• 6 Usuarios de prueba');
+    console.log('• 6 Productos');
+    console.log('• 5 Servicios');
+    console.log('• 7 Asignaciones profesional-especialidad');
+
+    console.log('\n🔐 Credenciales de acceso:');
+    console.log('Admin: admin@afrodb.com / Admin123!');
+    console.log('Profesional: maria.profesional@afrodb.com / Profe123!');
+    console.log('Cliente: juan.cliente@afrodb.com / Cliente123!');
+    console.log('Auxiliar: sofia.auxiliar@afrodb.com / Auxiliar123!');
 
   } catch (error) {
-    console.error('❌ Error en el seeder:', error.message);
-    console.error(error);
+    console.error('\n❌ Error ejecutando seeders:', error);
+
+    // Reactivar restricciones en caso de error
+    try {
+      await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+    } catch (fkError) {
+      console.error('Error reactivando FK checks:', fkError);
+    }
+
     throw error;
   }
 };
 
-module.exports = { seedDatosCompletos };
+// Ejecutar si se llama directamente
+if (require.main === module) {
+  datosCompletosSeeder()
+    .then(() => {
+      console.log('\n✅ Proceso completado exitosamente.');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('\n💥 Error fatal:', error);
+      process.exit(1);
+    });
+}
+
+module.exports = datosCompletosSeeder;

@@ -1,47 +1,46 @@
 /**
  * ============================================
- * SEEDER - DATOS COMPLETOS DEL SISTEMA
+ * SEEDER DE ADMINISTRADOR
  * ============================================
- * Este archivo ejecuta el seeder de datos completos
- * Se ejecuta automáticamente al iniciar el servidor
+ * Crea un usuario administrador por defecto para pruebas.
+ * Este seeder se ejecuta primero para tener un admin disponible.
  */
 
-// Importar el seeder de datos completos
-const { seedDatosCompletos } = require('./datosCompletos.seeder');
+const Usuario = require('../models/Usuario');
 
-/**
- * Función principal que ejecuta todos los seeders
- */
-const seedAdmin = async () => {
+const adminSeeder = async () => {
   try {
-    // Ejecutar el seeder de datos completos
-    await seedDatosCompletos();
+    console.log('🌱 Creando administrador por defecto...');
+
+    // Verificar si ya existe un administrador
+    const adminExistente = await Usuario.findOne({
+      where: { rol: 'administrador' }
+    });
+
+    if (adminExistente) {
+      console.log('✅ Administrador ya existe, saltando...');
+      return adminExistente;
+    }
+
+    // Crear administrador
+    const admin = await Usuario.create({
+      tipo_documento: 'C.C.',
+      documento: '1234567890',
+      nombre: 'Administrador Sistema',
+      email: 'admin@afrodb.com',
+      password: 'Admin123!',
+      rol: 'administrador',
+      telefono: '3001234567',
+      activo: true
+    });
+
+    console.log('✅ Administrador creado exitosamente:', admin.email);
+    return admin;
+
   } catch (error) {
-    console.error('❌ Error al ejecutar seeder:', error.message);
+    console.error('❌ Error creando administrador:', error);
     throw error;
   }
 };
 
-/**
- * Función principal que ejecuta todos los seeders
- */
-const runSeeders = async () => {
-  try {
-    console.log('\n🌱 Ejecutando seeders...\n');
-    
-    // Ejecutar seeder de datos completos
-    await seedDatosCompletos();
-    
-    console.log('\n✅ Seeders ejecutados correctamente\n');
-    
-  } catch (error) {
-    console.error('\n❌ Error al ejecutar seeders:', error.message);
-    throw error;
-  }
-};
-
-// Exportar las funciones
-module.exports = {
-  seedAdmin,
-  runSeeders
-};
+module.exports = adminSeeder;
