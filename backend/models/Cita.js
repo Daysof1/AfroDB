@@ -1,6 +1,15 @@
-/** Aqui se definira la estructura del modelo de agendamiento*/
+/**
+ * ============================================
+ * MODELO CITA (AGENDAMIENTO)
+ * ============================================
+ * Gestiona la reserva de servicios por parte de los usuarios.
+ * Relaciona:
+ *  - Usuario (cliente)
+ *  - Servicio
+ *  - Fecha y hora
+ */
 
-const { DataTypes } = require('sequelize');
+const { DataTypes, Op } = require('sequelize');
 const { sequelize } = require('../config/database');
 
 const Cita = sequelize.define('Cita', {
@@ -22,9 +31,7 @@ const Cita = sequelize.define('Cita', {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     validate: {
-      notNull: {
-        msg: 'Debe especificar un usuario'
-      }
+      notNull: { msg: 'Debe especificar un usuario' }
     }
   },
 
@@ -32,15 +39,13 @@ const Cita = sequelize.define('Cita', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'servicios', 
+      model: 'servicios',
       key: 'id'
     },
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     validate: {
-      notNull: {
-        msg: 'Debe especificar un servicio'
-      }
+      notNull: { msg: 'Debe especificar un servicio' }
     }
   },
 
@@ -49,7 +54,11 @@ const Cita = sequelize.define('Cita', {
     allowNull: false,
     validate: {
       notNull: { msg: 'Debe ingresar una fecha' },
-      isDate: { msg: 'Formato de fecha inválido' }
+      isDate: { msg: 'Formato de fecha inválido' },
+      isAfter: {
+        args: new Date().toISOString().split('T')[0],
+        msg: 'La fecha debe ser hoy o futura'
+      }
     }
   },
 
@@ -62,36 +71,33 @@ const Cita = sequelize.define('Cita', {
   },
 
   estado: {
-    type: DataTypes.ENUM('pendiente', 'confirmada', 'cancelada'),
+    type: DataTypes.ENUM('pendiente', 'confirmada', 'cancelada', 'finalizada'),
+    allowNull: false,
     defaultValue: 'pendiente'
   },
 
   notas: {
-    type: DataTypes.STRING
+    type: DataTypes.TEXT,
+    allowNull: true
   }
 
 }, {
+
   tableName: 'agendamientos',
   timestamps: true,
 
   indexes: [
-    {
-      fields: ['usuarioId']
-    },
-    {
-      fields: ['servicioId']
-    },
-    {
-      unique: true,
-      fields: ['fecha', 'hora'],
-      name: 'fecha_hora_unique'
-    }
+    { fields: ['usuarioId'] },
+    { fields: ['servicioId'] },
+    { fields: ['fecha', 'hora'] }
   ],
-  
-  /**hooks: funciones que Sequelize ejecuta automáticamente en ciertos momentos
-   *  Son como "eventos" del ciclo de vida del registro */ 
 
   hooks: {
+    /**
+     * Valida:
+     * - Servicio existe y está activo
+     * - No haya doble reserva en misma hora
+     */
     beforeCreate: async (cita) => {
       const Servicio = require('./Servicio');
 
@@ -104,31 +110,75 @@ const Cita = sequelize.define('Cita', {
       if (!servicio.activo) {
         throw new Error('El servicio no está disponible');
       }
+
+      // Validar disponibilidad (evitar doble cita)
+      const existe = await Cita.findOne({
+        where: {
+          fecha: cita.fecha,
+          hora: cita.hora,
+          estado: {
+            [Op.ne]: 'cancelada'
+          }
+        }
+      });
+
+      if (existe) {
+        throw new Error('Ya existe una cita en esa fecha y hora');
+      }
     }
   }
+
 });
 
-// Metodos de instancia
 
-Agendar.prototype.esCancelable = function() {
-  return this.estado !== 'cancelada';
+// ===============================
+// MÉTODOS DE INSTANCIA
+// ===============================
+
+Cita.prototype.esCancelable = function() {
+  return this.estado !== 'cancelada' && this.estado !== 'finalizada';
 };
 
-// Metodos estaticos
+Cita.prototype.esActiva = function() {
+  return this.estado === 'pendiente' || this.estado === 'confirmada';
+};
 
-Agendar.obtenerCitasUsuario = async function(usuarioId) {
+
+// ===============================
+// MÉTODOS ESTÁTICOS
+// ===============================
+
+Cita.obtenerCitasUsuario = async function(usuarioId) {
   return await this.findAll({
     where: { usuarioId },
     order: [['fecha', 'DESC'], ['hora', 'DESC']]
   });
 };
 
-Agendar.verificarDisponibilidad = async function(fecha, hora) {
+Cita.verificarDisponibilidad = async function(fecha, hora) {
   const cita = await this.findOne({
-    where: { fecha, hora }
+    where: {
+      fecha,
+      hora,
+      estado: {
+        [Op.ne]: 'cancelada'
+      }
+    }
   });
 
-  return !cita; // true si está libre
+  return !cita;
 };
+
+Cita.obtenerPorFecha = async function(fecha) {
+  return await this.findAll({
+    where: { fecha },
+    order: [['hora', 'ASC']]
+  });
+};
+
+
+// ===============================
+// EXPORTACIÓN
+// ===============================
 
 module.exports = Cita;

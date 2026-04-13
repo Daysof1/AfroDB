@@ -11,25 +11,45 @@ const Servicio = sequelize.define('Servicio', {
   },
 
   nombre: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(120),
     allowNull: false,
+    unique: {
+      msg: 'Este servicio ya existe'
+    },
     validate: {
-      notNull: { msg: 'El nombre es obligatorio' }
+      notEmpty: { msg: 'El nombre no puede estar vacío' },
+      len: {
+        args: [2, 120],
+        msg: 'Debe tener entre 2 y 120 caracteres'
+      }
     }
   },
-  //Ampliar mas la lista de servicios.
+
+  // ⚠️ Mejorable: luego puedes reemplazar esto por FK a Especialidad
   categoria: {
     type: DataTypes.ENUM(
       'manicure',
       'pedicure',
       'cabello',
-      'barberia'
+      'barberia',
+      'cejas_pestañas',
+      'tratamientos'
     ),
-    allowNull: false
+    allowNull: false,
+    validate: {
+      notEmpty: { msg: 'La categoría es obligatoria' }
+    }
   },
 
   descripcion: {
-    type: DataTypes.STRING
+    type: DataTypes.TEXT,
+    allowNull: true,
+    validate: {
+      len: {
+        args: [0, 255],
+        msg: 'Máximo 255 caracteres'
+      }
+    }
   },
 
   precio: {
@@ -37,28 +57,57 @@ const Servicio = sequelize.define('Servicio', {
     allowNull: false,
     validate: {
       isDecimal: { msg: 'Debe ser un número válido' },
-      min: { args: [0], msg: 'No puede ser negativo' }
+      min: {
+        args: [0],
+        msg: 'El precio no puede ser negativo'
+      }
     }
   },
 
   duracion: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    comment: 'Duración en minutos'
+    comment: 'Duración en minutos',
+    validate: {
+      isInt: { msg: 'Debe ser un número entero' },
+      min: {
+        args: [5],
+        msg: 'Mínimo 5 minutos'
+      },
+      max: {
+        args: [600],
+        msg: 'Máximo 10 horas'
+      }
+    }
   },
 
   activo: {
     type: DataTypes.BOOLEAN,
+    allowNull: false,
     defaultValue: true
   }
 
 }, {
+
   tableName: 'servicios',
-  timestamps: true
+  timestamps: true,
+
+  defaultScope: {
+    where: { activo: true }
+  },
+
+  scopes: {
+    withInactive: {
+      where: {}
+    }
+  }
+
 });
 
 
-// Metodos estaticos
+// ===============================
+// MÉTODOS ESTÁTICOS
+// ===============================
 
 Servicio.obtenerPorCategoria = async function(categoria) {
   return await this.findAll({
@@ -66,11 +115,28 @@ Servicio.obtenerPorCategoria = async function(categoria) {
   });
 };
 
-// Metodos de instancia
+Servicio.obtenerActivos = async function() {
+  return await this.findAll({
+    where: { activo: true }
+  });
+};
+
+
+// ===============================
+// MÉTODOS DE INSTANCIA
+// ===============================
 
 Servicio.prototype.esDisponible = function() {
   return this.activo;
 };
 
+Servicio.prototype.formatearPrecio = function() {
+  return `$${parseFloat(this.precio).toLocaleString()}`;
+};
+
+
+// ===============================
+// EXPORTACIÓN
+// ===============================
 
 module.exports = Servicio;
