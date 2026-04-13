@@ -41,6 +41,34 @@ const Usuario = sequelize.define('Usuario', {
     allowNull: false                   // No permite NULL
   },
 
+  tipo_documento: {
+    type: DataTypes.ENUM(              
+      'T.I.',                      
+      'C.C.',                    
+      'C.E.',                      
+      'P.A.',
+      'otro'               
+    ),
+    allowNull: false,                  
+    defaultValue: 'C.C.',           
+    validate: {
+      isIn: {                          
+        args: [['T.I.', 'C.C.', 'C.E.', 'P.A.', 'otro']],
+        msg: 'El tipo de documento debe ser T.I., C.C., C.E., P.A. o otro'
+      }
+    }
+  },
+
+  documento: {
+    type: DataTypes.STRING(15),             
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: 'El número de documento no puede estar vacío'
+      }
+    }                  
+  },
+
   // Columna 'nombre' → Nombre del usuario
   nombre: {
     type: DataTypes.STRING(100),       // VARCHAR(100) en MySQL → máximo 100 caracteres
@@ -118,29 +146,6 @@ const Usuario = sequelize.define('Usuario', {
         msg: 'El teléfono solo puede contener números y caracteres válidos'
       }
     }
-  },
-   
-  tipo_documento: {
-    type: DataTypes.ENUM(              
-      'T.I.',                      
-      'C.C.',                    
-      'C.E.',                      
-      'P.A.',
-      'otros'               
-    ),
-    allowNull: false,                  
-    defaultValue: 'cliente',           
-    validate: {
-      isIn: {                          
-        args: [['T.I.', 'C.C.', 'C.E.', 'P.A.', 'otros']],
-        msg: 'El tipo de documento debe ser T.I., C.C., C.E., P.A. o otros'
-      }
-    }
-  },
-
-   documento: {
-    type: DataTypes.STRING(15),             
-    allowNull: true                  
   },
 
   // Columna 'direccion' → Dirección del usuario (opcional, se usa para envíos)
