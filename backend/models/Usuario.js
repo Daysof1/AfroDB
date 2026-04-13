@@ -96,7 +96,7 @@ const Usuario = sequelize.define('Usuario', {
       'cliente',                       // Cliente: compra productos, tiene carrito y pedidos
       'profesional',                    // Profesional: ve las citas programadas, puede gestionar su agenda
       'auxiliar',                      // Auxiliar: acceso parcial al panel de administración
-      'administrador'                  // Administrador: control total del sistema
+      'administrador'             // Administrador: control total del sistema
     ),
     allowNull: false,                  // Obligatorio
     defaultValue: 'cliente',           // Por defecto se registra como cliente
@@ -118,6 +118,29 @@ const Usuario = sequelize.define('Usuario', {
         msg: 'El teléfono solo puede contener números y caracteres válidos'
       }
     }
+  },
+   
+  tipo_documento: {
+    type: DataTypes.ENUM(              
+      'T.I.',                      
+      'C.C.',                    
+      'C.E.',                      
+      'P.A.',
+      'otros'               
+    ),
+    allowNull: false,                  
+    defaultValue: 'cliente',           
+    validate: {
+      isIn: {                          
+        args: [['T.I.', 'C.C.', 'C.E.', 'P.A.', 'otros']],
+        msg: 'El tipo de documento debe ser T.I., C.C., C.E., P.A. o otros'
+      }
+    }
+  },
+
+   documento: {
+    type: DataTypes.STRING(15),             
+    allowNull: true                  
   },
 
   // Columna 'direccion' → Dirección del usuario (opcional, se usa para envíos)
