@@ -1,98 +1,309 @@
+/**
+ * ============================================
+ * CONTROLADOR DE SERVICIOS
+ * ============================================
+ * Gestiona la creación, consulta, actualización y estado de servicios.
+ * Los servicios son usados para agendar citas con profesionales.
+ * 
+ * - ADMIN: CRUD completo
+ * - CLIENTE: ver servicios disponibles
+ */
+
 const Servicio = require('../models/Servicio');
+const Categoria = require('../models/Categoria');
+const Subcategoria = require('../models/Subcategoria');
+const Usuario = require('../models/Usuario'); // profesional
 
-// GET → Todos los servicios
-exports.getAll = async (req, res) => {
+/**
+ * ============================================
+ * OBTENER SERVICIOS (PUBLICO / CLIENTE)
+ * ============================================
+ * GET /api/servicios
+ * Query: ?categoriaId=&subcategoriaId=&profesionalId=&activo=true
+ */
+const getServicios = async (req, res) => {
   try {
-    const servicios = await Servicio.findAll();
-    res.json(servicios);
+    const { categoriaId, subcategoriaId, profesionalId, activo } = req.query;
+
+    const where = {};
+
+    if (categoriaId) where.categoriaId = categoriaId;
+    if (subcategoriaId) where.subcategoriaId = subcategoriaId;
+    if (profesionalId) where.profesionalId = profesionalId;
+    if (activo !== undefined) where.activo = activo === 'true';
+
+    const servicios = await Servicio.findAll({
+      where,
+      include: [
+        {
+          model: Categoria,
+          as: 'categoria',
+          attributes: ['id', 'nombre']
+        },
+        {
+          model: Subcategoria,
+          as: 'subcategoria',
+          attributes: ['id', 'nombre']
+        },
+        {
+          model: Usuario,
+          as: 'profesional',
+          attributes: ['id', 'nombre', 'email']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      count: servicios.length,
+      data: { servicios }
+    });
+
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    console.error('Error en getServicios:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener servicios',
+      error: error.message
+    });
   }
 };
 
-// GET → Por ID
-exports.getById = async (req, res) => {
+/**
+ * ============================================
+ * OBTENER SERVICIO POR ID
+ * ============================================
+ * GET /api/servicios/:id
+ */
+const getServicioById = async (req, res) => {
   try {
-    const servicio = await Servicio.findByPk(req.params.id);
+    const { id } = req.params;
+
+    const servicio = await Servicio.findByPk(id, {
+      include: [
+        { model: Categoria, as: 'categoria' },
+        { model: Subcategoria, as: 'subcategoria' },
+        { model: Usuario, as: 'profesional', attributes: ['id', 'nombre', 'email'] }
+      ]
+    });
 
     if (!servicio) {
-      return res.status(404).json({ msg: 'Servicio no encontrado' });
+      return res.status(404).json({
+        success: false,
+        message: 'Servicio no encontrado'
+      });
     }
 
-    res.json(servicio);
+    res.json({
+      success: true,
+      data: { servicio }
+    });
+
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    console.error('Error en getServicioById:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener servicio',
+      error: error.message
+    });
   }
 };
 
-// GET → Por categoría
-exports.getByCategoria = async (req, res) => {
+/**
+ * ============================================
+ * CREAR SERVICIO (ADMIN o PROFESIONAL)
+ * ============================================
+ * POST /api/servicios
+ */
+const crearServicio = async (req, res) => {
   try {
-    const servicios = await Servicio.obtenerPorCategoria(req.params.categoria);
-    res.json(servicios);
+    const {
+      nombre,
+      descripcion,
+      precio,
+      duracion,
+      categoriaId,
+      subcategoriaId,
+      profesionalId
+    } = req.body;
+
+    // VALIDACIONES
+    if (!nombre || !precio || !duracion || !categoriaId || !subcategoriaId || !profesionalId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Todos los campos obligatorios deben ser enviados'
+      });
+    }
+
+    // Validar profesional
+    const profesional = await Usuario.findByPk(profesionalId);
+    if (!profesional || profesional.rol !== 'profesional') {
+      return res.status(400).json({
+        success: false,
+        message: 'El usuario no es un profesional válido'
+      });
+    }
+
+    const servicio = await Servicio.create({
+      nombre,
+      descripcion,
+      precio,
+      duracion,
+      categoriaId,
+      subcategoriaId,
+      profesionalId,
+      activo: true
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Servicio creado exitosamente',
+      data: { servicio }
+    });
+
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    console.error('Error en crearServicio:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al crear servicio',
+      error: error.message
+    });
   }
 };
 
-// POST → Crear servicio
-exports.create = async (req, res) => {
+/**
+ * ============================================
+ * ACTUALIZAR SERVICIO
+ * ============================================
+ * PUT /api/servicios/:id
+ */
+const actualizarServicio = async (req, res) => {
   try {
-    const servicio = await Servicio.create(req.body);
-    res.status(201).json(servicio);
-  } catch (error) {
-    res.status(500).json({ msg: error.message });
-  }
-};
+    const { id } = req.params;
 
-// PUT → Actualizar completo
-exports.update = async (req, res) => {
-  try {
-    const servicio = await Servicio.findByPk(req.params.id);
+    const servicio = await Servicio.findByPk(id);
 
     if (!servicio) {
-      return res.status(404).json({ msg: 'Servicio no encontrado' });
+      return res.status(404).json({
+        success: false,
+        message: 'Servicio no encontrado'
+      });
     }
 
-    await servicio.update(req.body);
+    const campos = [
+      'nombre',
+      'descripcion',
+      'precio',
+      'duracion',
+      'categoriaId',
+      'subcategoriaId',
+      'activo'
+    ];
 
-    res.json(servicio);
-  } catch (error) {
-    res.status(500).json({ msg: error.message });
-  }
-};
+    campos.forEach(campo => {
+      if (req.body[campo] !== undefined) {
+        servicio[campo] = req.body[campo];
+      }
+    });
 
-// PATCH → Activar / desactivar
-exports.patch = async (req, res) => {
-  try {
-    const servicio = await Servicio.findByPk(req.params.id);
-
-    if (!servicio) {
-      return res.status(404).json({ msg: 'Servicio no encontrado' });
-    }
-
-    servicio.activo = req.body.activo;
     await servicio.save();
 
-    res.json(servicio);
+    res.json({
+      success: true,
+      message: 'Servicio actualizado',
+      data: { servicio }
+    });
+
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    console.error('Error en actualizarServicio:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar servicio',
+      error: error.message
+    });
   }
 };
 
-// DELETE → Eliminar
-exports.delete = async (req, res) => {
+/**
+ * ============================================
+ * ACTIVAR / DESACTIVAR SERVICIO
+ * ============================================
+ * PATCH /api/servicios/:id/toggle
+ */
+const toggleServicio = async (req, res) => {
   try {
-    const servicio = await Servicio.findByPk(req.params.id);
+    const { id } = req.params;
+
+    const servicio = await Servicio.findByPk(id);
 
     if (!servicio) {
-      return res.status(404).json({ msg: 'Servicio no encontrado' });
+      return res.status(404).json({
+        success: false,
+        message: 'Servicio no encontrado'
+      });
+    }
+
+    servicio.activo = !servicio.activo;
+    await servicio.save();
+
+    res.json({
+      success: true,
+      message: `Servicio ${servicio.activo ? 'activado' : 'desactivado'}`,
+      data: { servicio }
+    });
+
+  } catch (error) {
+    console.error('Error en toggleServicio:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al cambiar estado del servicio',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * ============================================
+ * ELIMINAR SERVICIO
+ * ============================================
+ * DELETE /api/servicios/:id
+ */
+const eliminarServicio = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const servicio = await Servicio.findByPk(id);
+
+    if (!servicio) {
+      return res.status(404).json({
+        success: false,
+        message: 'Servicio no encontrado'
+      });
     }
 
     await servicio.destroy();
 
-    res.json({ msg: 'Servicio eliminado' });
+    res.json({
+      success: true,
+      message: 'Servicio eliminado exitosamente'
+    });
+
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    console.error('Error en eliminarServicio:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar servicio',
+      error: error.message
+    });
   }
+};
+
+module.exports = {
+  getServicios,
+  getServicioById,
+  crearServicio,
+  actualizarServicio,
+  toggleServicio,
+  eliminarServicio
 };
