@@ -1,0 +1,267 @@
+/**
+ * ============================================
+ * CONTROLADOR DE PROFESIONALES
+ * ============================================
+ * Gestiona profesionales (usuarios con rol 'profesional')
+ * y sus especialidades.
+ * 
+ * Funciones:
+ * - ADMIN: ver todos, asignar especialidades
+ * - PROFESIONAL: ver y actualizar su perfil
+ */
+
+const Usuario = require('../models/Usuario');
+const Especialidad = require('../models/Especialidad');
+const ProfesionalEspecialidad = require('../models/ProfesionalEspecialidad');
+
+/**
+ * Obtener todos los profesionales (ADMIN)
+ * 
+ * GET /api/admin/profesionales
+ */
+const getProfesionales = async (req, res) => {
+  try {
+    const profesionales = await Usuario.findAll({
+      where: { rol: 'profesional' },
+      include: [{
+        model: Especialidad,
+        as: 'especialidades',
+        attributes: ['id', 'nombre'],
+        through: { attributes: [] } // Oculta tabla intermedia
+      }],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      count: profesionales.length,
+      data: { profesionales }
+    });
+
+  } catch (error) {
+    console.error('Error en getProfesionales:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener profesionales',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Obtener un profesional por ID
+ * 
+ * GET /api/profesionales/:id
+ */
+const getProfesionalById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const profesional = await Usuario.findOne({
+      where: { id, rol: 'profesional' },
+      include: [{
+        model: Especialidad,
+        as: 'especialidades',
+        attributes: ['id', 'nombre'],
+        through: { attributes: [] }
+      }]
+    });
+
+    if (!profesional) {
+      return res.status(404).json({
+        success: false,
+        message: 'Profesional no encontrado'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { profesional }
+    });
+
+  } catch (error) {
+    console.error('Error en getProfesionalById:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener profesional',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Obtener mi perfil como profesional
+ * 
+ * GET /api/profesional/perfil
+ */
+const getMiPerfilProfesional = async (req, res) => {
+  try {
+    const profesional = await Usuario.findByPk(req.usuario.id, {
+      include: [{
+        model: Especialidad,
+        as: 'especialidades',
+        attributes: ['id', 'nombre'],
+        through: { attributes: [] }
+      }]
+    });
+
+    res.json({
+      success: true,
+      data: { profesional }
+    });
+
+  } catch (error) {
+    console.error('Error en getMiPerfilProfesional:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener perfil',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Asignar especialidades a un profesional (ADMIN)
+ * 
+ * POST /api/admin/profesionales/:id/especialidades
+ * Body: { especialidadesIds: [1,2,3] }
+ */
+const asignarEspecialidades = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { especialidadesIds } = req.body;
+
+    // Validación
+    if (!Array.isArray(especialidadesIds) || especialidadesIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debe enviar un array de especialidades'
+      });
+    }
+
+    const profesional = await Usuario.findByPk(id);
+
+    if (!profesional || profesional.rol !== 'profesional') {
+      return res.status(404).json({
+        success: false,
+        message: 'Profesional no encontrado'
+      });
+    }
+
+    // Verificar que existan las especialidades
+    const especialidades = await Especialidad.findAll({
+      where: { id: especialidadesIds }
+    });
+
+    if (especialidades.length !== especialidadesIds.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Una o más especialidades no existen'
+      });
+    }
+
+    // Asignación (reemplaza todas)
+    await profesional.setEspecialidades(especialidadesIds);
+
+    res.json({
+      success: true,
+      message: 'Especialidades asignadas correctamente'
+    });
+
+  } catch (error) {
+    console.error('Error en asignarEspecialidades:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al asignar especialidades',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Actualizar perfil profesional
+ * 
+ * PUT /api/profesional/perfil
+ */
+const actualizarMiPerfil = async (req, res) => {
+  try {
+    const { nombre, telefono } = req.body;
+
+    const profesional = await Usuario.findByPk(req.usuario.id);
+
+    if (!profesional || profesional.rol !== 'profesional') {
+      return res.status(403).json({
+        success: false,
+        message: 'No autorizado'
+      });
+    }
+
+    if (nombre !== undefined) profesional.nombre = nombre;
+    if (telefono !== undefined) profesional.telefono = telefono;
+
+    await profesional.save();
+
+    res.json({
+      success: true,
+      message: 'Perfil actualizado',
+      data: { profesional }
+    });
+
+  } catch (error) {
+    console.error('Error en actualizarMiPerfil:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar perfil',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Eliminar especialidad de un profesional (ADMIN)
+ * 
+ * DELETE /api/admin/profesionales/:id/especialidades/:especialidadId
+ */
+const eliminarEspecialidad = async (req, res) => {
+  try {
+    const { id, especialidadId } = req.params;
+
+    const profesional = await Usuario.findByPk(id);
+
+    if (!profesional || profesional.rol !== 'profesional') {
+      return res.status(404).json({
+        success: false,
+        message: 'Profesional no encontrado'
+      });
+    }
+
+    await ProfesionalEspecialidad.destroy({
+      where: {
+        usuarioId: id,
+        especialidadId
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Especialidad eliminada del profesional'
+    });
+
+  } catch (error) {
+    console.error('Error en eliminarEspecialidad:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar especialidad',
+      error: error.message
+    });
+  }
+};
+
+module.exports = {
+  getProfesionales,
+  getProfesionalById,
+  getMiPerfilProfesional,
+  asignarEspecialidades,
+  actualizarMiPerfil,
+  eliminarEspecialidad
+};
