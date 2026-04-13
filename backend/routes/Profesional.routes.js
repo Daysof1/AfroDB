@@ -16,8 +16,13 @@
  * 
  * 2. RUTAS PROTEGIDAS (requieren token JWT):
  *    /api/profesional/citas         → Ver citas del profesional
- *   /api/profesional/citas/:id     → Ver detalle de una cita
+ *    /api/profesional/citas/:id     → Ver detalle de una cita
  *    /api/profesional/citas/:id/estado → Actualizar estado de una cita (confirmar, cancelar, completar)
+ *   /api/profesional/servicios      → Ver servicios que ofrece el profesional
+ *   /api/profesional/servicios/:id  → Ver detalle de un servicio
+ *   /api/profesional/servicios/:id/actualizar → Actualizar información de un servicio
+ *   /api/profesional/servicios/:id/estado → Activar/desactivar un servicio
+ *  
  */
 
 // Importa express desde el paquete npm 'express'
@@ -39,10 +44,9 @@ const router = express.Router();
 // Se usa en las rutas de carrito y pedidos (que requieren usuario autenticado)
 const { verificarAuth } = require('../middleware/auth');
 
-// Importa esCliente desde middleware/checkRole.js
-// esCliente → verifica que el usuario autenticado tenga rol 'cliente'
-// NOTA: En este archivo no se usa actualmente (las rutas protegidas permiten cualquier rol autenticado)
-const { esCliente } = require('../middleware/checkRole');
+// Importa esProfesional desde middleware/checkRole.js
+// esProfesional → verifica que el usuario autenticado tenga rol 'profesional'
+const { esProfesional } = require('../middleware/checkRole');
 
 // ==========================================
 // IMPORTACIÓN DE CONTROLADORES
@@ -62,6 +66,16 @@ const carritoController = require('../controllers/carrito.controller');
 // Maneja la creación y consulta de pedidos del cliente (requiere autenticación)
 // Funciones: crearPedido, getMisPedidos, getPedidoById, cancelarPedido
 const pedidoController = require('../controllers/pedido.controller');
+
+// Controlador de citas del profesional → desde controllers/profesionalCita.controller.js
+// Maneja las citas del profesional autenticado
+// Funciones: getMisCitas, getDetalleCita, actualizarEstadoCita
+const profesionalCitaController = require('../controllers/profesionalCita.controller');
+
+// Controlador de servicios del profesional → desde controllers/profesionalServicio.controller.js
+// Maneja los servicios que ofrece el profesional autenticado
+// Funciones: getMisServicios, getDetalleServicio, actualizarServicio, actualizarEstadoServicio
+const profesionalServicioController = require('../controllers/profesionalServicio.controller');
 
 // ============================================
 // RUTAS PÚBLICAS - CATÁLOGO (/api/catalogo/...)
@@ -173,6 +187,80 @@ router.get('/cliente/pedidos/:id', verificarAuth, pedidoController.getPedidoById
 // Si el pedido ya fue pagado, enviado o entregado, NO se puede cancelar
 // Al cancelar, restaura el stock de los productos que estaban en el pedido
 router.put('/cliente/pedidos/:id/cancelar', verificarAuth, pedidoController.cancelarPedido);
+
+// ============================================
+// RUTAS DE CITAS - PROFESIONAL (/api/profesional/citas)
+// ============================================
+// Todas requieren autenticación y rol 'profesional'
+// verificarAuth → verifica token JWT
+// esProfesional → verifica que el usuario sea profesional
+
+// GET /api/profesional/citas → Obtiene todas las citas del profesional autenticado
+// verificarAuth → verifica token
+// esProfesional → verifica que sea profesional
+// Filtro opcional: ?estado=pendiente|confirmada|completada|cancelada
+// Controlador: getMisCitas → retorna citas del profesional ordenadas por fecha y hora
+router.get('/profesional/citas', verificarAuth, esProfesional, profesionalCitaController.getMisCitas);
+
+// GET /api/profesional/citas/:id → Obtiene el detalle de una cita específica
+// :id es el ID de la cita
+// verificarAuth → verifica token
+// esProfesional → verifica que sea profesional
+// Controlador: getDetalleCita → verifica que la cita pertenezca al profesional
+// Retorna detalles completos: servicios, cliente, horario, estado, etc.
+router.get('/profesional/citas/:id', verificarAuth, esProfesional, profesionalCitaController.getDetalleCita);
+
+// PUT /api/profesional/citas/:id/estado → Actualiza el estado de una cita
+// :id es el ID de la cita
+// verificarAuth → verifica token
+// esProfesional → verifica que sea profesional
+// Body esperado: { estado: 'pendiente' | 'confirmada' | 'completada' | 'cancelada' }
+// Transiciones válidas:
+//   pendiente → confirmada | cancelada
+//   confirmada → completada | cancelada
+//   completada → (sin cambios)
+//   cancelada → (sin cambios)
+// Controlador: actualizarEstadoCita → valida transiciones de estado
+router.put('/profesional/citas/:id/estado', verificarAuth, esProfesional, profesionalCitaController.actualizarEstadoCita);
+
+// ============================================
+// RUTAS DE SERVICIOS - PROFESIONAL (/api/profesional/servicios)
+// ============================================
+// Todas requieren autenticación y rol 'profesional'
+// El profesional solo puede ver y actualizar sus propios servicios
+
+// GET /api/profesional/servicios → Obtiene todos los servicios del profesional
+// verificarAuth → verifica token
+// esProfesional → verifica que sea profesional
+// Controlador: getMisServicios → retorna servicios asociados al profesional
+// Incluye información de la especialidad y estado (activo/inactivo)
+router.get('/profesional/servicios', verificarAuth, esProfesional, profesionalServicioController.getMisServicios);
+
+// GET /api/profesional/servicios/:id → Obtiene el detalle de un servicio
+// :id es el ID del servicio
+// verificarAuth → verifica token
+// esProfesional → verifica que sea profesional
+// Controlador: getDetalleServicio → verifica que el profesional tenga acceso
+// Retorna detalles: nombre, descripción, precio, duración, estado
+router.get('/profesional/servicios/:id', verificarAuth, esProfesional, profesionalServicioController.getDetalleServicio);
+
+// PUT /api/profesional/servicios/:id/actualizar → Actualiza información del servicio
+// :id es el ID del servicio
+// verificarAuth → verifica token
+// esProfesional → verifica que sea profesional
+// Body esperado: { nombre?, descripcion?, precio?, duracion? }
+// Controlador: actualizarServicio → actualiza los campos proporcionados
+// Todos los campos son opcionales (PATCH parcial)
+router.put('/profesional/servicios/:id/actualizar', verificarAuth, esProfesional, profesionalServicioController.actualizarServicio);
+
+// PUT /api/profesional/servicios/:id/estado → Activa o desactiva un servicio
+// :id es el ID del servicio
+// verificarAuth → verifica token
+// esProfesional → verifica que sea profesional
+// Body esperado: { activo: true | false }
+// Controlador: actualizarEstadoServicio → cambia el estado del servicio
+// Si activo=false, el servicio no aparecerá en búsquedas de clientes
+router.put('/profesional/servicios/:id/estado', verificarAuth, esProfesional, profesionalServicioController.actualizarEstadoServicio);
 
 // ==========================================
 // EXPORTAR ROUTER
