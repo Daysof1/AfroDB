@@ -1,18 +1,21 @@
 /**
  * ============================================
- * MODELO CITA (AGENDAMIENTO)
+ * MODELO CITA
  * ============================================
- * Gestiona la reserva de servicios por parte de los usuarios.
- * Relaciona:
- *  - Usuario (cliente)
- *  - Servicio
- *  - Fecha y hora
+ * Define la estructura de la tabla 'citas' en MySQL usando Sequelize ORM.
+ * Cada registro representa una cita agendada por un cliente con un profesional.
+ * Un cliente SIEMPRE existe, pero el profesional puede asignarse manual o automáticamente.
+ * Una cita puede tener múltiples servicios (relación muchos a muchos).
  */
 
-const { DataTypes, Op } = require('sequelize');
+const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
 const Cita = sequelize.define('Cita', {
+
+  // ==========================================
+  // COLUMNAS
+  // ==========================================
 
   id: {
     type: DataTypes.INTEGER,
@@ -21,7 +24,8 @@ const Cita = sequelize.define('Cita', {
     allowNull: false
   },
 
-  usuarioId: {
+  // Cliente que agenda la cita
+  clienteId: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
@@ -31,51 +35,46 @@ const Cita = sequelize.define('Cita', {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     validate: {
-      notNull: { msg: 'Debe especificar un usuario' }
-    }
-  },
-
-  servicioId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'servicios',
-      key: 'id'
-    },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-    validate: {
-      notNull: { msg: 'Debe especificar un servicio' }
-    }
-  },
-
-  fecha: {
-    type: DataTypes.DATEONLY,
-    allowNull: false,
-    validate: {
-      notNull: { msg: 'Debe ingresar una fecha' },
-      isDate: { msg: 'Formato de fecha inválido' },
-      isAfter: {
-        args: new Date().toISOString().split('T')[0],
-        msg: 'La fecha debe ser hoy o futura'
+      notNull: {
+        msg: 'La cita debe tener un cliente'
       }
     }
   },
 
-  hora: {
-    type: DataTypes.TIME,
+  // Profesional (puede ser asignado automáticamente)
+  profesionalId: {
+    type: DataTypes.INTEGER,
+    allowNull: true, // 👈 CLAVE DEL CAMBIO
+    references: {
+      model: 'usuarios',
+      key: 'id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL'
+  },
+
+  // Fecha y hora de la cita
+  fecha: {
+    type: DataTypes.DATE,
     allowNull: false,
     validate: {
-      notNull: { msg: 'Debe ingresar una hora' }
+      notNull: {
+        msg: 'Debe indicar la fecha de la cita'
+      },
+      isDate: {
+        msg: 'La fecha debe ser válida'
+      }
     }
   },
 
+  // Estado de la cita
   estado: {
-    type: DataTypes.ENUM('pendiente', 'confirmada', 'cancelada', 'finalizada'),
+    type: DataTypes.ENUM('pendiente', 'confirmada', 'cancelada', 'completada'),
     allowNull: false,
     defaultValue: 'pendiente'
   },
 
+  // Notas adicionales (opcional)
   notas: {
     type: DataTypes.TEXT,
     allowNull: true
@@ -83,102 +82,98 @@ const Cita = sequelize.define('Cita', {
 
 }, {
 
-  tableName: 'agendamientos',
+  tableName: 'citas',
   timestamps: true,
 
   indexes: [
-    { fields: ['usuarioId'] },
-    { fields: ['servicioId'] },
-    { fields: ['fecha', 'hora'] }
+    {
+      fields: ['clienteId']
+    },
+    {
+      fields: ['profesionalId']
+    },
+    {
+      fields: ['fecha']
+    },
+    {
+      fields: ['estado']
+    }
   ],
 
+  // ==========================================
+  // HOOKS
+  // ==========================================
+
   hooks: {
+
     /**
-     * Valida:
-     * - Servicio existe y está activo
-     * - No haya doble reserva en misma hora
+     * beforeCreate → Se ejecuta antes de crear la cita
+     * Si no se asignó profesional, el sistema asigna uno automáticamente
      */
     beforeCreate: async (cita) => {
-      const Servicio = require('./Servicio');
 
-      const servicio = await Servicio.findByPk(cita.servicioId);
+      // Si ya tiene profesional → no hacer nada
+      if (cita.profesionalId) return;
 
-      if (!servicio) {
-        throw new Error('El servicio no existe');
-      }
+      const Usuario = require('./Usuario');
 
-      if (!servicio.activo) {
-        throw new Error('El servicio no está disponible');
-      }
-
-      // Validar disponibilidad (evitar doble cita)
-      const existe = await Cita.findOne({
+      // Buscar profesionales activos
+      const profesionales = await Usuario.findAll({
         where: {
-          fecha: cita.fecha,
-          hora: cita.hora,
-          estado: {
-            [Op.ne]: 'cancelada'
-          }
+          rol: 'profesional',
+          activo: true
         }
       });
 
-      if (existe) {
-        throw new Error('Ya existe una cita en esa fecha y hora');
+      if (!profesionales.length) {
+        throw new Error('No hay profesionales disponibles');
+      }
+
+      // Selección aleatoria (puedes mejorar luego con disponibilidad)
+      const random = Math.floor(Math.random() * profesionales.length);
+
+      cita.profesionalId = profesionales[random].id;
+    },
+
+    /**
+     * beforeUpdate → Validar cambios importantes
+     */
+    beforeUpdate: async (cita) => {
+
+      // Ejemplo: no permitir cambiar a completada sin profesional
+      if (cita.estado === 'completada' && !cita.profesionalId) {
+        throw new Error('Una cita completada debe tener profesional asignado');
       }
     }
   }
-
 });
 
 
-// ===============================
+// ==========================================
 // MÉTODOS DE INSTANCIA
-// ===============================
+// ==========================================
 
-Cita.prototype.esCancelable = function() {
-  return this.estado !== 'cancelada' && this.estado !== 'finalizada';
+/**
+ * obtenerTotalServicios → suma el precio de los servicios asociados
+ */
+Cita.prototype.obtenerTotalServicios = async function() {
+  const servicios = await this.getServicios(); // belongsToMany
+  return servicios.reduce((total, s) => total + parseFloat(s.precio), 0);
 };
 
-Cita.prototype.esActiva = function() {
-  return this.estado === 'pendiente' || this.estado === 'confirmada';
+/**
+ * estaPendiente → indica si la cita sigue pendiente
+ */
+Cita.prototype.estaPendiente = function() {
+  return this.estado === 'pendiente';
 };
 
-
-// ===============================
-// MÉTODOS ESTÁTICOS
-// ===============================
-
-Cita.obtenerCitasUsuario = async function(usuarioId) {
-  return await this.findAll({
-    where: { usuarioId },
-    order: [['fecha', 'DESC'], ['hora', 'DESC']]
-  });
+/**
+ * puedeCancelarse → lógica básica de cancelación
+ */
+Cita.prototype.puedeCancelarse = function() {
+  return ['pendiente', 'confirmada'].includes(this.estado);
 };
 
-Cita.verificarDisponibilidad = async function(fecha, hora) {
-  const cita = await this.findOne({
-    where: {
-      fecha,
-      hora,
-      estado: {
-        [Op.ne]: 'cancelada'
-      }
-    }
-  });
-
-  return !cita;
-};
-
-Cita.obtenerPorFecha = async function(fecha) {
-  return await this.findAll({
-    where: { fecha },
-    order: [['hora', 'ASC']]
-  });
-};
-
-
-// ===============================
-// EXPORTACIÓN
-// ===============================
 
 module.exports = Cita;
