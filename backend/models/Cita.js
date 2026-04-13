@@ -3,7 +3,7 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-const Agendar = sequelize.define('Agendar', {
+const Cita = sequelize.define('Cita', {
 
   id: {
     type: DataTypes.INTEGER,
@@ -32,7 +32,7 @@ const Agendar = sequelize.define('Agendar', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'servicios', // Agregar un modelo de servivicios. 
+      model: 'servicios', 
       key: 'id'
     },
     onUpdate: 'CASCADE',
@@ -131,4 +131,4 @@ Agendar.verificarDisponibilidad = async function(fecha, hora) {
   return !cita; // true si está libre
 };
 
-module.exports = Agendar;
+module.exports = Cita;

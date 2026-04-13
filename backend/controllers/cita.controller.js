@@ -1,9 +1,9 @@
-const Agendar = require('../models/Agendar');
+const cita = require('../models/Cita');
 
 // GET → Todas las citas
 exports.getAll = async (req, res) => {
   try {
-    const citas = await Agendar.findAll({
+    const citas = await cita.findAll({
       order: [['fecha', 'DESC'], ['hora', 'DESC']]
     });
     res.json(citas);
@@ -15,7 +15,7 @@ exports.getAll = async (req, res) => {
 // GET → Una cita por ID
 exports.getById = async (req, res) => {
   try {
-    const cita = await Agendar.findByPk(req.params.id);
+    const cita = await cita.findByPk(req.params.id);
 
     if (!cita) {
       return res.status(404).json({ msg: 'Cita no encontrada' });
@@ -32,14 +32,14 @@ exports.create = async (req, res) => {
   try {
     const { fecha, hora } = req.body;
 
-    const disponible = await Agendar.verificarDisponibilidad(fecha, hora);
+    const disponible = await cita.verificarDisponibilidad(fecha, hora);
     if (!disponible) {
       return res.status(400).json({
         msg: 'Ya existe una cita en esa fecha y hora'
       });
     }
 
-    const nuevaCita = await Agendar.create(req.body);
+    const nuevaCita = await cita.create(req.body);
 
     res.status(201).json(nuevaCita);
 
@@ -51,7 +51,7 @@ exports.create = async (req, res) => {
 // PUT → Actualizar completa
 exports.update = async (req, res) => {
   try {
-    const cita = await Agendar.findByPk(req.params.id);
+    const cita = await cita.findByPk(req.params.id);
 
     if (!cita) {
       return res.status(404).json({ msg: 'Cita no encontrada' });
@@ -60,7 +60,7 @@ exports.update = async (req, res) => {
     const { fecha, hora } = req.body;
 
     if (fecha && hora) {
-      const disponible = await Agendar.verificarDisponibilidad(fecha, hora);
+      const disponible = await cita.verificarDisponibilidad(fecha, hora);
       if (!disponible) {
         return res.status(400).json({
           msg: 'Ese horario ya está ocupado'
@@ -80,7 +80,7 @@ exports.update = async (req, res) => {
 // PATCH → Cambiar estado
 exports.patch = async (req, res) => {
   try {
-    const cita = await Agendar.findByPk(req.params.id);
+    const cita = await cita.findByPk(req.params.id);
 
     if (!cita) {
       return res.status(404).json({ msg: 'Cita no encontrada' });
@@ -108,7 +108,7 @@ exports.patch = async (req, res) => {
 // DELETE → Eliminar cita
 exports.delete = async (req, res) => {
   try {
-    const cita = await Agendar.findByPk(req.params.id);
+    const cita = await cita.findByPk(req.params.id);
 
     if (!cita) {
       return res.status(404).json({ msg: 'Cita no encontrada' });
