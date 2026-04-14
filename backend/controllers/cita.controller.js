@@ -99,7 +99,7 @@ const crearCita = async (req, res) => {
     // ==========================================
 
     const cita = await Cita.create({
-      usuarioId: req.usuario.id,
+      clienteId: req.usuario.id,
       profesionalId: profesionalAsignado,
       fecha,
       hora,
@@ -168,7 +168,7 @@ const crearCita = async (req, res) => {
 const getMisCitas = async (req, res) => {
   try {
     const citas = await Cita.findAll({
-      where: { usuarioId: req.usuario.id },
+      where: { clienteId: req.usuario.id }, /////
       include: [
         {
           model: Usuario,
@@ -209,7 +209,7 @@ const getCitaById = async (req, res) => {
     const where = { id };
 
     if (req.usuario.rol !== 'administrador') {
-      where.usuarioId = req.usuario.id;
+      where.clienteId = req.usuario.id;
     }
 
     const cita = await Cita.findOne({
@@ -263,7 +263,7 @@ const cancelarCita = async (req, res) => {
     const cita = await Cita.findOne({
       where: {
         id,
-        usuarioId: req.usuario.id
+        clienteId: req.usuario.id
       }
     });
 

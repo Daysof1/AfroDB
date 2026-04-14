@@ -66,6 +66,19 @@ const Cita = sequelize.define('Cita', {
       }
     }
   },
+  hora: {
+  type: DataTypes.TIME, // 👈 aquí va la hora
+  allowNull: false,
+  validate: {
+    notNull: {
+      msg: 'Debe indicar la hora de la cita'
+    },
+    is: {
+      args: /^([0-1]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/,
+      msg: 'La hora debe tener formato HH:mm o HH:mm:ss'
+    }
+  }
+},
 
   // Hora de la cita
   hora: {
