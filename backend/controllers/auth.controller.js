@@ -28,17 +28,17 @@ const register = async (req, res) => {
   try {
     // Desestructura los datos enviados en el body de la petición HTTP.
     // req.body contiene los datos que el cliente envía en formato JSON.
-    const { nombre, apellido, email, password, telefono, direccion } = req.body;
+    const { tipo_documento, documento, nombre, apellido, email, password, telefono, direccion } = req.body;
     
     // VALIDACIÓN 1: Verifica que los campos obligatorios existan.
     // El operador ! convierte a booleano: si es vacío, null o undefined, retorna true.
-    if (!nombre || !apellido || !email || !password) {
+    if ( !tipo_documento || !documento || !nombre || !apellido || !email || !password) {
       // res.status(400) = Bad Request (datos inválidos del cliente)
       // .json() envía la respuesta en formato JSON
       // return detiene la ejecución para que no siga al siguiente código
       return res.status(400).json({
         success: false,
-        message: 'Faltan campos requeridos: nombre, apellido, email y password son obligatorios'
+        message: 'Faltan campos requeridos: tipo_documento, documento, nombre, apellido, email y password son obligatorios'
       });
     }
     
@@ -81,7 +81,7 @@ const register = async (req, res) => {
     // El password se guarda encriptado, nunca en texto plano.
     const nuevoUsuario = await Usuario.create({
       tipo_documento: 'C.C.',          // Tipo de documento predeterminado
-      documento: email,                // Documento requerido por el modelo, usamos el email para evitar null
+      documento,
       nombre,                          // Nombre del usuario
       apellido,                        // Apellido del usuario
       email,                           // Email (único)
@@ -284,7 +284,7 @@ const updateMe = async (req, res) => {
   try {
     // Solo extrae los campos que el usuario tiene PERMITIDO cambiar.
     // No extrae 'rol' ni 'activo' por seguridad.
-    const { nombre, apellido, telefono, direccion } = req.body;
+    const { tipo_documento, nombre, apellido, telefono, direccion } = req.body;
     
     // Busca el usuario en la BD por su ID (viene del token via middleware)
     const usuario = await Usuario.findByPk(req.usuario.id);
@@ -303,6 +303,7 @@ const updateMe = async (req, res) => {
     if (apellido !== undefined) usuario.apellido = apellido;
     if (telefono !== undefined) usuario.telefono = telefono;
     if (direccion !== undefined) usuario.direccion = direccion;
+    if (tipo_documento !== undefined) usuario.tipo_documento = tipo_documento;
     
     // .save() persiste los cambios en la base de datos.
     // Sequelize genera un UPDATE SQL solo con los campos que cambiaron.

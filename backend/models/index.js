@@ -164,6 +164,20 @@ Servicio.belongsTo(Subcategoria, {
   as: 'subcategoria'
 });
 
+Usuario.hasMany(Servicio, {
+  foreignKey: 'profesionalId',
+  as: 'servicios',
+  onDelete: 'RESTRICT',
+  onUpdate: 'CASCADE'
+});
+
+Servicio.belongsTo(Usuario, {
+  foreignKey: 'profesionalId',
+  as: 'profesional',
+  onDelete: 'RESTRICT',
+  onUpdate: 'CASCADE'
+});
+
 // Citas // 
 
 // Un usuario (cliente) puede tener muchas citas

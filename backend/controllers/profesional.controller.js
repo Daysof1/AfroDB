@@ -105,6 +105,13 @@ const getMiPerfilProfesional = async (req, res) => {
       }]
     });
 
+    if (!profesional || profesional.rol !== 'profesional') {
+      return res.status(403).json({
+        success: false,
+        message: 'No autorizado'
+      });
+    }
+
     res.json({
       success: true,
       data: { profesional }
@@ -115,6 +122,133 @@ const getMiPerfilProfesional = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al obtener perfil',
+      error: error.message
+    });
+  }
+};
+
+const getMisEspecialidades = async (req, res) => {
+  try {
+    const profesional = await Usuario.findByPk(req.usuario.id, {
+      include: [{
+        model: Especialidad,
+        as: 'especialidades',
+        attributes: ['id', 'nombre'],
+        through: { attributes: [] }
+      }]
+    });
+
+    if (!profesional || profesional.rol !== 'profesional') {
+      return res.status(403).json({
+        success: false,
+        message: 'No autorizado'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { especialidades: profesional.especialidades }
+    });
+
+  } catch (error) {
+    console.error('Error en getMisEspecialidades:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener especialidades',
+      error: error.message
+    });
+  }
+};
+
+const agregarEspecialidad = async (req, res) => {
+  try {
+    const { especialidadId } = req.body;
+
+    if (!especialidadId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debe enviar el id de la especialidad'
+      });
+    }
+
+    const profesional = await Usuario.findByPk(req.usuario.id);
+    if (!profesional || profesional.rol !== 'profesional') {
+      return res.status(403).json({
+        success: false,
+        message: 'No autorizado'
+      });
+    }
+
+    const especialidad = await Especialidad.findByPk(especialidadId);
+    if (!especialidad) {
+      return res.status(404).json({
+        success: false,
+        message: 'Especialidad no encontrada'
+      });
+    }
+
+    const already = await ProfesionalEspecialidad.findOne({
+      where: {
+        usuarioId: profesional.id,
+        especialidadId
+      }
+    });
+
+    if (already) {
+      return res.status(400).json({
+        success: false,
+        message: 'Especialidad ya asignada'
+      });
+    }
+
+    await profesional.addEspecialidad(especialidad);
+
+    res.json({
+      success: true,
+      message: 'Especialidad agregada correctamente'
+    });
+
+  } catch (error) {
+    console.error('Error en agregarEspecialidad:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al agregar especialidad',
+      error: error.message
+    });
+  }
+};
+
+const removerEspecialidad = async (req, res) => {
+  try {
+    const { especialidadId } = req.params;
+
+    if (!especialidadId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debe enviar el id de la especialidad'
+      });
+    }
+
+    const profesional = await Usuario.findByPk(req.usuario.id);
+    if (!profesional || profesional.rol !== 'profesional') {
+      return res.status(403).json({
+        success: false,
+        message: 'No autorizado'
+      });
+    }
+
+    await profesional.removeEspecialidad(especialidadId);
+
+    res.json({
+      success: true,
+      message: 'Especialidad removida correctamente'
+    });
+
+  } catch (error) {
+    console.error('Error en removerEspecialidad:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al remover especialidad',
       error: error.message
     });
   }
@@ -344,6 +478,9 @@ module.exports = {
   getProfesionales,
   getProfesionalById,
   getMiPerfilProfesional,
+  getMisEspecialidades,
+  agregarEspecialidad,
+  removerEspecialidad,
   asignarEspecialidades,
   actualizarMiPerfil,
   eliminarEspecialidad,

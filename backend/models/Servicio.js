@@ -104,6 +104,22 @@ const Servicio = sequelize.define('Servicio', {
     }
   },
 
+  profesionalId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'usuarios',
+      key: 'id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'RESTRICT',
+    validate: {
+      notNull: {
+        msg: 'Debe seleccionar un profesional'
+      }
+    }
+  },
+
   activo: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
@@ -119,6 +135,7 @@ const Servicio = sequelize.define('Servicio', {
     { fields: ['nombre'] },
     { fields: ['categoriaId'] },
     { fields: ['subcategoriaId'] },
+    { fields: ['profesionalId'] },
     { fields: ['activo'] }
   ],
 

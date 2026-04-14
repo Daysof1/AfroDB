@@ -79,7 +79,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // rutas raiz verificar que el servidor esta corriendo 
 
-app.get('/,', (req, res) =>{
+app.get('/', (req, res) =>{
     res.json({
         success: true,
         message: 'servidor E-commerce Backend esta corrriendo',
@@ -113,6 +113,10 @@ app.use('/api/auth', authRoutes);
 const adminRoutes = require ('./routes/admin.routes');
 app.use('/api/admin', adminRoutes);
  
+// Rutas de profesionales
+// se montan en /api/profesional
+const profesionalRoutes = require('./routes/Profesional.routes');
+app.use('/api/profesional', profesionalRoutes);
 
 // rutas clientes
 // incluye 

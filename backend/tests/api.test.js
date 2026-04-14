@@ -12,9 +12,11 @@ const app = require('../server');
 let adminToken = '';
 let auxiliarToken = '';
 let clienteToken = '';
+let profesionalToken = '';
 let categoriaId = 0;
 let subcategoriaId = 0;
 let productoId = 0;
+let servicioId = 0;
 let usuarioId = 0;
 let pedidoId = 0;
 let especialidadId = 0;
@@ -68,6 +70,8 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
       const response = await request(app)
         .post('/api/auth/register')
         .send({
+          tipo_documento: 'C.C',
+          documento: '1065328903',
           nombre: 'Cliente Test',
           apellido: 'Prueba',
           email: 'test@test.com',
@@ -133,6 +137,22 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
       expect(response.body.data.usuario).toHaveProperty('rol', 'cliente');
       
       clienteToken = response.body.data.token;
+    });
+
+    test('✅ Debe hacer login como profesional', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'maria.profesional@afrodb.com',
+          password: 'Profe123!'
+        });
+      
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('data');
+      expect(response.body.data).toHaveProperty('token');
+      expect(response.body.data.usuario).toHaveProperty('rol', 'profesional');
+      
+      profesionalToken = response.body.data.token;
     });
 
     test('❌ No debe hacer login con credenciales incorrectas', async () => {
@@ -560,6 +580,47 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
       expect(response.body.data).toHaveProperty('producto');
     });
 
+    test('✅ Cliente debe listar todos los servicios', async () => {
+      const response = await request(app)
+        .get('/api/servicios');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data.servicios)).toBe(true);
+      if (response.body.data.servicios.length > 0) {
+        servicioId = response.body.data.servicios[0].id;
+      }
+    });
+
+    test('✅ Cliente debe ver un servicio específico', async () => {
+      if (servicioId) {
+        const response = await request(app)
+          .get(`/api/servicios/${servicioId}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.success).toBe(true);
+        expect(response.body.data).toHaveProperty('servicio');
+      }
+    });
+
+    test('✅ Cliente debe listar profesionales', async () => {
+      const response = await request(app)
+        .get('/api/profesionales');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data.profesionales)).toBe(true);
+    });
+
+    test('✅ Cliente debe listar especialidades', async () => {
+      const response = await request(app)
+        .get('/api/especialidades');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data.especialidades)).toBe(true);
+    });
+
     // TODO: Implementar rutas de búsqueda y filtrado en el backend
     // test('✅ Cliente debe buscar productos', async () => {
     //   const response = await request(app)
@@ -697,9 +758,48 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
   });
 
   // ==========================================
-  // 9. TESTS DE ADMIN - GESTIÓN DE PEDIDOS
+  // 9. TESTS DE PROFESIONAL - PERFIL Y ESPECIALIDADES
   // ==========================================
-  describe('9️⃣  ADMIN - GESTIÓN DE PEDIDOS', () => {
+  describe('9️⃣  PROFESIONAL - PERFIL Y ESPECIALIDADES', () => {
+
+    test('✅ Profesional debe obtener su perfil', async () => {
+      const response = await request(app)
+        .get('/api/profesional/perfil')
+        .set('Authorization', `Bearer ${profesionalToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('profesional');
+    });
+
+    test('✅ Profesional debe listar sus especialidades', async () => {
+      const response = await request(app)
+        .get('/api/profesional/mis-especialidades')
+        .set('Authorization', `Bearer ${profesionalToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data.especialidades)).toBe(true);
+    });
+
+    test('✅ Profesional debe actualizar su perfil', async () => {
+      const response = await request(app)
+        .put('/api/profesional/perfil')
+        .set('Authorization', `Bearer ${profesionalToken}`)
+        .send({
+          telefono: '3000000000'
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+
+  });
+
+  // ==========================================
+  // 10. TESTS DE ADMIN - GESTIÓN DE PEDIDOS
+  // ==========================================
+  describe('🔟  ADMIN - GESTIÓN DE PEDIDOS', () => {
 
     // TODO: Implementar filtrado por estado en backend
     // test('✅ Admin debe filtrar pedidos por estado', async () => {

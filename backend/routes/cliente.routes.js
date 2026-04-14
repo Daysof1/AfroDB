@@ -20,6 +20,7 @@ const { esCliente, esProfesional } = require('../middleware/checkRole'); // 👈
 const catalogoController = require('../controllers/catalogo.controller');
 const carritoController = require('../controllers/carrito.controller');
 const pedidoController = require('../controllers/pedido.controller');
+const servicioController = require('../controllers/servicio.controller');
 
 // 🆕 NUEVOS CONTROLADORES
 const profesionalController = require('../controllers/profesional.controller');
@@ -35,6 +36,8 @@ router.get('/catalogo/productos/:id', catalogoController.getProductoById);
 router.get('/catalogo/categorias', catalogoController.getCategorias);
 router.get('/catalogo/categorias/:id/subcategorias', catalogoController.getSubcategoriasPorCategoria);
 router.get('/catalogo/destacados', catalogoController.getProductosDestacados);
+router.get('/servicios', servicioController.getServicios);
+router.get('/servicios/:id', servicioController.getServicioById);
 
 // ============================================
 // 🆕 RUTAS PÚBLICAS - PROFESIONALES Y ESPECIALIDADES
@@ -83,16 +86,6 @@ router.get('/cliente/citas/:id', verificarAuth, esCliente, citaController.getCit
 
 // Cancelar cita
 router.put('/cliente/citas/:id/cancelar', verificarAuth, esCliente, citaController.cancelarCita);
-
-// ============================================
-// 🆕 RUTAS DE PROFESIONAL (/api/profesional/...)
-// ============================================
-
-// Ver citas asignadas al profesional
-router.get('/profesional/citas', verificarAuth, esProfesional, citaController.getCitasProfesional);
-
-// Actualizar estado de cita
-router.put('/profesional/citas/:id/estado', verificarAuth, esProfesional, citaController.actualizarEstadoCita);
 
 // ==========================================
 // EXPORTAR ROUTER

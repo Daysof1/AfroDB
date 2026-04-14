@@ -24,6 +24,8 @@ const subcategoriaController = require('../controllers/subcategoria.controller')
 const productoController = require('../controllers/producto.controller');
 const usuarioController = require('../controllers/usuario.controller');
 const pedidoController = require('../controllers/pedido.controller');
+const servicioController = require('../controllers/servicio.controller');
+const citaController = require('../controllers/cita.controller');
 
 // 🔥 NUEVOS CONTROLADORES
 const especialidadController = require('../controllers/especialidades.controller');
@@ -72,6 +74,26 @@ router.patch('/productos/:id/stock', productoController.actualizarStock);
 router.delete('/productos/:id', soloAdministrador, productoController.eliminarProducto);
 
 // ==========================================
+// SERVICIOS
+// ==========================================
+
+router.get('/servicios', servicioController.getServicios);
+router.get('/servicios/:id', servicioController.getServicioById);
+router.post('/servicios', servicioController.crearServicio);
+router.put('/servicios/:id', servicioController.actualizarServicio);
+router.patch('/servicios/:id/toggle', servicioController.toggleServicio);
+router.delete('/servicios/:id', soloAdministrador, servicioController.eliminarServicio);
+
+// ==========================================
+// CITAS
+// ==========================================
+
+router.get('/citas', citaController.getAllCitas);
+router.put('/citas/:id/estado', citaController.actualizarEstadoCita);
+router.get('/citas/profesional', citaController.getCitasProfesional);
+
+
+// ==========================================
 // USUARIOS
 // ==========================================
 
@@ -100,6 +122,8 @@ router.get('/especialidades', especialidadController.getEspecialidades);
 router.get('/especialidades/:id', especialidadController.getEspecialidadById);
 router.post('/especialidades', especialidadController.crearEspecialidad);
 router.put('/especialidades/:id', especialidadController.actualizarEspecialidad);
+router.patch('/especialidades/:id/toggle', especialidadController.toggleEspecialidad);
+router.get('/especialidades/:id/stats', especialidadController.getEstadisticasEspecialidad);
 router.delete('/especialidades/:id', soloAdministrador, especialidadController.eliminarEspecialidad);
 
 // ==========================================

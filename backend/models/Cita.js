@@ -24,8 +24,8 @@ const Cita = sequelize.define('Cita', {
     allowNull: false
   },
 
-  // Cliente que agenda la cita
-  clienteId: {
+  // Usuario que agenda la cita
+  usuarioId: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
@@ -44,7 +44,7 @@ const Cita = sequelize.define('Cita', {
   // Profesional (puede ser asignado automáticamente)
   profesionalId: {
     type: DataTypes.INTEGER,
-    allowNull: true, // 👈 CLAVE DEL CAMBIO
+    allowNull: true,
     references: {
       model: 'usuarios',
       key: 'id'
@@ -53,9 +53,9 @@ const Cita = sequelize.define('Cita', {
     onDelete: 'SET NULL'
   },
 
-  // Fecha y hora de la cita
+  // Fecha de la cita
   fecha: {
-    type: DataTypes.DATE,
+    type: DataTypes.DATEONLY,
     allowNull: false,
     validate: {
       notNull: {
@@ -63,6 +63,47 @@ const Cita = sequelize.define('Cita', {
       },
       isDate: {
         msg: 'La fecha debe ser válida'
+      }
+    }
+  },
+
+  // Hora de la cita
+  hora: {
+    type: DataTypes.TIME,
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: 'La hora de la cita es obligatoria'
+      }
+    }
+  },
+
+  // Duración total de la cita en minutos
+  duracionTotal: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: {
+      isInt: {
+        msg: 'La duración total debe ser un número entero'
+      },
+      min: {
+        args: [1],
+        msg: 'La duración total debe ser mayor a 0 minutos'
+      }
+    }
+  },
+
+  // Total cobrado por la cita
+  total: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    validate: {
+      isDecimal: {
+        msg: 'El total debe ser un número decimal válido'
+      },
+      min: {
+        args: [0],
+        msg: 'El total no puede ser negativo'
       }
     }
   },
@@ -87,13 +128,16 @@ const Cita = sequelize.define('Cita', {
 
   indexes: [
     {
-      fields: ['clienteId']
+      fields: ['usuarioId']
     },
     {
       fields: ['profesionalId']
     },
     {
       fields: ['fecha']
+    },
+    {
+      fields: ['hora']
     },
     {
       fields: ['estado']

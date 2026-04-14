@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const verificarAuth = require('../middleware/auth');
+const { verificarAuth } = require('../middleware/auth');
 const { esProfesional } = require('../middleware/checkRole');
 
 const citaController = require('../controllers/cita.controller');
@@ -18,7 +18,7 @@ router.put('/citas/:id/estado', verificarAuth, esProfesional, citaController.act
 // PERFIL PROFESIONAL
 // ============================================
 
-router.get('/perfil', verificarAuth, esProfesional, profesionalController.getMiPerfil);
+router.get('/perfil', verificarAuth, esProfesional, profesionalController.getMiPerfilProfesional);
 router.put('/perfil', verificarAuth, esProfesional, profesionalController.actualizarMiPerfil);
 
 // Especialidades del profesional

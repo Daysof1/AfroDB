@@ -156,7 +156,7 @@ const crearPedido = async (req, res) => {
       direccionEnvio,                // Dirección enviada por el usuario
       telefono,                      // Teléfono de contacto
       metodoPago,                    // 'efectivo', 'tarjeta' o 'transferencia'
-      notasAdicionales               // Notas opcionales
+      notas: notasAdicionales || null // Notas opcionales
     }, { transaction: t });          // Parte de la transacción
     
     // CREAR DETALLES DEL PEDIDO Y ACTUALIZAR STOCK

@@ -34,7 +34,6 @@ const router = express.Router();
 // IMPORTACIÓN DE CONTROLADORES
 // ==========================================
 // Importa las funciones del controlador de autenticación desde controllers/auth.controller.js
-// Usa desestructuración {} para importar solo las funciones necesarias
 const {
   register,          // Función que registra un nuevo usuario cliente
   login,             // Función que autentica al usuario y retorna un token JWT

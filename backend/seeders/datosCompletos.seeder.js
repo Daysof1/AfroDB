@@ -161,6 +161,8 @@ const datosCompletosSeeder = async () => {
       if (created) console.log(`✅ Usuario: ${usuario.nombre} (${usuario.rol})`);
     }
 
+    const profesionalesDisponibles = usuarios.filter(u => u.rol === 'profesional');
+
     // 6. PRODUCTOS
     console.log('\n6️⃣ Creando productos...');
     const productosData = [
@@ -202,11 +204,12 @@ const datosCompletosSeeder = async () => {
       { nombre: 'Consulta Nutricional', descripcion: 'Asesoría nutricional personalizada con enfoque natural', precio: 50000, duracion: 45, categoriaNombre: 'Salud y Bienestar - Servicios', subcategoriaNombre: 'Suplementos Naturales' }
     ];
 
-    for (const servData of serviciosData) {
+    for (const [index, servData] of serviciosData.entries()) {
       const categoria = categorias.find(c => c.nombre === servData.categoriaNombre && c.tipo === 'servicio');
       const subcategoria = subcategorias.find(s => s.nombre === servData.subcategoriaNombre && s.categoriaId === categoria?.id && s.tipo === 'servicio');
+      const profesional = profesionalesDisponibles[index % profesionalesDisponibles.length];
 
-      if (categoria && subcategoria) {
+      if (categoria && subcategoria && profesional) {
         const [servicio, created] = await Servicio.findOrCreate({
           where: { nombre: servData.nombre },
           defaults: {
@@ -215,10 +218,11 @@ const datosCompletosSeeder = async () => {
             precio: servData.precio,
             duracion: servData.duracion,
             categoriaId: categoria.id,
-            subcategoriaId: subcategoria.id
+            subcategoriaId: subcategoria.id,
+            profesionalId: profesional.id
           }
         });
-        if (created) console.log(`✅ Servicio: ${servicio.nombre} - $${servicio.precio}`);
+        if (created) console.log(`✅ Servicio: ${servicio.nombre} - $${servicio.precio} (Profesional: ${profesional.nombre})`);
       }
     }
 
