@@ -23,7 +23,7 @@ const pedidoController = require('../controllers/pedido.controller');
 
 // 🆕 NUEVOS CONTROLADORES
 const profesionalController = require('../controllers/profesional.controller');
-const especialidadController = require('../controllers/especialidad.controller');
+const especialidadController = require('../controllers/especialidades.controller');
 const citaController = require('../controllers/cita.controller');
 
 // ============================================

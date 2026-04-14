@@ -381,6 +381,43 @@ const actualizarEstadoCita = async (req, res) => {
 
 
 // ==========================================
+// 📅 CITAS DEL PROFESIONAL
+// ==========================================
+
+const getCitasProfesional = async (req, res) => {
+  try {
+    const citas = await Cita.findAll({
+      where: { profesionalId: req.usuario.id },
+      include: [
+        {
+          model: Usuario,
+          as: 'cliente',
+          attributes: ['id', 'nombre', 'email', 'telefono']
+        },
+        {
+          model: Servicio,
+          through: { attributes: ['precio', 'duracion'] }
+        }
+      ],
+      order: [['fecha', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      data: { citas }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener citas',
+      error: error.message
+    });
+  }
+};
+
+
+// ==========================================
 // EXPORTS
 // ==========================================
 
@@ -393,5 +430,6 @@ module.exports = {
 
   // ADMIN
   getAllCitas,
-  actualizarEstadoCita
+  actualizarEstadoCita,
+  getCitasProfesional
 };

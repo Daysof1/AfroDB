@@ -257,11 +257,96 @@ const eliminarEspecialidad = async (req, res) => {
   }
 };
 
+/**
+ * Actualizar profesional (ADMIN)
+ * 
+ * PUT /api/admin/profesionales/:id
+ */
+const actualizarProfesional = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, email, telefono, activo } = req.body;
+
+    const profesional = await Usuario.findByPk(id);
+
+    if (!profesional || profesional.rol !== 'profesional') {
+      return res.status(404).json({
+        success: false,
+        message: 'Profesional no encontrado'
+      });
+    }
+
+    if (nombre !== undefined) profesional.nombre = nombre;
+    if (email !== undefined) profesional.email = email;
+    if (telefono !== undefined) profesional.telefono = telefono;
+    if (activo !== undefined) profesional.activo = activo;
+
+    await profesional.save();
+
+    res.json({
+      success: true,
+      message: 'Profesional actualizado correctamente',
+      data: { profesional }
+    });
+
+  } catch (error) {
+    console.error('Error en actualizarProfesional:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar profesional',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Eliminar profesional (ADMIN)
+ * 
+ * DELETE /api/admin/profesionales/:id
+ */
+const eliminarProfesional = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const profesional = await Usuario.findByPk(id);
+
+    if (!profesional || profesional.rol !== 'profesional') {
+      return res.status(404).json({
+        success: false,
+        message: 'Profesional no encontrado'
+      });
+    }
+
+    // Eliminar especialidades asociadas
+    await ProfesionalEspecialidad.destroy({
+      where: { usuarioId: id }
+    });
+
+    // Eliminar el profesional
+    await profesional.destroy();
+
+    res.json({
+      success: true,
+      message: 'Profesional eliminado correctamente'
+    });
+
+  } catch (error) {
+    console.error('Error en eliminarProfesional:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar profesional',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getProfesionales,
   getProfesionalById,
   getMiPerfilProfesional,
   asignarEspecialidades,
   actualizarMiPerfil,
-  eliminarEspecialidad
+  eliminarEspecialidad,
+  actualizarProfesional,
+  eliminarProfesional
 };

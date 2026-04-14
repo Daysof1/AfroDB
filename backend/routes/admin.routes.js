@@ -26,7 +26,7 @@ const usuarioController = require('../controllers/usuario.controller');
 const pedidoController = require('../controllers/pedido.controller');
 
 // 🔥 NUEVOS CONTROLADORES
-const especialidadController = require('../controllers/especialidad.controller');
+const especialidadController = require('../controllers/especialidades.controller');
 const profesionalController = require('../controllers/profesional.controller');
 
 // ==========================================

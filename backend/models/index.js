@@ -47,7 +47,7 @@ const Cita = require('./Cita');
 
 const CitaServicio = require('./CitaServicio');
 
-const Especialidad = require('./Especialidad');
+const Especialidad = require('./Especialidades');
 
 const ProfesionalEspecialidad = require('./ProfesionalEspecialidad');
 
