@@ -43,7 +43,7 @@ const datosCompletosSeeder = async () => {
         documento: '1234567890',
         nombre: 'Administrador Sistema',
         email: 'admin@afrodb.com',
-        password: 'Admin123!',
+        password: 'admin1234',
         rol: 'administrador',
         telefono: '3001234567',
         activo: true
@@ -56,17 +56,19 @@ const datosCompletosSeeder = async () => {
     // 2. CATEGORÍAS
     console.log('\n2️⃣ Creando categorías...');
     const categoriasData = [
-      { nombre: 'Belleza y Cuidado Personal', descripcion: 'Productos y servicios para el cuidado de la piel, cabello y belleza general' },
-      { nombre: 'Salud y Bienestar', descripcion: 'Productos naturales, suplementos y servicios de bienestar' },
-      { nombre: 'Hogar y Limpieza', descripcion: 'Productos para el hogar, limpieza y organización' },
-      { nombre: 'Alimentación', descripcion: 'Productos naturales, orgánicos y saludables' },
-      { nombre: 'Moda y Accesorios', descripcion: 'Ropa, accesorios y complementos con estilo afro' }
+      { nombre: 'Belleza y Cuidado Personal', descripcion: 'Productos para el cuidado de la piel, cabello y belleza general', tipo: 'producto' },
+      { nombre: 'Belleza y Cuidado Personal - Servicios', descripcion: 'Servicios para el cuidado de la piel, cabello y belleza general', tipo: 'servicio' },
+      { nombre: 'Salud y Bienestar', descripcion: 'Productos naturales, suplementos y servicios de bienestar', tipo: 'producto' },
+      { nombre: 'Salud y Bienestar - Servicios', descripcion: 'Servicios naturales y terapias de bienestar', tipo: 'servicio' },
+      { nombre: 'Hogar y Limpieza', descripcion: 'Productos para el hogar, limpieza y organización', tipo: 'producto' },
+      { nombre: 'Alimentación', descripcion: 'Productos naturales, orgánicos y saludables', tipo: 'producto' },
+      { nombre: 'Moda y Accesorios', descripcion: 'Ropa, accesorios y complementos con estilo afro', tipo: 'producto' }
     ];
 
     const categorias = [];
     for (const catData of categoriasData) {
       const [categoria, created] = await Categoria.findOrCreate({
-        where: { nombre: catData.nombre },
+        where: { nombre: catData.nombre, tipo: catData.tipo },
         defaults: catData
       });
       categorias.push(categoria);
@@ -76,29 +78,36 @@ const datosCompletosSeeder = async () => {
     // 3. SUBCATEGORÍAS
     console.log('\n3️⃣ Creando subcategorías...');
     const subcategoriasData = [
-      // Belleza
-      { nombre: 'Cuidado del Cabello', categoriaNombre: 'Belleza y Cuidado Personal' },
-      { nombre: 'Cuidado de la Piel', categoriaNombre: 'Belleza y Cuidado Personal' },
-      { nombre: 'Maquillaje Natural', categoriaNombre: 'Belleza y Cuidado Personal' },
-      // Salud
-      { nombre: 'Suplementos Naturales', categoriaNombre: 'Salud y Bienestar' },
-      { nombre: 'Aceites Esenciales', categoriaNombre: 'Salud y Bienestar' },
-      { nombre: 'Productos de Masaje', categoriaNombre: 'Salud y Bienestar' },
+      // Belleza producto
+      { nombre: 'Cuidado del Cabello', categoriaNombre: 'Belleza y Cuidado Personal', tipo: 'producto' },
+      { nombre: 'Cuidado de la Piel', categoriaNombre: 'Belleza y Cuidado Personal', tipo: 'producto' },
+      { nombre: 'Maquillaje Natural', categoriaNombre: 'Belleza y Cuidado Personal', tipo: 'producto' },
+      // Belleza servicio
+      { nombre: 'Cuidado del Cabello', categoriaNombre: 'Belleza y Cuidado Personal - Servicios', tipo: 'servicio' },
+      { nombre: 'Aceites Esenciales', categoriaNombre: 'Belleza y Cuidado Personal - Servicios', tipo: 'servicio' },
+      { nombre: 'Maquillaje Natural', categoriaNombre: 'Belleza y Cuidado Personal - Servicios', tipo: 'servicio' },
+      // Salud producto
+      { nombre: 'Suplementos Naturales', categoriaNombre: 'Salud y Bienestar', tipo: 'producto' },
+      { nombre: 'Aceites Esenciales', categoriaNombre: 'Salud y Bienestar', tipo: 'producto' },
+      // Salud servicio
+      { nombre: 'Suplementos Naturales', categoriaNombre: 'Salud y Bienestar - Servicios', tipo: 'servicio' },
+      { nombre: 'Aceites Esenciales', categoriaNombre: 'Salud y Bienestar - Servicios', tipo: 'servicio' },
+      { nombre: 'Productos de Masaje', categoriaNombre: 'Salud y Bienestar - Servicios', tipo: 'servicio' },
       // Alimentación
-      { nombre: 'Alimentos Orgánicos', categoriaNombre: 'Alimentación' },
-      { nombre: 'Tés e Infusiones', categoriaNombre: 'Alimentación' },
+      { nombre: 'Alimentos Orgánicos', categoriaNombre: 'Alimentación', tipo: 'producto' },
+      { nombre: 'Tés e Infusiones', categoriaNombre: 'Alimentación', tipo: 'producto' },
       // Moda
-      { nombre: 'Accesorios Étnicos', categoriaNombre: 'Moda y Accesorios' },
-      { nombre: 'Bisutería Artesanal', categoriaNombre: 'Moda y Accesorios' }
+      { nombre: 'Accesorios Étnicos', categoriaNombre: 'Moda y Accesorios', tipo: 'producto' },
+      { nombre: 'Bisutería Artesanal', categoriaNombre: 'Moda y Accesorios', tipo: 'producto' }
     ];
 
     const subcategorias = [];
     for (const subData of subcategoriasData) {
-      const categoria = categorias.find(c => c.nombre === subData.categoriaNombre);
+      const categoria = categorias.find(c => c.nombre === subData.categoriaNombre && c.tipo === subData.tipo);
       if (categoria) {
         const [subcategoria, created] = await Subcategoria.findOrCreate({
-          where: { nombre: subData.nombre, categoriaId: categoria.id },
-          defaults: { nombre: subData.nombre, categoriaId: categoria.id }
+          where: { nombre: subData.nombre, categoriaId: categoria.id, tipo: subData.tipo },
+          defaults: { nombre: subData.nombre, categoriaId: categoria.id, tipo: subData.tipo }
         });
         subcategorias.push(subcategoria);
         if (created) console.log(`✅ Subcategoría: ${subcategoria.nombre}`);
@@ -136,10 +145,10 @@ const datosCompletosSeeder = async () => {
       { tipo_documento: 'C.C.', documento: '2222222222', nombre: 'Carlos Rodríguez', email: 'carlos.profesional@afrodb.com', password: 'Profe123!', rol: 'profesional', telefono: '3023456789', activo: true },
       { tipo_documento: 'C.C.', documento: '3333333333', nombre: 'Ana López', email: 'ana.profesional@afrodb.com', password: 'Profe123!', rol: 'profesional', telefono: '3034567890', activo: true },
       // Clientes
-      { tipo_documento: 'C.C.', documento: '4444444444', nombre: 'Juan Pérez', email: 'juan.cliente@afrodb.com', password: 'Cliente123!', rol: 'cliente', telefono: '3045678901', activo: true },
-      { tipo_documento: 'C.C.', documento: '5555555555', nombre: 'Laura Martínez', email: 'laura.cliente@afrodb.com', password: 'Cliente123!', rol: 'cliente', telefono: '3056789012', activo: true },
+      { tipo_documento: 'C.C.', documento: '4444444444', nombre: 'Juan Pérez', apellido: 'Cliente', email: 'cliente1@afrodb.com', password: 'cliente1', rol: 'cliente', telefono: '3045678901', activo: true },
+      { tipo_documento: 'C.C.', documento: '5555555555', nombre: 'Laura Martínez', apellido: 'Cliente', email: 'laura.cliente@afrodb.com', password: 'Cliente123!', rol: 'cliente', telefono: '3056789012', activo: true },
       // Auxiliar
-      { tipo_documento: 'C.C.', documento: '6666666666', nombre: 'Sofia Ramírez', email: 'sofia.auxiliar@afrodb.com', password: 'Auxiliar123!', rol: 'auxiliar', telefono: '3067890123', activo: true }
+      { tipo_documento: 'C.C.', documento: '6666666666', nombre: 'Sofia Ramírez', apellido: 'Auxiliar', email: 'auxiliar@afrodb.com', password: 'aux123', rol: 'auxiliar', telefono: '3067890123', activo: true }
     ];
 
     const usuarios = [];
@@ -164,8 +173,8 @@ const datosCompletosSeeder = async () => {
     ];
 
     for (const prodData of productosData) {
-      const categoria = categorias.find(c => c.nombre === prodData.categoriaNombre);
-      const subcategoria = subcategorias.find(s => s.nombre === prodData.subcategoriaNombre && s.categoriaId === categoria?.id);
+      const categoria = categorias.find(c => c.nombre === prodData.categoriaNombre && c.tipo === 'producto');
+      const subcategoria = subcategorias.find(s => s.nombre === prodData.subcategoriaNombre && s.categoriaId === categoria?.id && s.tipo === 'producto');
 
       if (categoria && subcategoria) {
         const [producto, created] = await Producto.findOrCreate({
@@ -186,16 +195,16 @@ const datosCompletosSeeder = async () => {
     // 7. SERVICIOS
     console.log('\n7️⃣ Creando servicios...');
     const serviciosData = [
-      { nombre: 'Corte y Peinado Afro', descripcion: 'Corte especializado para cabello afro con técnicas profesionales', precio: 45000, duracion_minutos: 90, categoriaNombre: 'Belleza y Cuidado Personal', subcategoriaNombre: 'Cuidado del Cabello' },
-      { nombre: 'Maquillaje para Eventos', descripcion: 'Maquillaje profesional para bodas, fiestas y ocasiones especiales', precio: 55000, duracion_minutos: 75, categoriaNombre: 'Belleza y Cuidado Personal', subcategoriaNombre: 'Maquillaje Natural' },
-      { nombre: 'Masaje Terapéutico Completo', descripcion: 'Masaje relajante con técnicas terapéuticas para todo el cuerpo', precio: 65000, duracion_minutos: 90, categoriaNombre: 'Salud y Bienestar', subcategoriaNombre: 'Productos de Masaje' },
-      { nombre: 'Sesión de Aromaterapia', descripcion: 'Terapia con aceites esenciales para relajación y bienestar', precio: 40000, duracion_minutos: 60, categoriaNombre: 'Salud y Bienestar', subcategoriaNombre: 'Aceites Esenciales' },
-      { nombre: 'Consulta Nutricional', descripcion: 'Asesoría nutricional personalizada con enfoque natural', precio: 50000, duracion_minutos: 45, categoriaNombre: 'Salud y Bienestar', subcategoriaNombre: 'Suplementos Naturales' }
+      { nombre: 'Corte y Peinado Afro', descripcion: 'Corte especializado para cabello afro con técnicas profesionales', precio: 45000, duracion: 90, categoriaNombre: 'Belleza y Cuidado Personal - Servicios', subcategoriaNombre: 'Cuidado del Cabello' },
+      { nombre: 'Maquillaje para Eventos', descripcion: 'Maquillaje profesional para bodas, fiestas y ocasiones especiales', precio: 55000, duracion: 75, categoriaNombre: 'Belleza y Cuidado Personal - Servicios', subcategoriaNombre: 'Maquillaje Natural' },
+      { nombre: 'Masaje Terapéutico Completo', descripcion: 'Masaje relajante con técnicas terapéuticas para todo el cuerpo', precio: 65000, duracion: 90, categoriaNombre: 'Salud y Bienestar - Servicios', subcategoriaNombre: 'Productos de Masaje' },
+      { nombre: 'Sesión de Aromaterapia', descripcion: 'Terapia con aceites esenciales para relajación y bienestar', precio: 40000, duracion: 60, categoriaNombre: 'Salud y Bienestar - Servicios', subcategoriaNombre: 'Aceites Esenciales' },
+      { nombre: 'Consulta Nutricional', descripcion: 'Asesoría nutricional personalizada con enfoque natural', precio: 50000, duracion: 45, categoriaNombre: 'Salud y Bienestar - Servicios', subcategoriaNombre: 'Suplementos Naturales' }
     ];
 
     for (const servData of serviciosData) {
-      const categoria = categorias.find(c => c.nombre === servData.categoriaNombre);
-      const subcategoria = subcategorias.find(s => s.nombre === servData.subcategoriaNombre && s.categoriaId === categoria?.id);
+      const categoria = categorias.find(c => c.nombre === servData.categoriaNombre && c.tipo === 'servicio');
+      const subcategoria = subcategorias.find(s => s.nombre === servData.subcategoriaNombre && s.categoriaId === categoria?.id && s.tipo === 'servicio');
 
       if (categoria && subcategoria) {
         const [servicio, created] = await Servicio.findOrCreate({
@@ -204,7 +213,7 @@ const datosCompletosSeeder = async () => {
             nombre: servData.nombre,
             descripcion: servData.descripcion,
             precio: servData.precio,
-            duracion_minutos: servData.duracion_minutos,
+            duracion: servData.duracion,
             categoriaId: categoria.id,
             subcategoriaId: subcategoria.id
           }

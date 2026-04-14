@@ -97,8 +97,8 @@ const getCategoriaById = async (req, res) => {
     categoriaJSON.totalProductos = categoriaJSON.productos.length;
     categoriaJSON.totalServicios = categoriaJSON.servicios.length;
 
-    delete categoriaJSON.productos;
-    delete categoriaJSON.servicios;
+    delete categoriaJSON.Productos;
+    delete categoriaJSON.Servicios;
 
     res.json({
       success: true,
@@ -122,12 +122,21 @@ const getCategoriaById = async (req, res) => {
  */
 const crearCategoria = async (req, res) => {
   try {
-    const { nombre, descripcion } = req.body;
+    const { nombre, descripcion, tipo } = req.body;
 
     if (!nombre) {
       return res.status(400).json({
         success: false,
         message: 'El nombre de la categoría es requerido'
+      });
+    }
+
+    const categoriaTipo = tipo ? tipo.toLowerCase() : 'producto';
+
+    if (!['producto', 'servicio'].includes(categoriaTipo)) {
+      return res.status(400).json({
+        success: false,
+        message: 'El tipo de categoría debe ser producto o servicio'
       });
     }
 
@@ -143,6 +152,7 @@ const crearCategoria = async (req, res) => {
     const categoria = await Categoria.create({
       nombre,
       descripcion,
+      tipo: categoriaTipo,
       activo: true
     });
 
@@ -170,7 +180,7 @@ const crearCategoria = async (req, res) => {
 const actualizarCategoria = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, descripcion, activo } = req.body;
+    const { nombre, descripcion, activo, tipo } = req.body;
 
     const categoria = await Categoria.findByPk(id);
 
@@ -194,6 +204,16 @@ const actualizarCategoria = async (req, res) => {
     if (nombre !== undefined) categoria.nombre = nombre;
     if (descripcion !== undefined) categoria.descripcion = descripcion;
     if (activo !== undefined) categoria.activo = activo;
+    if (tipo !== undefined) {
+      const categoriaTipo = tipo.toLowerCase();
+      if (!['producto', 'servicio'].includes(categoriaTipo)) {
+        return res.status(400).json({
+          success: false,
+          message: 'El tipo de categoría debe ser producto o servicio'
+        });
+      }
+      categoria.tipo = categoriaTipo;
+    }
 
     await categoria.save();
 

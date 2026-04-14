@@ -39,7 +39,7 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
     console.log('[beforeAll] Checking for admin user...');
     while (!adminFound && attempts < 50) {
       try {
-        const admin = await Usuario.findOne({ where: { email: 'admin@ecommerce.com' } });
+        const admin = await Usuario.findOne({ where: { email: 'admin@afrodb.com' } });
         if (admin) {
           console.log('[beforeAll] Admin user found!');
           adminFound = true;
@@ -86,7 +86,7 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'admin@ecommerce.com',
+          email: 'admin@afrodb.com',
           password: 'admin1234'
         });
       
@@ -107,7 +107,7 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'auxiliar@ecommerce.com',
+          email: 'auxiliar@afrodb.com',
           password: 'aux123'
         });
       
@@ -123,7 +123,7 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'cliente1@ecommerce.com',
+          email: 'cliente1@afrodb.com',
           password: 'cliente1'
         });
       

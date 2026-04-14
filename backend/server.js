@@ -25,8 +25,7 @@ const { testConnection, syncDatabase, sequelize } = require ('./config/database'
 const {initAssociations} = require ('./models');
 
 // Importar seeders 
-const runSeeders = require ('./seeders/adminSeeder');
-const { version } = require('os');
+const { runSeeders } = require('./seeders/adminSeeder');
 
 // crear aplicaciones express 
 

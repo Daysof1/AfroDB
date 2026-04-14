@@ -8,7 +8,7 @@
  * El campo 'tipo' permite diferenciar su uso.
  */
 
-const { DataTypes } = require('sequelize');
+const { DataTypes } = require ('sequelize');
 const { sequelize } = require('../config/database');
 
 const Categoria = sequelize.define('Categoria', {

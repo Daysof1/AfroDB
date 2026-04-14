@@ -107,7 +107,7 @@ const getSubcategoriaById = async (req, res) => {
  */
 const crearSubcategoria = async (req, res) => {
   try {
-    const { nombre, descripcion, categoriaId } = req.body;
+    const { nombre, descripcion, categoriaId, tipo } = req.body;
 
     if (!nombre || !categoriaId) {
       return res.status(400).json({
@@ -125,10 +125,20 @@ const crearSubcategoria = async (req, res) => {
       });
     }
 
+    const subcategoriaTipo = tipo ? tipo.toLowerCase() : categoria.tipo;
+
+    if (!['producto', 'servicio'].includes(subcategoriaTipo)) {
+      return res.status(400).json({
+        success: false,
+        message: 'El tipo de subcategoría debe ser producto o servicio'
+      });
+    }
+
     const subcategoria = await Subcategoria.create({
       nombre,
       descripcion,
       categoriaId,
+      tipo: subcategoriaTipo,
       activo: true
     });
 

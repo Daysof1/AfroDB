@@ -47,8 +47,8 @@ const resetDatabase = async () => {
     console.log('✅ Conexión a MySQL establecida\n');
     
     // Lee el nombre de la base de datos del .env (variable DB_NAME)
-    // Si no existe la variable, usa 'ecommerce_db' como valor por defecto
-    const dbName = process.env.DB_NAME || 'ecommerce_db';
+    // Si no existe la variable, usa 'afrodb' como valor por defecto
+    const dbName = process.env.DB_NAME || 'afrodb';
     
     // PASO 1: Eliminar la base de datos si existe
     // DROP DATABASE IF EXISTS: elimina la BD completa con todas sus tablas y datos.

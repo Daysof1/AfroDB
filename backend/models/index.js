@@ -142,22 +142,26 @@ Producto.belongsTo(Subcategoria, {
   onUpdate: 'CASCADE'
 });
 
-// Servivios //
+// Servicios //
 
 Categoria.hasMany(Servicio, {
-  foreignKey: 'categoriaId'
+  foreignKey: 'categoriaId',
+  as: 'servicios'
 });
 
 Subcategoria.hasMany(Servicio, {
-  foreignKey: 'subcategoriaId'
+  foreignKey: 'subcategoriaId',
+  as: 'servicios'
 });
 
 Servicio.belongsTo(Categoria, {
-  foreignKey: 'categoriaId'
+  foreignKey: 'categoriaId',
+  as: 'categoria'
 });
 
 Servicio.belongsTo(Subcategoria, {
-  foreignKey: 'subcategoriaId'
+  foreignKey: 'subcategoriaId',
+  as: 'subcategoria'
 });
 
 // Citas // 

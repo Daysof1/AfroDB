@@ -80,6 +80,8 @@ const register = async (req, res) => {
     // El hook beforeCreate (definido en el modelo) hashea automáticamente la contraseña.
     // El password se guarda encriptado, nunca en texto plano.
     const nuevoUsuario = await Usuario.create({
+      tipo_documento: 'C.C.',          // Tipo de documento predeterminado
+      documento: email,                // Documento requerido por el modelo, usamos el email para evitar null
       nombre,                          // Nombre del usuario
       apellido,                        // Apellido del usuario
       email,                           // Email (único)
