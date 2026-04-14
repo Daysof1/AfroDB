@@ -137,6 +137,6 @@ router.delete('/profesionales/:id', soloAdministrador, profesionalController.eli
 
 // ==========================================
 // EXPORTAR
-// ==========================================
+// =========================================
 
 module.exports = router;
