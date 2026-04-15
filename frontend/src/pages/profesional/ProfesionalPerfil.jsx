@@ -1,30 +1,84 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons';
 import '../Profesional.css';
+import { apiRequest } from '../../api/client';
 
 export default function ProfesionalPerfil() {
   const [perfil, setPerfil] = useState({
-    nombre: 'Dr. Juan García',
-    especialidad: 'Cuidado Capilar',
-    email: 'juan@afrodb.com',
-    telefono: '+57 3001234567',
-    experiencia: '5 años',
-    descripcion: 'Especialista en tratamientos capilares naturales con amplia experiencia',
-    foto: '/uploads/shampoo.jfif',
+    nombre: '',
+    especialidad: '',
+    email: '',
+    telefono: '',
+    direccion: '',
+    tipo_documento: 'C.C.',
+    documento: '',
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(perfil);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    const loadPerfil = async () => {
+      try {
+        const response = await apiRequest('/perfil');
+        const profesional = response?.data?.profesional;
+        if (profesional) {
+          const mapped = {
+            ...perfil,
+            nombre: profesional.nombre || '',
+            email: profesional.email || '',
+            telefono: profesional.telefono || '',
+            direccion: profesional.direccion || '',
+            tipo_documento: profesional.tipo_documento || 'C.C.',
+            documento: profesional.documento || '',
+            especialidad: (profesional.especialidades || []).map((e) => e.nombre).join(', '),
+          };
+          setPerfil(mapped);
+          setFormData(mapped);
+        }
+      } catch (err) {
+        setError(err.message || 'No se pudo cargar el perfil');
+      }
+    };
+
+    loadPerfil();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSave = () => {
-    setPerfil(formData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      setError('');
+      setSuccess('');
+      const response = await apiRequest('/perfil', {
+        method: 'PUT',
+        body: JSON.stringify({
+          nombre: formData.nombre,
+          email: formData.email,
+          telefono: formData.telefono,
+          direccion: formData.direccion,
+          tipo_documento: formData.tipo_documento,
+          documento: formData.documento,
+        }),
+      });
+      const profesional = response?.data?.profesional;
+      const updated = {
+        ...formData,
+        especialidad: (profesional?.especialidades || []).map((e) => e.nombre).join(', ') || formData.especialidad,
+      };
+      setPerfil(updated);
+      setFormData(updated);
+      setSuccess('Perfil actualizado correctamente');
+      setIsEditing(false);
+    } catch (err) {
+      setError(err.message || 'No se pudo actualizar el perfil');
+    }
   };
 
   return (
@@ -39,13 +93,12 @@ export default function ProfesionalPerfil() {
         </button>
       </div>
 
+      {error && <div className="alert alert-error">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
+
       {!isEditing ? (
         <div className="perfil-container">
           <div className="perfil-card">
-            <div className="perfil-foto">
-              <img src={perfil.foto} alt={perfil.nombre} />
-            </div>
-
             <div className="perfil-info">
               <h2>{perfil.nombre}</h2>
               <p className="especialidad">{perfil.especialidad}</p>
@@ -60,12 +113,8 @@ export default function ProfesionalPerfil() {
                   <p>{perfil.telefono}</p>
                 </div>
                 <div className="info-item">
-                  <label>Experiencia:</label>
-                  <p>{perfil.experiencia}</p>
-                </div>
-                <div className="info-item">
-                  <label>Descripción Profesional:</label>
-                  <p>{perfil.descripcion}</p>
+                  <label>Dirección:</label>
+                  <p>{perfil.direccion || 'No registrada'}</p>
                 </div>
               </div>
             </div>
@@ -110,6 +159,27 @@ export default function ProfesionalPerfil() {
                 name="especialidad"
                 value={formData.especialidad}
                 onChange={handleInputChange}
+                disabled
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Tipo Documento</label>
+              <input
+                type="text"
+                name="tipo_documento"
+                value={formData.tipo_documento}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Documento</label>
+              <input
+                type="text"
+                name="documento"
+                value={formData.documento}
+                onChange={handleInputChange}
               />
             </div>
 
@@ -124,6 +194,16 @@ export default function ProfesionalPerfil() {
             </div>
 
             <div className="form-group">
+              <label>Dirección</label>
+              <input
+                type="text"
+                name="direccion"
+                value={formData.direccion}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="form-group">
               <label>Teléfono</label>
               <input
                 type="tel"
@@ -131,26 +211,6 @@ export default function ProfesionalPerfil() {
                 value={formData.telefono}
                 onChange={handleInputChange}
               />
-            </div>
-
-            <div className="form-group">
-              <label>Años de Experiencia</label>
-              <input
-                type="text"
-                name="experiencia"
-                value={formData.experiencia}
-                onChange={handleInputChange}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Descripción Profesional</label>
-              <textarea
-                name="descripcion"
-                value={formData.descripcion}
-                onChange={handleInputChange}
-                rows="4"
-              ></textarea>
             </div>
 
             <button type="button" className="btn btn-primary" onClick={handleSave}>

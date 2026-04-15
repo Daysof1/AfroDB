@@ -1,28 +1,30 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Register.css';
+import { apiRequest } from '../api/client';
 
 export default function Register() {
+  const [tipoDocumento, setTipoDocumento] = useState('C.C.');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [documento, setDocumento] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [direccion, setDireccion] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Obtener usuarios registrados
-  const getRegisteredUsers = () => {
-    const users = localStorage.getItem('registeredUsers');
-    return users ? JSON.parse(users) : [];
-  };
-
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
     // Validaciones
-    if (!email || !password || !confirmPassword) {
+    if (!tipoDocumento || !nombre || !apellido || !documento || !email || !password || !confirmPassword) {
       setError('Por favor completa todos los campos');
       return;
     }
@@ -37,41 +39,31 @@ export default function Register() {
       return;
     }
 
-    // Verificar si el email ya está registrado
-    const registeredUsers = getRegisteredUsers();
-    if (registeredUsers.some(user => user.email.toLowerCase() === email.toLowerCase())) {
-      setError('Este correo ya está registrado');
-      return;
+    try {
+      setLoading(true);
+      await apiRequest('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          tipo_documento: tipoDocumento,
+          documento,
+          nombre,
+          apellido,
+          email,
+          password,
+          telefono: telefono.trim() || undefined,
+          direccion: direccion.trim() || undefined,
+        }),
+      });
+
+      setSuccess('¡Registro exitoso! Redirigiendo a iniciar sesión...');
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+    } catch (err) {
+      setError(err.message || 'No se pudo registrar el usuario');
+    } finally {
+      setLoading(false);
     }
-
-    // Asignar rol automáticamente según el email
-    let assignedRole = 'cliente'; // Por defecto
-    const emailLower = email.toLowerCase();
-    
-    if (emailLower.includes('admin')) {
-      assignedRole = 'admin';
-    } else if (emailLower.includes('prof') || emailLower.includes('doctor') || emailLower.includes('especialista')) {
-      assignedRole = 'profesional';
-    } else if (emailLower.includes('auxiliar')) {
-      assignedRole = 'auxiliar';
-    }
-
-    // Registrar nuevo usuario
-    const newUser = {
-      email: email.toLowerCase(),
-      password,
-      role: assignedRole,
-    };
-
-    registeredUsers.push(newUser);
-    localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-
-    setSuccess('¡Registro exitoso! Redirigiendo a iniciar sesión...');
-
-    // Redirigir a login después de 1.5 segundos
-    setTimeout(() => {
-      navigate('/login');
-    }, 1500);
   };
 
   return (
@@ -98,6 +90,64 @@ export default function Register() {
 
             <form onSubmit={handleRegister}>
               <div className="form-group">
+                <label>Tipo de Documento</label>
+                <select
+                  value={tipoDocumento}
+                  onChange={(e) => {
+                    setTipoDocumento(e.target.value);
+                    setError('');
+                  }}
+                  className="form-input"
+                >
+                  <option value="C.C.">C.C.</option>
+                  <option value="C.E.">C.E.</option>
+                  <option value="Pasaporte">Pasaporte</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Nombre</label>
+                <input
+                  type="text"
+                  value={nombre}
+                  onChange={(e) => {
+                    setNombre(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="Tu nombre"
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Apellido</label>
+                <input
+                  type="text"
+                  value={apellido}
+                  onChange={(e) => {
+                    setApellido(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="Tu apellido"
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Documento</label>
+                <input
+                  type="text"
+                  value={documento}
+                  onChange={(e) => {
+                    setDocumento(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="Número de documento"
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
                 <label>Correo Electrónico</label>
                 <input
                   type="email"
@@ -109,7 +159,35 @@ export default function Register() {
                   placeholder="tu@email.com"
                   className="form-input"
                 />
-                <small>El sistema asignará tu rol basado en tu email</small>
+                <small>Tu cuenta se crea como cliente</small>
+              </div>
+
+              <div className="form-group">
+                <label>Teléfono (opcional)</label>
+                <input
+                  type="text"
+                  value={telefono}
+                  onChange={(e) => {
+                    setTelefono(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="3001234567"
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Dirección (opcional)</label>
+                <input
+                  type="text"
+                  value={direccion}
+                  onChange={(e) => {
+                    setDireccion(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="Tu dirección de envío"
+                  className="form-input"
+                />
               </div>
 
               <div className="form-group">
@@ -141,8 +219,8 @@ export default function Register() {
                 />
               </div>
 
-              <button type="submit" className="btn-register">
-                Crear Cuenta
+              <button type="submit" className="btn-register" disabled={loading}>
+                {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
               </button>
             </form>
 

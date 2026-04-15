@@ -20,6 +20,10 @@ export default function Sidebar({ userRole, onToggle }) {
     { icon: 'box', label: 'Productos', href: '/admin/productos' },
     { icon: 'bell', label: 'Servicios', href: '/admin/servicios' },
     { icon: 'folder', label: 'Categorías', href: '/admin/categorias' },
+    { icon: 'folder', label: 'Subcategorías', href: '/admin/subcategorias' },
+    { icon: 'specialties', label: 'Especialidades', href: '/admin/especialidades' },
+    { icon: 'professionals', label: 'Profesionales', href: '/admin/profesionales' },
+    { icon: 'profile', label: 'Usuarios', href: '/admin/usuarios' },
     { icon: 'calendar', label: 'Citas', href: '/admin/citas' },
   ];
 
@@ -37,6 +41,19 @@ export default function Sidebar({ userRole, onToggle }) {
     { icon: 'calendar', label: 'Mis Citas', href: '/profesional/citas' },
     { icon: 'profile', label: 'Mi Perfil', href: '/profesional/perfil' },
     { icon: 'specialties', label: 'Especialidades', href: '/profesional/especialidades' },
+  ];
+
+  const auxiliarLinks = [
+    { icon: 'dashboard', label: 'Dashboard', href: '/auxiliar/dashboard' },
+    { icon: 'box', label: 'Productos', href: '/auxiliar/productos' },
+    { icon: 'bell', label: 'Servicios', href: '/auxiliar/servicios' },
+    { icon: 'folder', label: 'Categorías', href: '/auxiliar/categorias' },
+    { icon: 'folder', label: 'Subcategorías', href: '/auxiliar/subcategorias' },
+    { icon: 'specialties', label: 'Especialidades', href: '/auxiliar/especialidades' },
+    { icon: 'professionals', label: 'Profesionales', href: '/auxiliar/profesionales' },
+    { icon: 'profile', label: 'Usuarios', href: '/auxiliar/usuarios' },
+    { icon: 'calendar', label: 'Citas', href: '/auxiliar/citas' },
+    { icon: 'box', label: 'Pedidos', href: '/auxiliar/pedidos' },
   ];
 
   let links = [];
@@ -80,6 +97,9 @@ export default function Sidebar({ userRole, onToggle }) {
   if (userRole === 'admin') {
     links = adminLinks;
     section = 'Administración';
+  } else if (userRole === 'auxiliar') {
+    links = auxiliarLinks;
+    section = 'Panel Auxiliar';
   } else if (userRole === 'cliente') {
     links = clienteLinks;
     section = 'Mi Cuenta';

@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest, getAssetUrl } from '../../api/client';
 
-export default function AdminProductos() {
+export default function AuxiliarProductos() {
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [subcategorias, setSubcategorias] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [newProduct, setNewProduct] = useState({
     nombre: '',
@@ -82,19 +81,10 @@ export default function AdminProductos() {
     }
   };
 
-  const handleDeleteProduct = async (id) => {
-    try {
-      await apiRequest(`/admin/productos/${id}`, { method: 'DELETE' });
-      await loadProductos();
-    } catch (err) {
-      setError(err.message || 'No se pudo eliminar el producto');
-    }
-  };
-
   return (
     <div className="admin-page">
       <div className="page-header">
-        <h1>Gestión de Productos</h1>
+        <h1>Auxiliar - Productos</h1>
         <button className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
           {isFormOpen ? 'Cancelar' : '➕ Nuevo Producto'}
         </button>
@@ -109,43 +99,19 @@ export default function AdminProductos() {
           <form onSubmit={handleAddProduct}>
             <div className="form-group">
               <label>Nombre</label>
-              <input
-                type="text"
-                value={newProduct.nombre}
-                onChange={(e) => setNewProduct({ ...newProduct, nombre: e.target.value })}
-                placeholder="Nombre del producto"
-                required
-              />
+              <input value={newProduct.nombre} onChange={(e) => setNewProduct({ ...newProduct, nombre: e.target.value })} required />
             </div>
             <div className="form-group">
               <label>Descripción</label>
-              <textarea
-                value={newProduct.descripcion}
-                onChange={(e) => setNewProduct({ ...newProduct, descripcion: e.target.value })}
-                placeholder="Descripción"
-              ></textarea>
+              <textarea value={newProduct.descripcion} onChange={(e) => setNewProduct({ ...newProduct, descripcion: e.target.value })} />
             </div>
             <div className="form-group">
               <label>Precio</label>
-              <input
-                type="number"
-                value={newProduct.precio}
-                onChange={(e) => setNewProduct({ ...newProduct, precio: e.target.value })}
-                placeholder="Precio"
-                min="1"
-                required
-              />
+              <input type="number" min="1" value={newProduct.precio} onChange={(e) => setNewProduct({ ...newProduct, precio: e.target.value })} required />
             </div>
             <div className="form-group">
               <label>Stock</label>
-              <input
-                type="number"
-                value={newProduct.stock}
-                onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-                placeholder="Cantidad en stock"
-                min="0"
-                required
-              />
+              <input type="number" min="0" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })} required />
             </div>
             <div className="form-group">
               <label>Categoría</label>
@@ -166,11 +132,7 @@ export default function AdminProductos() {
             </div>
             <div className="form-group">
               <label>Subcategoría</label>
-              <select
-                value={newProduct.subcategoriaId}
-                onChange={(e) => setNewProduct({ ...newProduct, subcategoriaId: e.target.value })}
-                required
-              >
+              <select value={newProduct.subcategoriaId} onChange={(e) => setNewProduct({ ...newProduct, subcategoriaId: e.target.value })} required>
                 <option value="">Selecciona subcategoría</option>
                 {subcategorias.map((subcategoria) => (
                   <option key={subcategoria.id} value={subcategoria.id}>{subcategoria.nombre}</option>
@@ -190,7 +152,6 @@ export default function AdminProductos() {
               <th>Nombre</th>
               <th>Precio</th>
               <th>Stock</th>
-              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -200,10 +161,6 @@ export default function AdminProductos() {
                 <td>{producto.nombre}</td>
                 <td>${Number(producto.precio || 0).toLocaleString()}</td>
                 <td>{Number(producto.stock || 0)}</td>
-                <td>
-                  <button className="btn btn-sm btn-secondary">✏️ Editar</button>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleDeleteProduct(producto.id)}>🗑️ Eliminar</button>
-                </td>
               </tr>
             ))}
           </tbody>

@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client';
 
-export default function AdminServicios() {
+export default function AuxiliarServicios() {
   const [servicios, setServicios] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [subcategorias, setSubcategorias] = useState([]);
   const [profesionales, setProfesionales] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [newServicio, setNewServicio] = useState({
     nombre: '',
@@ -95,19 +94,10 @@ export default function AdminServicios() {
     }
   };
 
-  const handleEliminar = async (id) => {
-    try {
-      await apiRequest(`/admin/servicios/${id}`, { method: 'DELETE' });
-      await loadServicios();
-    } catch (err) {
-      setError(err.message || 'No se pudo eliminar el servicio');
-    }
-  };
-
   return (
     <div className="admin-page">
       <div className="page-header">
-        <h1>Gestión de Servicios</h1>
+        <h1>Auxiliar - Servicios</h1>
         <button className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
           {isFormOpen ? 'Cancelar' : '➕ Nuevo Servicio'}
         </button>
@@ -120,47 +110,10 @@ export default function AdminServicios() {
         <div className="form-container">
           <h2>Agregar Nuevo Servicio</h2>
           <form onSubmit={handleCrearServicio}>
-            <div className="form-group">
-              <label>Nombre</label>
-              <input
-                type="text"
-                placeholder="Nombre del servicio"
-                value={newServicio.nombre}
-                onChange={(e) => setNewServicio({ ...newServicio, nombre: e.target.value })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Descripción</label>
-              <textarea
-                placeholder="Descripción del servicio"
-                rows="4"
-                value={newServicio.descripcion}
-                onChange={(e) => setNewServicio({ ...newServicio, descripcion: e.target.value })}
-              ></textarea>
-            </div>
-            <div className="form-group">
-              <label>Precio</label>
-              <input
-                type="number"
-                placeholder="Precio"
-                min="1"
-                value={newServicio.precio}
-                onChange={(e) => setNewServicio({ ...newServicio, precio: e.target.value })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Duración (min)</label>
-              <input
-                type="number"
-                placeholder="Duración"
-                min="1"
-                value={newServicio.duracion}
-                onChange={(e) => setNewServicio({ ...newServicio, duracion: e.target.value })}
-                required
-              />
-            </div>
+            <div className="form-group"><label>Nombre</label><input value={newServicio.nombre} onChange={(e) => setNewServicio({ ...newServicio, nombre: e.target.value })} required /></div>
+            <div className="form-group"><label>Descripción</label><textarea rows="4" value={newServicio.descripcion} onChange={(e) => setNewServicio({ ...newServicio, descripcion: e.target.value })} /></div>
+            <div className="form-group"><label>Precio</label><input type="number" min="1" value={newServicio.precio} onChange={(e) => setNewServicio({ ...newServicio, precio: e.target.value })} required /></div>
+            <div className="form-group"><label>Duración (min)</label><input type="number" min="1" value={newServicio.duracion} onChange={(e) => setNewServicio({ ...newServicio, duracion: e.target.value })} required /></div>
             <div className="form-group">
               <label>Categoría</label>
               <select
@@ -180,11 +133,7 @@ export default function AdminServicios() {
             </div>
             <div className="form-group">
               <label>Subcategoría</label>
-              <select
-                value={newServicio.subcategoriaId}
-                onChange={(e) => setNewServicio({ ...newServicio, subcategoriaId: e.target.value })}
-                required
-              >
+              <select value={newServicio.subcategoriaId} onChange={(e) => setNewServicio({ ...newServicio, subcategoriaId: e.target.value })} required>
                 <option value="">Selecciona subcategoría</option>
                 {subcategorias.map((subcategoria) => (
                   <option key={subcategoria.id} value={subcategoria.id}>{subcategoria.nombre}</option>
@@ -193,11 +142,7 @@ export default function AdminServicios() {
             </div>
             <div className="form-group">
               <label>Profesional</label>
-              <select
-                value={newServicio.profesionalId}
-                onChange={(e) => setNewServicio({ ...newServicio, profesionalId: e.target.value })}
-                required
-              >
+              <select value={newServicio.profesionalId} onChange={(e) => setNewServicio({ ...newServicio, profesionalId: e.target.value })} required>
                 <option value="">Selecciona profesional</option>
                 {profesionales.map((profesional) => (
                   <option key={profesional.id} value={profesional.id}>{profesional.nombre}</option>
@@ -215,10 +160,6 @@ export default function AdminServicios() {
             <h3>{servicio.nombre}</h3>
             <p>{servicio.descripcion}</p>
             <p className="price">${Number(servicio.precio || 0).toLocaleString()}</p>
-            <div className="card-actions">
-              <button className="btn btn-sm btn-secondary">✏️ Editar</button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleEliminar(servicio.id)}>🗑️ Eliminar</button>
-            </div>
           </div>
         ))}
       </div>

@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client';
 
-export default function AdminCategorias() {
+export default function AuxiliarCategorias() {
   const [categorias, setCategorias] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [newCategoria, setNewCategoria] = useState({ nombre: '', descripcion: '', tipo: 'producto' });
 
@@ -23,7 +22,7 @@ export default function AdminCategorias() {
     loadCategorias();
   }, []);
 
-  const handleCrearCategoria = async (e) => {
+  const handleCrear = async (e) => {
     e.preventDefault();
     try {
       setError('');
@@ -41,34 +40,20 @@ export default function AdminCategorias() {
     }
   };
 
-  const handleEliminarCategoria = async (id) => {
+  const handleToggle = async (id) => {
     try {
       setError('');
-      setSuccess('');
-      await apiRequest(`/admin/categorias/${id}`, { method: 'DELETE' });
-      setSuccess('Categoría eliminada correctamente');
-      await loadCategorias();
-    } catch (err) {
-      setError(err.message || 'No se pudo eliminar la categoría');
-    }
-  };
-
-  const handleToggleCategoria = async (id) => {
-    try {
-      setError('');
-      setSuccess('');
       await apiRequest(`/admin/categorias/${id}/toggle`, { method: 'PATCH' });
-      setSuccess('Estado de la categoría actualizado');
       await loadCategorias();
     } catch (err) {
-      setError(err.message || 'No se pudo cambiar el estado de la categoría');
+      setError(err.message || 'No se pudo cambiar el estado');
     }
   };
 
   return (
     <div className="admin-page">
       <div className="page-header">
-        <h1>Gestión de Categorías</h1>
+        <h1>Auxiliar - Categorías</h1>
         <button className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
           {isFormOpen ? 'Cancelar' : '➕ Nueva Categoría'}
         </button>
@@ -79,13 +64,11 @@ export default function AdminCategorias() {
 
       {isFormOpen && (
         <div className="form-container">
-          <h2>Agregar Nueva Categoría</h2>
-          <form onSubmit={handleCrearCategoria}>
+          <h2>Crear Categoría</h2>
+          <form onSubmit={handleCrear}>
             <div className="form-group">
-              <label>Nombre de la Categoría</label>
+              <label>Nombre</label>
               <input
-                type="text"
-                placeholder="Nombre"
                 value={newCategoria.nombre}
                 onChange={(e) => setNewCategoria({ ...newCategoria, nombre: e.target.value })}
                 required
@@ -94,11 +77,10 @@ export default function AdminCategorias() {
             <div className="form-group">
               <label>Descripción</label>
               <textarea
-                placeholder="Descripción de la categoría"
                 rows="3"
                 value={newCategoria.descripcion}
                 onChange={(e) => setNewCategoria({ ...newCategoria, descripcion: e.target.value })}
-              ></textarea>
+              />
             </div>
             <div className="form-group">
               <label>Tipo</label>
@@ -110,7 +92,7 @@ export default function AdminCategorias() {
                 <option value="servicio">Servicio</option>
               </select>
             </div>
-            <button type="submit" className="btn btn-primary">Guardar Categoría</button>
+            <button type="submit" className="btn btn-primary">Guardar</button>
           </form>
         </div>
       )}
@@ -130,10 +112,15 @@ export default function AdminCategorias() {
               <tr key={cat.id}>
                 <td>{cat.nombre}</td>
                 <td>{cat.tipo || 'producto'}</td>
-                <td><span className={`badge ${cat.activo ? 'badge-success' : 'badge-warning'}`}>{cat.activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td>
-                  <button className="btn btn-sm btn-secondary" onClick={() => handleToggleCategoria(cat.id)}>{cat.activo ? 'Desactivar' : 'Activar'}</button>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleEliminarCategoria(cat.id)}>🗑️ Eliminar</button>
+                  <span className={`badge ${cat.activo ? 'badge-success' : 'badge-warning'}`}>
+                    {cat.activo ? 'Activo' : 'Inactivo'}
+                  </span>
+                </td>
+                <td>
+                  <button className="btn btn-sm btn-secondary" onClick={() => handleToggle(cat.id)}>
+                    {cat.activo ? 'Desactivar' : 'Activar'}
+                  </button>
                 </td>
               </tr>
             ))}

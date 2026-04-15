@@ -1,38 +1,29 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faScissors } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
+import { apiRequest, getAssetUrl } from '../../api/client';
 
 export default function ClienteProfesionales() {
-  const [profesionales] = useState([
-    {
-      id: 1,
-      nombre: 'Dr. Juan García',
-      especialidad: 'Cuidado Capilar',
-      foto: '/uploads/shampoo.jfif',
-      calificacion: 4.8,
-      experiencia: '5 años',
-      descripcion: 'Especialista en tratamientos capilares naturales'
-    },
-    {
-      id: 2,
-      nombre: 'Dra. Sofia López',
-      especialidad: 'Cuidado Facial',
-      foto: '/uploads/facial%20care.jfif',
-      calificacion: 4.9,
-      experiencia: '8 años',
-      descripcion: 'Experta en skincare y tratamientos faciales'
-    },
-    {
-      id: 3,
-      nombre: 'Mg. María Rodríguez',
-      especialidad: 'Tratamientos Integrales',
-      foto: '/uploads/tratamiento.jfif',
-      calificacion: 4.7,
-      experiencia: '6 años',
-      descripcion: 'Tratamientos holísticos y naturales'
-    },
-  ]);
+  const [profesionales, setProfesionales] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadProfesionales = async () => {
+      try {
+        setLoading(true);
+        const response = await apiRequest('/profesionales');
+        setProfesionales(response?.data?.profesionales || []);
+      } catch (err) {
+        setError(err.message || 'No se pudieron cargar los profesionales');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfesionales();
+  }, []);
 
   return (
     <div className="cliente-page">
@@ -40,23 +31,26 @@ export default function ClienteProfesionales() {
         <h1><FontAwesomeIcon icon={faScissors} /> Nuestros Profesionales</h1>
       </div>
 
+      {loading && <p>Cargando profesionales...</p>}
+      {error && <div className="alert alert-error">{error}</div>}
+
       <div className="profesionales-grid">
-        {profesionales.map(prof => (
+        {profesionales.map((prof) => (
           <div key={prof.id} className="profesional-card">
             <div className="prof-image">
-              <img src={prof.foto} alt={prof.nombre} />
+              <img src={getAssetUrl(prof.imagen)} alt={prof.nombre} />
             </div>
 
             <div className="prof-info">
               <h3>{prof.nombre}</h3>
-              <p className="especialidad">{prof.especialidad}</p>
+              <p className="especialidad">{(prof.especialidades || []).map((e) => e.nombre).join(', ') || 'Sin especialidades'}</p>
               
               <div className="prof-details">
-                <span>⭐ {prof.calificacion}</span>
-                <span>💼 {prof.experiencia}</span>
+                <span>⭐ 5.0</span>
+                <span>💼 Profesional</span>
               </div>
 
-              <p className="descripcion">{prof.descripcion}</p>
+              <p className="descripcion">Especialista en atención profesional y personalizada.</p>
 
               <div className="prof-actions">
                 <button className="btn btn-secondary">👁️ Ver Perfil</button>

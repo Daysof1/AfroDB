@@ -21,6 +21,21 @@
   background: var(--color-bg);
 }
 
+.global-notice {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1200;
+  background: #6f2f2f;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  max-width: 420px;
+  animation: fadeIn 0.25s ease;
+}
+
 .main-content {
   display: flex;
 }
@@ -208,5 +223,11 @@ img {
 
   .content.with-sidebar {
     margin-left: 70px;
+  }
+
+  .global-notice {
+    left: 12px;
+    right: 12px;
+    max-width: none;
   }
 }

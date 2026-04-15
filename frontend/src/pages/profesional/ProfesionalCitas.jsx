@@ -1,49 +1,46 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 import '../Profesional.css';
+import { apiRequest } from '../../api/client';
 
 export default function ProfesionalCitas() {
-  const [citas, setCitas] = useState([
-    {
-      id: 1,
-      cliente: 'María González',
-      servicio: 'Consulta Capilar',
-      fecha: '2026-04-18',
-      hora: '14:00',
-      estado: 'Confirmada',
-      telefono: '+57 3001234567'
-    },
-    {
-      id: 2,
-      cliente: 'Ana Pérez',
-      servicio: 'Tratamiento Facial',
-      fecha: '2026-04-18',
-      hora: '15:30',
-      estado: 'Confirmada',
-      telefono: '+57 3009876543'
-    },
-    {
-      id: 3,
-      cliente: 'Carlos López',
-      servicio: 'Consulta Capilar',
-      fecha: '2026-04-19',
-      hora: '10:00',
-      estado: 'Pendiente',
-      telefono: '+57 3005555555'
-    },
-  ]);
+  const [citas, setCitas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const [filtro, setFiltro] = useState('Todos');
 
+  const loadCitas = async () => {
+    try {
+      setLoading(true);
+      const response = await apiRequest('/citas');
+      setCitas(response?.data?.citas || []);
+    } catch (err) {
+      setError(err.message || 'No se pudieron cargar las citas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCitas();
+  }, []);
+
   const citasFiltradas = filtro === 'Todos' 
     ? citas 
-    : citas.filter(c => c.estado === filtro);
+    : citas.filter((c) => (c.estado || '').toLowerCase() === filtro.toLowerCase());
 
-  const handleActualizarEstado = (id, nuevoEstado) => {
-    setCitas(citas.map(c =>
-      c.id === id ? { ...c, estado: nuevoEstado } : c
-    ));
+  const handleActualizarEstado = async (id, nuevoEstado) => {
+    try {
+      await apiRequest(`/citas/${id}/estado`, {
+        method: 'PUT',
+        body: JSON.stringify({ estado: nuevoEstado.toLowerCase() }),
+      });
+      await loadCitas();
+    } catch (err) {
+      setError(err.message || 'No se pudo actualizar el estado');
+    }
   };
 
   return (
@@ -51,6 +48,9 @@ export default function ProfesionalCitas() {
       <div className="page-header">
         <h1><FontAwesomeIcon icon={faCalendar} /> Mis Citas</h1>
       </div>
+
+      {loading && <p>Cargando citas...</p>}
+      {error && <div className="alert alert-error">{error}</div>}
 
       <div className="filters">
         <button
@@ -63,13 +63,13 @@ export default function ProfesionalCitas() {
           className={`filter-btn ${filtro === 'Confirmada' ? 'active' : ''}`}
           onClick={() => setFiltro('Confirmada')}
         >
-          Confirmadas ({citas.filter(c => c.estado === 'Confirmada').length})
+          Confirmadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'confirmada').length})
         </button>
         <button
           className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
           onClick={() => setFiltro('Pendiente')}
         >
-          Pendientes ({citas.filter(c => c.estado === 'Pendiente').length})
+          Pendientes ({citas.filter((c) => (c.estado || '').toLowerCase() === 'pendiente').length})
         </button>
       </div>
 
@@ -80,24 +80,24 @@ export default function ProfesionalCitas() {
           </div>
         ) : (
           <div className="citas-grid">
-            {citasFiltradas.map(cita => (
+            {citasFiltradas.map((cita) => (
               <div key={cita.id} className="cita-card-prof">
                 <div className="cita-header-prof">
-                  <h3>{cita.cliente}</h3>
-                  <span className={`badge ${cita.estado === 'Confirmada' ? 'badge-success' : 'badge-warning'}`}>
+                  <h3>{cita?.cliente?.nombre || 'Cliente'}</h3>
+                  <span className={`badge ${(cita.estado || '').toLowerCase() === 'confirmada' ? 'badge-success' : 'badge-warning'}`}>
                     {cita.estado}
                   </span>
                 </div>
 
                 <div className="cita-info-prof">
-                  <p><strong>Servicio:</strong> {cita.servicio}</p>
+                  <p><strong>Servicio:</strong> {(cita.Servicios || []).map((servicio) => servicio.nombre).join(', ') || 'Servicio'}</p>
                   <p><strong>Fecha:</strong> {cita.fecha}</p>
                   <p><strong>Hora:</strong> {cita.hora}</p>
-                  <p><strong>Teléfono:</strong> {cita.telefono}</p>
+                  <p><strong>Teléfono:</strong> {cita?.cliente?.telefono || 'N/A'}</p>
                 </div>
 
                 <div className="cita-actions-prof">
-                  {cita.estado === 'Pendiente' && (
+                  {(cita.estado || '').toLowerCase() === 'pendiente' && (
                     <>
                       <button 
                         className="btn btn-sm btn-primary"
@@ -113,8 +113,8 @@ export default function ProfesionalCitas() {
                       </button>
                     </>
                   )}
-                  {cita.estado === 'Confirmada' && (
-                    <button className="btn btn-sm btn-secondary">
+                  {(cita.estado || '').toLowerCase() === 'confirmada' && (
+                    <button className="btn btn-sm btn-secondary" onClick={() => handleActualizarEstado(cita.id, 'Completada')}>
                       ✓ Completada
                     </button>
                   )}

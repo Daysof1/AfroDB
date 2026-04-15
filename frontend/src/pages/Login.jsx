@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
+import { apiRequest, saveSession, normalizeRole } from '../api/client';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     
     if (!email || !password) {
@@ -21,49 +23,40 @@ export default function Login() {
       return;
     }
 
-    // Credenciales de prueba
-    const validCredentials = {
-      'admin@email.com': { password: '123456', role: 'admin' },
-      'profesional@email.com': { password: '123456', role: 'profesional' },
-      'cliente@email.com': { password: '123456', role: 'cliente' },
-    };
+    try {
+      setLoading(true);
+      setError('');
 
-    let user = validCredentials[email.toLowerCase()];
+      const response = await apiRequest('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
 
-    // Si no está en credenciales de prueba, buscar en usuarios registrados
-    if (!user) {
-      const registeredUsers = localStorage.getItem('registeredUsers');
-      const users = registeredUsers ? JSON.parse(registeredUsers) : [];
-      
-      const registeredUser = users.find(u => u.email === email.toLowerCase());
-      if (registeredUser) {
-        user = { password: registeredUser.password, role: registeredUser.role };
+      const usuario = response?.data?.usuario;
+      const token = response?.data?.token;
+
+      if (!usuario || !token) {
+        throw new Error('Respuesta inválida del servidor');
       }
-    }
 
-    if (!user || user.password !== password) {
-      setError('Correo o contraseña incorrectos');
-      return;
-    }
+      saveSession({ token, usuario });
+      window.dispatchEvent(new Event('authChange'));
 
-    // Credenciales válidas - guardar en localStorage
-    localStorage.setItem('userRole', user.role);
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('token', 'fake-token-' + Date.now());
-
-    // Disparar evento personalizado para notificar a App.jsx
-    window.dispatchEvent(new Event('authChange'));
-
-    // Redirigir según el rol
-    setTimeout(() => {
-      if (user.role === 'admin') {
+      const role = normalizeRole(usuario.rol);
+      if (role === 'admin') {
         navigate('/admin/dashboard');
-      } else if (user.role === 'profesional') {
+      } else if (role === 'auxiliar') {
+        navigate('/auxiliar/dashboard');
+      } else if (role === 'profesional') {
         navigate('/profesional/dashboard');
-      } else if (user.role === 'cliente') {
+      } else {
         navigate('/cliente/catalogo');
       }
-    }, 100);
+    } catch (err) {
+      setError(err.message || 'Correo o contraseña incorrectos');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -116,13 +109,13 @@ export default function Login() {
                 />
               </div>
 
-              <button type="submit" className="btn-login">
-                Ingresar
+              <button type="submit" className="btn-login" disabled={loading}>
+                {loading ? 'Ingresando...' : 'Ingresar'}
               </button>
             </form>
 
             <div className="login-footer">
-              <p>¿No tienes cuenta? <a href="#registro">Regístrate aquí</a></p>
+              <p>¿No tienes cuenta? <Link to="/register">Regístrate aquí</Link></p>
               <p style={{ fontSize: '0.85rem', color: '#999', marginTop: '1rem' }}>
                 El sistema reconocerá automáticamente tu rol
               </p>

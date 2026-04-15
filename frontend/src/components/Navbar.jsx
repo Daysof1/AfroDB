@@ -65,7 +65,30 @@ export default function Navbar({ userRole, onLogout }) {
               <Link to="/admin/productos">Productos</Link>
               <Link to="/admin/servicios">Servicios</Link>
               <Link to="/admin/categorias">Categorías</Link>
+              <Link to="/admin/subcategorias">Subcategorías</Link>
+              <Link to="/admin/especialidades">Especialidades</Link>
+              <Link to="/admin/profesionales">Profesionales</Link>
+              <Link to="/admin/usuarios">Usuarios</Link>
               <Link to="/admin/citas">Citas</Link>
+              <button onClick={handleLogout} className="btn-logout">
+                Cerrar Sesión
+              </button>
+            </>
+          )}
+
+          {/* SI ESTÁ AUTENTICADO COMO AUXILIAR */}
+          {userRole === 'auxiliar' && (
+            <>
+              <Link to="/auxiliar/dashboard">Dashboard</Link>
+              <Link to="/auxiliar/productos">Productos</Link>
+              <Link to="/auxiliar/servicios">Servicios</Link>
+              <Link to="/auxiliar/categorias">Categorías</Link>
+              <Link to="/auxiliar/subcategorias">Subcategorías</Link>
+              <Link to="/auxiliar/especialidades">Especialidades</Link>
+              <Link to="/auxiliar/profesionales">Profesionales</Link>
+              <Link to="/auxiliar/usuarios">Usuarios</Link>
+              <Link to="/auxiliar/citas">Citas</Link>
+              <Link to="/auxiliar/pedidos">Pedidos</Link>
               <button onClick={handleLogout} className="btn-logout">
                 Cerrar Sesión
               </button>
@@ -133,7 +156,29 @@ export default function Navbar({ userRole, onLogout }) {
               <Link to="/admin/productos" onClick={() => setIsMenuOpen(false)}>Productos</Link>
               <Link to="/admin/servicios" onClick={() => setIsMenuOpen(false)}>Servicios</Link>
               <Link to="/admin/categorias" onClick={() => setIsMenuOpen(false)}>Categorías</Link>
+              <Link to="/admin/subcategorias" onClick={() => setIsMenuOpen(false)}>Subcategorías</Link>
+              <Link to="/admin/especialidades" onClick={() => setIsMenuOpen(false)}>Especialidades</Link>
+              <Link to="/admin/profesionales" onClick={() => setIsMenuOpen(false)}>Profesionales</Link>
+              <Link to="/admin/usuarios" onClick={() => setIsMenuOpen(false)}>Usuarios</Link>
               <Link to="/admin/citas" onClick={() => setIsMenuOpen(false)}>Citas</Link>
+              <button onClick={handleLogout} className="btn-logout">
+                Cerrar Sesión
+              </button>
+            </>
+          )}
+
+          {userRole === 'auxiliar' && (
+            <>
+              <Link to="/auxiliar/dashboard" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
+              <Link to="/auxiliar/productos" onClick={() => setIsMenuOpen(false)}>Productos</Link>
+              <Link to="/auxiliar/servicios" onClick={() => setIsMenuOpen(false)}>Servicios</Link>
+              <Link to="/auxiliar/categorias" onClick={() => setIsMenuOpen(false)}>Categorías</Link>
+              <Link to="/auxiliar/subcategorias" onClick={() => setIsMenuOpen(false)}>Subcategorías</Link>
+              <Link to="/auxiliar/especialidades" onClick={() => setIsMenuOpen(false)}>Especialidades</Link>
+              <Link to="/auxiliar/profesionales" onClick={() => setIsMenuOpen(false)}>Profesionales</Link>
+              <Link to="/auxiliar/usuarios" onClick={() => setIsMenuOpen(false)}>Usuarios</Link>
+              <Link to="/auxiliar/citas" onClick={() => setIsMenuOpen(false)}>Citas</Link>
+              <Link to="/auxiliar/pedidos" onClick={() => setIsMenuOpen(false)}>Pedidos</Link>
               <button onClick={handleLogout} className="btn-logout">
                 Cerrar Sesión
               </button>

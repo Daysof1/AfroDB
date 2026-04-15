@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client';
 
-export default function AdminCitas() {
+export default function AuxiliarCitas() {
   const [citas, setCitas] = useState([]);
   const [error, setError] = useState('');
 
@@ -34,7 +34,7 @@ export default function AdminCitas() {
   return (
     <div className="admin-page">
       <div className="page-header">
-        <h1>Gestión de Citas</h1>
+        <h1>Auxiliar - Citas</h1>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -64,8 +64,7 @@ export default function AdminCitas() {
                   </span>
                 </td>
                 <td>
-                  <button className="btn btn-sm btn-secondary">👁️ Ver</button>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleCancelar(cita.id)}>❌ Cancelar</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleCancelar(cita.id)}>Cancelar</button>
                 </td>
               </tr>
             ))}

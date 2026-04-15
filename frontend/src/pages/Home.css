@@ -5,7 +5,7 @@
 
 /* HERO BANNER */
 .hero-banner {
-  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/uploads/imagen_1.png') center/cover no-repeat;
+  background: linear-gradient(135deg, rgba(62, 47, 37, 0.88) 0%, rgba(165, 99, 99, 0.88) 100%);
   color: white;
   padding: 6rem 2rem;
   text-align: center;

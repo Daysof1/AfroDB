@@ -35,7 +35,7 @@ src/
 │   └── Profesional.css # Estilos para páginas profesional
 ├── App.jsx             # Componente principal con rutas
 ├── App.css             # Estilos generales
-└── main.jsx            # Punto de entrada
+└── index.js            # Punto de entrada
 ```
 
 ## 🎯 Características

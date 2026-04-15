@@ -1,35 +1,29 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faBell, faClock, faSackDollar } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
+import { apiRequest } from '../../api/client';
 
 export default function ClienteServicios() {
-  const [servicios] = useState([
-    {
-      id: 1,
-      nombre: 'Consulta Capilar',
-      descripcion: 'Diagnóstico y plan de cuidado personalizado para tu tipo de cabello',
-      precio: 50000,
-      duracion: '30 min',
-      icono: '/uploads/Corte_en_capas.webp'
-    },
-    {
-      id: 2,
-      nombre: 'Tratamiento Facial Premium',
-      descripcion: 'Limpieza profunda, exfoliación y mascarilla restauradora',
-      precio: 75000,
-      duracion: '60 min',
-      icono: '/uploads/Mascarilla_Hidratante.jpg'
-    },
-    {
-      id: 3,
-      nombre: 'Masaje Relajante',
-      descripcion: 'Masaje terapéutico con aceites naturales',
-      precio: 60000,
-      duracion: '45 min',
-      icono: '/uploads/MasajeFacial.png'
-    },
-  ]);
+  const [servicios, setServicios] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadServicios = async () => {
+      try {
+        setLoading(true);
+        const response = await apiRequest('/servicios?activo=true');
+        setServicios(response?.data?.servicios || []);
+      } catch (err) {
+        setError(err.message || 'No se pudieron cargar los servicios');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadServicios();
+  }, []);
 
   return (
     <div className="cliente-page">
@@ -37,22 +31,21 @@ export default function ClienteServicios() {
         <h1><FontAwesomeIcon icon={faBell} /> Nuestros Servicios</h1>
       </div>
 
+      {loading && <p>Cargando servicios...</p>}
+      {error && <div className="alert alert-error">{error}</div>}
+
       <div className="servicios-grid">
-        {servicios.map(servicio => (
+        {servicios.map((servicio) => (
           <div key={servicio.id} className="servicio-card">
             <div className="servicio-icon">
-              {servicio.icono.startsWith('/') ? (
-                <img src={servicio.icono} alt={servicio.nombre} />
-              ) : (
-                servicio.icono
-              )}
+              <span>✨</span>
             </div>
             <h3>{servicio.nombre}</h3>
             <p className="servicio-desc">{servicio.descripcion}</p>
 
             <div className="servicio-details">
-              <span><FontAwesomeIcon icon={faClock} /> {servicio.duracion}</span>
-              <span><FontAwesomeIcon icon={faSackDollar} /> ${servicio.precio.toLocaleString()}</span>
+              <span><FontAwesomeIcon icon={faClock} /> {servicio.duracion} min</span>
+              <span><FontAwesomeIcon icon={faSackDollar} /> ${Number(servicio.precio || 0).toLocaleString()}</span>
             </div>
 
             <button className="btn btn-primary"><FontAwesomeIcon icon={faCalendar} /> Agendar Cita</button>

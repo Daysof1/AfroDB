@@ -2,23 +2,48 @@ import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faChalkboard, faStar, faUsers, faCheck, faGear } from '@fortawesome/free-solid-svg-icons';
 import '../Profesional.css';
+import { apiRequest } from '../../api/client';
 
 export default function ProfesionalDashboard() {
   const [stats, setStats] = useState({
-    citasHoy: 3,
-    citasConfirmadas: 12,
-    clientesAtendidos: 45,
-    calificacion: 4.8,
+    citasHoy: 0,
+    citasConfirmadas: 0,
+    clientesAtendidos: 0,
+    calificacion: 5.0,
   });
 
-  const [proximasCitas, setProximasCitas] = useState([
-    { id: 1, cliente: 'María González', servicio: 'Consulta Capilar', hora: '14:00', estado: 'Confirmada' },
-    { id: 2, cliente: 'Ana Pérez', servicio: 'Tratamiento Facial', hora: '15:30', estado: 'Confirmada' },
-  ]);
+  const [proximasCitas, setProximasCitas] = useState([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const response = await apiRequest('/citas');
+        const citas = response?.data?.citas || [];
+        const today = new Date().toISOString().slice(0, 10);
+        const citasHoy = citas.filter((cita) => String(cita.fecha).slice(0, 10) === today).length;
+        const citasConfirmadas = citas.filter((cita) => (cita.estado || '').toLowerCase() === 'confirmada').length;
+        const clientesAtendidos = new Set(citas.map((cita) => cita?.cliente?.id).filter(Boolean)).size;
+
+        setStats({
+          citasHoy,
+          citasConfirmadas,
+          clientesAtendidos,
+          calificacion: 5.0,
+        });
+        setProximasCitas(citas.slice(0, 5));
+      } catch (err) {
+        setError(err.message || 'No se pudo cargar el dashboard');
+      }
+    };
+
+    loadDashboard();
+  }, []);
 
   return (
     <div className="profesional-page">
       <h1>Dashboard - Mi Espacio Profesional</h1>
+      {error && <div className="alert alert-error">{error}</div>}
 
       <div className="stats-grid">
         <div className="stat-card">
@@ -57,12 +82,12 @@ export default function ProfesionalDashboard() {
       <div className="profesional-section">
         <h2>Próximas Citas</h2>
         <div className="citas-timeline">
-          {proximasCitas.map(cita => (
+          {proximasCitas.map((cita) => (
             <div key={cita.id} className="timeline-item">
               <div className="timeline-time">{cita.hora}</div>
               <div className="timeline-content">
-                <h4>{cita.cliente}</h4>
-                <p>{cita.servicio}</p>
+                <h4>{cita?.cliente?.nombre || 'Cliente'}</h4>
+                <p>{(cita.Servicios || []).map((servicio) => servicio.nombre).join(', ') || 'Servicio'}</p>
                 <span className="badge badge-success">{cita.estado}</span>
               </div>
             </div>

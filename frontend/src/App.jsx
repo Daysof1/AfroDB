@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import './App.css';
+import { clearSession } from './api/client';
 
 // Componentes compartidos
 import Navbar from './components/Navbar';
@@ -17,6 +18,10 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProductos from './pages/admin/AdminProductos';
 import AdminServicios from './pages/admin/AdminServicios';
 import AdminCategorias from './pages/admin/AdminCategorias';
+import AdminSubcategorias from './pages/admin/AdminSubcategorias';
+import AdminEspecialidades from './pages/admin/AdminEspecialidades';
+import AdminProfesionales from './pages/admin/AdminProfesionales';
+import AdminUsuarios from './pages/admin/AdminUsuarios';
 import AdminCitas from './pages/admin/AdminCitas';
 
 // Páginas Cliente
@@ -32,11 +37,22 @@ import ProfesionalDashboard from './pages/profesional/ProfesionalDashboard';
 import ProfesionalCitas from './pages/profesional/ProfesionalCitas';
 import ProfesionalPerfil from './pages/profesional/ProfesionalPerfil';
 import ProfesionalEspecialidades from './pages/profesional/ProfesionalEspecialidades';
+import AuxiliarDashboard from './pages/auxiliar/AuxiliarDashboard';
+import AuxiliarProductos from './pages/auxiliar/AuxiliarProductos';
+import AuxiliarServicios from './pages/auxiliar/AuxiliarServicios';
+import AuxiliarCategorias from './pages/auxiliar/AuxiliarCategorias';
+import AuxiliarSubcategorias from './pages/auxiliar/AuxiliarSubcategorias';
+import AuxiliarEspecialidades from './pages/auxiliar/AuxiliarEspecialidades';
+import AuxiliarProfesionales from './pages/auxiliar/AuxiliarProfesionales';
+import AuxiliarUsuarios from './pages/auxiliar/AuxiliarUsuarios';
+import AuxiliarCitas from './pages/auxiliar/AuxiliarCitas';
+import AuxiliarPedidos from './pages/auxiliar/AuxiliarPedidos';
 
 function App() {
   const [userRole, setUserRole] = useState(null);
   const [authChanged, setAuthChanged] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [globalNotice, setGlobalNotice] = useState('');
 
   useEffect(() => {
     // Verificar si hay usuario autenticado
@@ -68,18 +84,39 @@ function App() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  useEffect(() => {
+    const handleSessionExpired = (event) => {
+      const message = event?.detail?.message || 'Tu sesion expiro. Inicia sesion nuevamente.';
+      setGlobalNotice(message);
+      window.setTimeout(() => setGlobalNotice(''), 4000);
+    };
+
+    window.addEventListener('sessionExpired', handleSessionExpired);
+    return () => window.removeEventListener('sessionExpired', handleSessionExpired);
+  }, []);
+
   const isAuthenticated = userRole !== null;
 
+  const getDefaultRouteByRole = () => {
+    if (userRole === 'admin') return '/admin/dashboard';
+    if (userRole === 'auxiliar') return '/auxiliar/dashboard';
+    if (userRole === 'profesional') return '/profesional/dashboard';
+    return '/cliente/catalogo';
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userEmail');
+    clearSession();
     setUserRole(null);
   };
 
   return (
     <Router>
       <div className="app-container">
+        {globalNotice && (
+          <div className="global-notice" role="status" aria-live="polite">
+            {globalNotice}
+          </div>
+        )}
         <Navbar userRole={userRole} onLogout={handleLogout} />
         
         <div className="main-content">
@@ -100,8 +137,8 @@ function App() {
               {/* Si está autenticado y trata de ir a /login o /register, redirecciona */}
               {isAuthenticated && (
                 <>
-                  <Route path="/login" element={<Navigate to={userRole === 'admin' ? '/admin/dashboard' : userRole === 'profesional' ? '/profesional/dashboard' : '/cliente/catalogo'} />} />
-                  <Route path="/register" element={<Navigate to={userRole === 'admin' ? '/admin/dashboard' : userRole === 'profesional' ? '/profesional/dashboard' : '/cliente/catalogo'} />} />
+                  <Route path="/login" element={<Navigate to={getDefaultRouteByRole()} />} />
+                  <Route path="/register" element={<Navigate to={getDefaultRouteByRole()} />} />
                 </>
               )}
 
@@ -112,6 +149,10 @@ function App() {
                   <Route path="/admin/productos" element={<AdminProductos />} />
                   <Route path="/admin/servicios" element={<AdminServicios />} />
                   <Route path="/admin/categorias" element={<AdminCategorias />} />
+                  <Route path="/admin/subcategorias" element={<AdminSubcategorias />} />
+                  <Route path="/admin/especialidades" element={<AdminEspecialidades />} />
+                  <Route path="/admin/profesionales" element={<AdminProfesionales />} />
+                  <Route path="/admin/usuarios" element={<AdminUsuarios />} />
                   <Route path="/admin/citas" element={<AdminCitas />} />
                 </>
               )}
@@ -138,8 +179,25 @@ function App() {
                 </>
               )}
 
+              {/* RUTAS AUXILIAR - Protegidas */}
+              {isAuthenticated && userRole === 'auxiliar' && (
+                <>
+                  <Route path="/auxiliar/dashboard" element={<AuxiliarDashboard />} />
+                  <Route path="/auxiliar/productos" element={<AuxiliarProductos />} />
+                  <Route path="/auxiliar/servicios" element={<AuxiliarServicios />} />
+                  <Route path="/auxiliar/categorias" element={<AuxiliarCategorias />} />
+                  <Route path="/auxiliar/subcategorias" element={<AuxiliarSubcategorias />} />
+                  <Route path="/auxiliar/especialidades" element={<AuxiliarEspecialidades />} />
+                  <Route path="/auxiliar/profesionales" element={<AuxiliarProfesionales />} />
+                  <Route path="/auxiliar/usuarios" element={<AuxiliarUsuarios />} />
+                  <Route path="/auxiliar/citas" element={<AuxiliarCitas />} />
+                  <Route path="/auxiliar/pedidos" element={<AuxiliarPedidos />} />
+                </>
+              )}
+
               {/* REDIRECCIONAMIENTOS POR DEFECTO */}
               {isAuthenticated && userRole === 'admin' && <Route path="*" element={<Navigate to="/admin/dashboard" />} />}
+              {isAuthenticated && userRole === 'auxiliar' && <Route path="*" element={<Navigate to="/auxiliar/dashboard" />} />}
               {isAuthenticated && userRole === 'cliente' && <Route path="*" element={<Navigate to="/cliente/catalogo" />} />}
               {isAuthenticated && userRole === 'profesional' && <Route path="*" element={<Navigate to="/profesional/dashboard" />} />}
               
