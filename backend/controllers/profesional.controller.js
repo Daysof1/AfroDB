@@ -13,6 +13,7 @@
 const Usuario = require('../models/Usuario');
 const Especialidad = require('../models/Especialidades');
 const ProfesionalEspecialidad = require('../models/ProfesionalEspecialidad');
+const Servicio = require('../models/Servicio');
 
 /**
  * Obtener todos los profesionales (ADMIN)
@@ -448,6 +449,19 @@ const eliminarProfesional = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Profesional no encontrado'
+      });
+    }
+
+    // Si el profesional tiene servicios asignados, no puede eliminarse por restricción FK.
+    const serviciosAsignados = await Servicio.count({
+      where: { profesionalId: id }
+    });
+
+    if (serviciosAsignados > 0) {
+      return res.status(409).json({
+        success: false,
+        message: 'No se puede eliminar el profesional porque tiene servicios asignados. Reasigna o elimina esos servicios primero.',
+        data: { serviciosAsignados }
       });
     }
 

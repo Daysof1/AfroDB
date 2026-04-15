@@ -107,11 +107,23 @@ const crearEspecialidad = async (req, res) => {
       });
     }
 
-    const existe = await Especialidad.findOne({
+    const existe = await Especialidad.scope('withInactive').findOne({
       where: { nombre }
     });
 
     if (existe) {
+      if (!existe.activo) {
+        existe.activo = true;
+        existe.descripcion = descripcion || existe.descripcion;
+        await existe.save();
+
+        return res.status(200).json({
+          success: true,
+          message: 'Especialidad reactivada',
+          data: { especialidad: existe }
+        });
+      }
+
       return res.status(400).json({
         success: false,
         message: `Ya existe la especialidad "${nombre}"`
@@ -159,7 +171,7 @@ const actualizarEspecialidad = async (req, res) => {
     const { id } = req.params;
     const { nombre, descripcion, activo } = req.body;
 
-    const especialidad = await Especialidad.findByPk(id);
+    const especialidad = await Especialidad.scope('withInactive').findByPk(id);
 
     if (!especialidad) {
       return res.status(404).json({
@@ -170,7 +182,7 @@ const actualizarEspecialidad = async (req, res) => {
 
     // Validar nombre único
     if (nombre && nombre !== especialidad.nombre) {
-      const existe = await Especialidad.findOne({ where: { nombre } });
+      const existe = await Especialidad.scope('withInactive').findOne({ where: { nombre } });
       if (existe) {
         return res.status(400).json({
           success: false,
@@ -210,7 +222,7 @@ const toggleEspecialidad = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const especialidad = await Especialidad.findByPk(id);
+    const especialidad = await Especialidad.scope('withInactive').findByPk(id);
 
     if (!especialidad) {
       return res.status(404).json({
@@ -224,7 +236,7 @@ const toggleEspecialidad = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Especialidad ${especialidad.activo ? 'activada' : 'desactivada'}`,
+      message: `Especialidad ${especialidad.activo ? 'activado' : 'desactivado'} exitosamente`,
       data: { especialidad }
     });
 
@@ -247,7 +259,7 @@ const eliminarEspecialidad = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const especialidad = await Especialidad.findByPk(id);
+    const especialidad = await Especialidad.scope('withInactive').findByPk(id);
 
     if (!especialidad) {
       return res.status(404).json({
@@ -293,7 +305,7 @@ const getEstadisticasEspecialidad = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const especialidad = await Especialidad.findByPk(id);
+    const especialidad = await Especialidad.scope('withInactive').findByPk(id);
 
     if (!especialidad) {
       return res.status(404).json({

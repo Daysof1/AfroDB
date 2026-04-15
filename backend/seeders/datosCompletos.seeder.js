@@ -129,10 +129,16 @@ const datosCompletosSeeder = async () => {
 
     const especialidades = [];
     for (const espData of especialidadesData) {
-      const [especialidad, created] = await Especialidad.findOrCreate({
+      const [especialidad, created] = await Especialidad.scope('withInactive').findOrCreate({
         where: { nombre: espData.nombre },
         defaults: espData
       });
+
+      // Si ya existía inactiva, se reactiva para evitar choques de unique en ejecuciones repetidas.
+      if (!created && !especialidad.activo) {
+        await especialidad.update({ activo: true, descripcion: espData.descripcion });
+      }
+
       especialidades.push(especialidad);
       if (created) console.log(`✅ Especialidad: ${especialidad.nombre}`);
     }
