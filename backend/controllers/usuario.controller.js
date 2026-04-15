@@ -128,13 +128,13 @@ const getUsuarioById = async (req, res) => {
 const crearUsuario = async (req, res) => {
   try {
     // Extrae todos los campos del body
-    const { nombre, apellido, email, password, rol, telefono, direccion } = req.body;
+    const { tipo_documento, documento, nombre, apellido, email, password, rol, telefono, direccion } = req.body;
     
     // VALIDACIÓN 1: Campos obligatorios
-    if (!nombre || !apellido || !email || !password || !rol) {
+    if (!tipo_documento || !documento || !nombre || !apellido || !email || !password || !rol) {
       return res.status(400).json({
         success: false,
-        message: 'Faltan campos requeridos: nombre, apellido, email, password y rol'
+        message: 'Faltan campos requeridos: tipo_documento, documento, nombre, apellido, email, password y rol'
       });
     }
     
@@ -158,6 +158,8 @@ const crearUsuario = async (req, res) => {
     // Crea el usuario en la BD. El hook beforeCreate del modelo
     // se encarga de hashear (encriptar) la contraseña automáticamente.
     const nuevoUsuario = await Usuario.create({
+      tipo_documento,
+      documento,
       nombre,
       apellido,
       email,
@@ -208,7 +210,7 @@ const crearUsuario = async (req, res) => {
 const actualizarUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, apellido, telefono, direccion, rol } = req.body;
+    const { tipo_documento, documento, nombre, apellido, telefono, direccion, rol } = req.body;
     
     // Busca el usuario por ID
     const usuario = await Usuario.findByPk(id);
@@ -234,6 +236,8 @@ const actualizarUsuario = async (req, res) => {
     if (telefono !== undefined) usuario.telefono = telefono;
     if (direccion !== undefined) usuario.direccion = direccion;
     if (rol !== undefined) usuario.rol = rol;
+    if (tipo_documento !== undefined) usuario.tipo_documento = tipo_documento;
+    if (documento !== undefined) usuario.documento = documento;
     
     // save() ejecuta UPDATE en la BD
     await usuario.save();
