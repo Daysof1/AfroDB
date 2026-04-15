@@ -23,12 +23,13 @@ const Servicio = require('../models/Servicio');
 const getProfesionales = async (req, res) => {
   try {
     const profesionales = await Usuario.findAll({
-      where: { rol: 'profesional' },
+      where: { rol: 'profesional', activo: true },
       include: [{
         model: Especialidad,
         as: 'especialidades',
         attributes: ['id', 'nombre'],
-        through: { attributes: [] } // Oculta tabla intermedia
+        through: { attributes: [] }, // Oculta tabla intermedia
+        required: false
       }],
       order: [['createdAt', 'DESC']]
     });
@@ -59,12 +60,13 @@ const getProfesionalById = async (req, res) => {
     const { id } = req.params;
 
     const profesional = await Usuario.findOne({
-      where: { id, rol: 'profesional' },
+      where: { id, rol: 'profesional', activo: true },
       include: [{
         model: Especialidad,
         as: 'especialidades',
         attributes: ['id', 'nombre'],
-        through: { attributes: [] }
+        through: { attributes: [] },
+        required: false
       }]
     });
 
@@ -102,7 +104,8 @@ const getMiPerfilProfesional = async (req, res) => {
         model: Especialidad,
         as: 'especialidades',
         attributes: ['id', 'nombre'],
-        through: { attributes: [] }
+        through: { attributes: [] },
+        required: false
       }]
     });
 
@@ -135,7 +138,8 @@ const getMisEspecialidades = async (req, res) => {
         model: Especialidad,
         as: 'especialidades',
         attributes: ['id', 'nombre'],
-        through: { attributes: [] }
+        through: { attributes: [] },
+        required: false
       }]
     });
 
@@ -202,7 +206,7 @@ const agregarEspecialidad = async (req, res) => {
       });
     }
 
-    await profesional.addEspecialidad(especialidad);
+    await profesional.addEspecialidades(especialidad);
 
     res.json({
       success: true,
@@ -238,7 +242,7 @@ const removerEspecialidad = async (req, res) => {
       });
     }
 
-    await profesional.removeEspecialidad(especialidadId);
+    await profesional.removeEspecialidades(especialidadId);
 
     res.json({
       success: true,
@@ -320,7 +324,7 @@ const asignarEspecialidades = async (req, res) => {
  */
 const actualizarMiPerfil = async (req, res) => {
   try {
-    const { nombre, telefono } = req.body;
+    const { nombre, telefono, tipo_documento, documento, email, direccion } = req.body;
 
     const profesional = await Usuario.findByPk(req.usuario.id);
 
@@ -331,8 +335,12 @@ const actualizarMiPerfil = async (req, res) => {
       });
     }
 
+    if(tipo_documento !== undefined) profesional.tipo_documento = tipo_documento;
+    if(documento !== undefined) profesional.documento = documento;
     if (nombre !== undefined) profesional.nombre = nombre;
     if (telefono !== undefined) profesional.telefono = telefono;
+    if (email !== undefined) profesional.email = email;
+    if (direccion !== undefined) profesional.direccion = direccion;
 
     await profesional.save();
 

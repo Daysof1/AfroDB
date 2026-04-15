@@ -118,6 +118,23 @@ app.use('/api/admin', adminRoutes);
 const profesionalRoutes = require('./routes/Profesional.routes');
 app.use('/api/profesional', profesionalRoutes);
 
+// Alias para citas de profesional en /api/citas
+const { verificarAuth } = require('./middleware/auth');
+const { esProfesional } = require('./middleware/checkRole');
+const citaController = require('./controllers/cita.controller');
+const profesionalController = require('./controllers/profesional.controller');
+app.get('/api/citas', verificarAuth, esProfesional, citaController.getCitasProfesional);
+app.put('/api/citas/:id/estado', verificarAuth, esProfesional, citaController.actualizarEstadoCita);
+
+// Alias para perfil de profesional en /api/perfil
+app.get('/api/perfil', verificarAuth, esProfesional, profesionalController.getMiPerfilProfesional);
+app.put('/api/perfil', verificarAuth, esProfesional, profesionalController.actualizarMiPerfil);
+
+// Alias para especialidades de profesional en /api/mis-especialidades
+app.get('/api/mis-especialidades', verificarAuth, esProfesional, profesionalController.getMisEspecialidades);
+app.post('/api/mis-especialidades', verificarAuth, esProfesional, profesionalController.agregarEspecialidad);
+app.delete('/api/mis-especialidades/:especialidadId', verificarAuth, esProfesional, profesionalController.removerEspecialidad);
+
 // rutas clientes
 // incluye 
 const clientRoutes = require ('./routes/cliente.routes');

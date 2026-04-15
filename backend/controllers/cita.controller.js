@@ -99,7 +99,7 @@ const crearCita = async (req, res) => {
     // ==========================================
 
     const cita = await Cita.create({
-      clienteId: req.usuario.id,
+      usuarioId: req.usuario.id,
       profesionalId: profesionalAsignado,
       fecha,
       hora,
@@ -168,7 +168,7 @@ const crearCita = async (req, res) => {
 const getMisCitas = async (req, res) => {
   try {
     const citas = await Cita.findAll({
-      where: { clienteId: req.usuario.id }, /////
+      where: { usuarioId: req.usuario.id }, /////
       include: [
         {
           model: Usuario,
@@ -209,7 +209,7 @@ const getCitaById = async (req, res) => {
     const where = { id };
 
     if (req.usuario.rol !== 'administrador') {
-      where.clienteId = req.usuario.id;
+      where.usuarioId = req.usuario.id;
     }
 
     const cita = await Cita.findOne({
@@ -263,7 +263,7 @@ const cancelarCita = async (req, res) => {
     const cita = await Cita.findOne({
       where: {
         id,
-        clienteId: req.usuario.id
+        usuarioId: req.usuario.id
       }
     });
 
@@ -386,8 +386,21 @@ const actualizarEstadoCita = async (req, res) => {
 
 const getCitasProfesional = async (req, res) => {
   try {
+    const rol = (req.usuario?.rol || '').toLowerCase().trim();
+    const where = {};
+
+    // Profesional: solo ve sus propias citas.
+    if (rol === 'profesional') {
+      where.profesionalId = req.usuario.id;
+    }
+
+    // Admin/Auxiliar: puede filtrar por profesionalId opcionalmente.
+    if (['administrador', 'auxiliar'].includes(rol) && req.query.profesionalId) {
+      where.profesionalId = req.query.profesionalId;
+    }
+
     const citas = await Cita.findAll({
-      where: { profesionalId: req.usuario.id },
+      where,
       include: [
         {
           model: Usuario,
