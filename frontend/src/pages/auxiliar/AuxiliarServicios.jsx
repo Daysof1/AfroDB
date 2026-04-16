@@ -10,6 +10,7 @@ export default function AuxiliarServicios() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingServicioId, setEditingServicioId] = useState(null);
   const [newServicio, setNewServicio] = useState({
     nombre: '',
     descripcion: '',
@@ -19,6 +20,12 @@ export default function AuxiliarServicios() {
     subcategoriaId: '',
     profesionalId: '',
   });
+
+  const resetForm = () => {
+    setEditingServicioId(null);
+    setNewServicio({ nombre: '', descripcion: '', precio: '', duracion: '', categoriaId: '', subcategoriaId: '', profesionalId: '' });
+    setSubcategorias([]);
+  };
 
   const loadServicios = async () => {
     try {
@@ -72,8 +79,9 @@ export default function AuxiliarServicios() {
     try {
       setError('');
       setSuccess('');
-      await apiRequest('/admin/servicios', {
-        method: 'POST',
+      const isEditing = Boolean(editingServicioId);
+      await apiRequest(isEditing ? `/admin/servicios/${editingServicioId}` : '/admin/servicios', {
+        method: isEditing ? 'PUT' : 'POST',
         body: JSON.stringify({
           nombre: newServicio.nombre,
           descripcion: newServicio.descripcion,
@@ -84,21 +92,47 @@ export default function AuxiliarServicios() {
           profesionalId: Number(newServicio.profesionalId),
         }),
       });
-      setSuccess('Servicio creado correctamente');
-      setNewServicio({ nombre: '', descripcion: '', precio: '', duracion: '', categoriaId: '', subcategoriaId: '', profesionalId: '' });
-      setSubcategorias([]);
+      setSuccess(isEditing ? 'Servicio actualizado correctamente' : 'Servicio creado correctamente');
+      resetForm();
       setIsFormOpen(false);
       await loadServicios();
     } catch (err) {
-      setError(err.message || 'No se pudo crear el servicio');
+      setError(err.message || 'No se pudo guardar el servicio');
     }
+  };
+
+  const handleEditarServicio = (servicio) => {
+    setError('');
+    setSuccess('');
+    setEditingServicioId(servicio.id);
+    setNewServicio({
+      nombre: servicio.nombre || '',
+      descripcion: servicio.descripcion || '',
+      precio: String(servicio.precio ?? ''),
+      duracion: String(servicio.duracion ?? ''),
+      categoriaId: String(servicio.categoriaId ?? ''),
+      subcategoriaId: String(servicio.subcategoriaId ?? ''),
+      profesionalId: String(servicio.profesionalId ?? ''),
+    });
+    if (servicio.categoriaId) {
+      loadSubcategorias(servicio.categoriaId);
+    }
+    setIsFormOpen(true);
   };
 
   return (
     <div className="admin-page">
       <div className="page-header">
         <h1>Auxiliar - Servicios</h1>
-        <button className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            if (isFormOpen) {
+              resetForm();
+            }
+            setIsFormOpen(!isFormOpen);
+          }}
+        >
           {isFormOpen ? 'Cancelar' : '➕ Nuevo Servicio'}
         </button>
       </div>
@@ -108,7 +142,7 @@ export default function AuxiliarServicios() {
 
       {isFormOpen && (
         <div className="form-container">
-          <h2>Agregar Nuevo Servicio</h2>
+          <h2>{editingServicioId ? 'Editar Servicio' : 'Agregar Nuevo Servicio'}</h2>
           <form onSubmit={handleCrearServicio}>
             <div className="form-group"><label>Nombre</label><input value={newServicio.nombre} onChange={(e) => setNewServicio({ ...newServicio, nombre: e.target.value })} required /></div>
             <div className="form-group"><label>Descripción</label><textarea rows="4" value={newServicio.descripcion} onChange={(e) => setNewServicio({ ...newServicio, descripcion: e.target.value })} /></div>
@@ -149,7 +183,9 @@ export default function AuxiliarServicios() {
                 ))}
               </select>
             </div>
-            <button type="submit" className="btn btn-primary">Guardar Servicio</button>
+            <button type="submit" className="btn btn-primary">
+              {editingServicioId ? 'Actualizar Servicio' : 'Guardar Servicio'}
+            </button>
           </form>
         </div>
       )}
@@ -160,6 +196,9 @@ export default function AuxiliarServicios() {
             <h3>{servicio.nombre}</h3>
             <p>{servicio.descripcion}</p>
             <p className="price">${Number(servicio.precio || 0).toLocaleString()}</p>
+            <div className="card-actions">
+              <button className="btn btn-sm btn-secondary" onClick={() => handleEditarServicio(servicio)}>✏️ Editar</button>
+            </div>
           </div>
         ))}
       </div>

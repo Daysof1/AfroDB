@@ -1,13 +1,27 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faBell, faClock, faSackDollar } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
-import { apiRequest } from '../../api/client';
+import { apiRequest, getAssetUrl, normalizeRole } from '../../api/client';
 
 export default function ClienteServicios() {
+  const navigate = useNavigate();
   const [servicios, setServicios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const handleAgendarCita = () => {
+    const userRole = normalizeRole(localStorage.getItem('userRole'));
+
+    // Si está autenticado como cliente, va a agendar cita
+    if (userRole === 'cliente') {
+      navigate('/cliente/citas');
+    } else {
+      // Si no está autenticado, lo lleva al login
+      navigate('/login');
+    }
+  };
 
   useEffect(() => {
     const loadServicios = async () => {
@@ -38,7 +52,11 @@ export default function ClienteServicios() {
         {servicios.map((servicio) => (
           <div key={servicio.id} className="servicio-card">
             <div className="servicio-icon">
-              <span>✨</span>
+              {servicio.imagen ? (
+                <img src={getAssetUrl(servicio.imagen)} alt={servicio.nombre} />
+              ) : (
+                <span>✨</span>
+              )}
             </div>
             <h3>{servicio.nombre}</h3>
             <p className="servicio-desc">{servicio.descripcion}</p>
@@ -48,7 +66,7 @@ export default function ClienteServicios() {
               <span><FontAwesomeIcon icon={faSackDollar} /> ${Number(servicio.precio || 0).toLocaleString()}</span>
             </div>
 
-            <button className="btn btn-primary"><FontAwesomeIcon icon={faCalendar} /> Agendar Cita</button>
+            <button onClick={handleAgendarCita} className="btn btn-primary"><FontAwesomeIcon icon={faCalendar} /> Agendar Cita</button>
           </div>
         ))}
       </div>

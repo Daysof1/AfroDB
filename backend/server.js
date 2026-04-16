@@ -63,7 +63,7 @@ app.use(express.urlencoded({extended: true}));
  * servir archivos estaticos iamgenes desdde la capeta raiz
  */
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'UPLOADS')));
 
 // middleware para logging de peticiones 
 // muestra en consola las peticiones que llega el servidor 
@@ -199,7 +199,9 @@ const starServer = async () =>{
         // (Jest establece JEST_WORKER_ID, y a veces NODE_ENV viene de .env)
         // en produccion debe ser false para no perder los datos
         const forceSync = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
-        const alterTables = process.env.NODE_ENV === 'development';
+        // En local suele venir NODE_ENV indefinido; tratamos eso como modo desarrollo.
+        const isProduction = process.env.NODE_ENV === 'production';
+        const alterTables = !isProduction;
         const dbSynced = await syncDatabase(forceSync, alterTables);
 
         if(!dbSynced){

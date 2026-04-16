@@ -286,7 +286,7 @@ const crearProducto = async (req, res) => {
     // para no dejar archivos huérfanos.
     if (req.file) {
       // path.join() construye la ruta completa: __dirname (directorio actual) + ../uploads + nombre
-      const rutaImagen = path.join(__dirname, '../uploads', req.file.filename);
+      const rutaImagen = path.join(__dirname, '../UPLOADS', req.file.filename);
       try {
         await fs.unlink(rutaImagen);    // Elimina el archivo del disco
       } catch (err) {
@@ -323,6 +323,8 @@ const actualizarProducto = async (req, res) => {
   try {
     const { id } = req.params;   // ID del producto desde la URL
     const { nombre, descripcion, precio, stock, categoriaId, subcategoriaId, activo } = req.body;
+    const parsedCategoriaId = categoriaId !== undefined && categoriaId !== '' ? parseInt(categoriaId, 10) : undefined;
+    const parsedSubcategoriaId = subcategoriaId !== undefined && subcategoriaId !== '' ? parseInt(subcategoriaId, 10) : undefined;
     
     // Busca el producto existente por su ID
     const producto = await Producto.findByPk(id);
@@ -335,8 +337,8 @@ const actualizarProducto = async (req, res) => {
     }
     
     // VALIDACIÓN: Si se cambia la categoría, verifica que exista y esté activa
-    if (categoriaId && categoriaId !== producto.categoriaId) {
-      const categoria = await Categoria.findByPk(categoriaId);
+    if (parsedCategoriaId !== undefined && parsedCategoriaId !== producto.categoriaId) {
+      const categoria = await Categoria.findByPk(parsedCategoriaId);
       if (!categoria || !categoria.activo) {
         return res.status(400).json({
           success: false,
@@ -347,8 +349,8 @@ const actualizarProducto = async (req, res) => {
     
     // VALIDACIÓN: Si se cambia la subcategoría, verifica que exista, esté activa
     // y pertenezca a la categoría (nueva o actual)
-    if (subcategoriaId && subcategoriaId !== producto.subcategoriaId) {
-      const subcategoria = await Subcategoria.findByPk(subcategoriaId);
+    if (parsedSubcategoriaId !== undefined && parsedSubcategoriaId !== producto.subcategoriaId) {
+      const subcategoria = await Subcategoria.findByPk(parsedSubcategoriaId);
       if (!subcategoria || !subcategoria.activo) {
         return res.status(400).json({
           success: false,
@@ -357,8 +359,8 @@ const actualizarProducto = async (req, res) => {
       }
       
       // Usa la nueva categoría si se envió, o la actual del producto
-      const catId = categoriaId || producto.categoriaId;
-      if (subcategoria.categoriaId !== parseInt(catId)) {
+      const catId = parsedCategoriaId !== undefined ? parsedCategoriaId : producto.categoriaId;
+      if (subcategoria.categoriaId !== catId) {
         return res.status(400).json({
           success: false,
           message: 'La subcategoría no pertenece a la categoría seleccionada'
@@ -384,7 +386,7 @@ const actualizarProducto = async (req, res) => {
     if (req.file) {
       // Si el producto ya tenía una imagen, la elimina del disco
       if (producto.imagen) {
-        const rutaImagenAnterior = path.join(__dirname, '../uploads', producto.imagen);
+        const rutaImagenAnterior = path.join(__dirname, '../UPLOADS', producto.imagen);
         try {
           await fs.unlink(rutaImagenAnterior);   // Elimina el archivo anterior
         } catch (err) {
@@ -400,8 +402,8 @@ const actualizarProducto = async (req, res) => {
     if (descripcion !== undefined) producto.descripcion = descripcion;
     if (precio !== undefined) producto.precio = parseFloat(precio);
     if (stock !== undefined) producto.stock = parseInt(stock);
-    if (categoriaId !== undefined) producto.categoriaId = parseInt(categoriaId);
-    if (subcategoriaId !== undefined) producto.subcategoriaId = parseInt(subcategoriaId);
+    if (parsedCategoriaId !== undefined) producto.categoriaId = parsedCategoriaId;
+    if (parsedSubcategoriaId !== undefined) producto.subcategoriaId = parsedSubcategoriaId;
     if (activo !== undefined) producto.activo = activo;
     
     // save() ejecuta UPDATE en la BD
@@ -429,7 +431,7 @@ const actualizarProducto = async (req, res) => {
     
     // Si hubo error y se subió una nueva imagen, la elimina para no dejar archivos huérfanos
     if (req.file) {
-      const rutaImagen = path.join(__dirname, '../uploads', req.file.filename);
+      const rutaImagen = path.join(__dirname, '../UPLOADS', req.file.filename);
       try {
         await fs.unlink(rutaImagen);
       } catch (err) {

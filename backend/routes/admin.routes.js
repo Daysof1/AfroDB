@@ -79,8 +79,8 @@ router.delete('/productos/:id', soloAdministrador, productoController.eliminarPr
 
 router.get('/servicios', servicioController.getServicios);
 router.get('/servicios/:id', servicioController.getServicioById);
-router.post('/servicios', servicioController.crearServicio);
-router.put('/servicios/:id', servicioController.actualizarServicio);
+router.post('/servicios', upload.single('imagen'), servicioController.crearServicio);
+router.put('/servicios/:id', upload.single('imagen'), servicioController.actualizarServicio);
 router.patch('/servicios/:id/toggle', servicioController.toggleServicio);
 router.delete('/servicios/:id', soloAdministrador, servicioController.eliminarServicio);
 

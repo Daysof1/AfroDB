@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 import './Navbar.css';
+import { getAssetUrl } from '../api/client';
 
 export default function Navbar({ userRole, onLogout }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    setIsMenuOpen(false);
     if (onLogout) {
       onLogout();
     }
@@ -17,26 +19,34 @@ export default function Navbar({ userRole, onLogout }) {
     navigate('/');
   };
 
-  const handleAgendarCita = () => {
-    // Si está autenticado como cliente, va a agendar cita
-    if (userRole === 'cliente') {
-      navigate('/cliente/citas');
-    } else {
-      // Si no está autenticado, lo lleva al login
-      navigate('/login');
-    }
-  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+  const handleAgendarCita = () => {
+    if (userRole === 'cliente') {
+      navigate('/cliente/citas');
+      return;
+    }
+    navigate('/login');
+  };
+
+  const getDashboardRoute = () => {
+    if (userRole === 'admin') return '/admin/dashboard';
+    if (userRole === 'auxiliar') return '/auxiliar/dashboard';
+    if (userRole === 'profesional') return '/profesional/dashboard';
+    return null;
+  };
+
+  const dashboardRoute = getDashboardRoute();
 
   return (
     <nav className="navbar-container">
       <div className="navbar-content">
         <div className="navbar-logo">
           <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <img src="/uploads/icono_DB.png" alt="AfroDB" className="logo-image" />
+            <img src={getAssetUrl('/uploads/AfroDB.png')} alt="AfroDB" className="logo-image" />
             <span className="logo-text">AfroDB</span>
           </Link>
         </div>
@@ -46,9 +56,6 @@ export default function Navbar({ userRole, onLogout }) {
           {!userRole && (
             <>
               <Link to="/">Inicio</Link>
-              <button onClick={handleAgendarCita} className="btn-nav btn-primary">
-                <FontAwesomeIcon icon={faCalendar} /> Agendar Cita
-              </button>
               <Link to="/login" className="btn-nav btn-primary">
                 Iniciar Sesión
               </Link>
@@ -58,67 +65,10 @@ export default function Navbar({ userRole, onLogout }) {
             </>
           )}
 
-          {/* SI ESTÁ AUTENTICADO COMO ADMIN */}
-          {userRole === 'admin' && (
+          {/* SI ESTÁ AUTENTICADO: SOLO ACCIONES GLOBALES (NO DUPLICAR SIDEBAR) */}
+          {userRole && (
             <>
-              <Link to="/admin/dashboard">Dashboard</Link>
-              <Link to="/admin/productos">Productos</Link>
-              <Link to="/admin/servicios">Servicios</Link>
-              <Link to="/admin/categorias">Categorías</Link>
-              <Link to="/admin/subcategorias">Subcategorías</Link>
-              <Link to="/admin/especialidades">Especialidades</Link>
-              <Link to="/admin/profesionales">Profesionales</Link>
-              <Link to="/admin/usuarios">Usuarios</Link>
-              <Link to="/admin/citas">Citas</Link>
-              <button onClick={handleLogout} className="btn-logout">
-                Cerrar Sesión
-              </button>
-            </>
-          )}
-
-          {/* SI ESTÁ AUTENTICADO COMO AUXILIAR */}
-          {userRole === 'auxiliar' && (
-            <>
-              <Link to="/auxiliar/dashboard">Dashboard</Link>
-              <Link to="/auxiliar/productos">Productos</Link>
-              <Link to="/auxiliar/servicios">Servicios</Link>
-              <Link to="/auxiliar/categorias">Categorías</Link>
-              <Link to="/auxiliar/subcategorias">Subcategorías</Link>
-              <Link to="/auxiliar/especialidades">Especialidades</Link>
-              <Link to="/auxiliar/profesionales">Profesionales</Link>
-              <Link to="/auxiliar/usuarios">Usuarios</Link>
-              <Link to="/auxiliar/citas">Citas</Link>
-              <Link to="/auxiliar/pedidos">Pedidos</Link>
-              <button onClick={handleLogout} className="btn-logout">
-                Cerrar Sesión
-              </button>
-            </>
-          )}
-
-          {/* SI ESTÁ AUTENTICADO COMO CLIENTE */}
-          {userRole === 'cliente' && (
-            <>
-              <Link to="/cliente/catalogo">Catálogo</Link>
-              <Link to="/cliente/servicios">Servicios</Link>
-              <Link to="/cliente/profesionales">Profesionales</Link>
-              <Link to="/cliente/carrito">Carrito</Link>
-              <Link to="/cliente/pedidos">Pedidos</Link>
-              <Link to="/cliente/citas" className="btn-nav btn-secondary">
-                <FontAwesomeIcon icon={faCalendar} /> Mis Citas
-              </Link>
-              <button onClick={handleLogout} className="btn-logout">
-                Cerrar Sesión
-              </button>
-            </>
-          )}
-
-          {/* SI ESTÁ AUTENTICADO COMO PROFESIONAL */}
-          {userRole === 'profesional' && (
-            <>
-              <Link to="/profesional/dashboard">Dashboard</Link>
-              <Link to="/profesional/citas">Mis Citas</Link>
-              <Link to="/profesional/perfil">Mi Perfil</Link>
-              <Link to="/profesional/especialidades">Especialidades</Link>
+              {dashboardRoute && <Link to={dashboardRoute}>Dashboard</Link>}
               <button onClick={handleLogout} className="btn-logout">
                 Cerrar Sesión
               </button>
@@ -150,63 +100,13 @@ export default function Navbar({ userRole, onLogout }) {
             </>
           )}
 
-          {userRole === 'admin' && (
+          {userRole && (
             <>
-              <Link to="/admin/dashboard" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
-              <Link to="/admin/productos" onClick={() => setIsMenuOpen(false)}>Productos</Link>
-              <Link to="/admin/servicios" onClick={() => setIsMenuOpen(false)}>Servicios</Link>
-              <Link to="/admin/categorias" onClick={() => setIsMenuOpen(false)}>Categorías</Link>
-              <Link to="/admin/subcategorias" onClick={() => setIsMenuOpen(false)}>Subcategorías</Link>
-              <Link to="/admin/especialidades" onClick={() => setIsMenuOpen(false)}>Especialidades</Link>
-              <Link to="/admin/profesionales" onClick={() => setIsMenuOpen(false)}>Profesionales</Link>
-              <Link to="/admin/usuarios" onClick={() => setIsMenuOpen(false)}>Usuarios</Link>
-              <Link to="/admin/citas" onClick={() => setIsMenuOpen(false)}>Citas</Link>
-              <button onClick={handleLogout} className="btn-logout">
-                Cerrar Sesión
-              </button>
-            </>
-          )}
-
-          {userRole === 'auxiliar' && (
-            <>
-              <Link to="/auxiliar/dashboard" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
-              <Link to="/auxiliar/productos" onClick={() => setIsMenuOpen(false)}>Productos</Link>
-              <Link to="/auxiliar/servicios" onClick={() => setIsMenuOpen(false)}>Servicios</Link>
-              <Link to="/auxiliar/categorias" onClick={() => setIsMenuOpen(false)}>Categorías</Link>
-              <Link to="/auxiliar/subcategorias" onClick={() => setIsMenuOpen(false)}>Subcategorías</Link>
-              <Link to="/auxiliar/especialidades" onClick={() => setIsMenuOpen(false)}>Especialidades</Link>
-              <Link to="/auxiliar/profesionales" onClick={() => setIsMenuOpen(false)}>Profesionales</Link>
-              <Link to="/auxiliar/usuarios" onClick={() => setIsMenuOpen(false)}>Usuarios</Link>
-              <Link to="/auxiliar/citas" onClick={() => setIsMenuOpen(false)}>Citas</Link>
-              <Link to="/auxiliar/pedidos" onClick={() => setIsMenuOpen(false)}>Pedidos</Link>
-              <button onClick={handleLogout} className="btn-logout">
-                Cerrar Sesión
-              </button>
-            </>
-          )}
-
-          {userRole === 'cliente' && (
-            <>
-              <Link to="/cliente/catalogo" onClick={() => setIsMenuOpen(false)}>Catálogo</Link>
-              <Link to="/cliente/servicios" onClick={() => setIsMenuOpen(false)}>Servicios</Link>
-              <Link to="/cliente/profesionales" onClick={() => setIsMenuOpen(false)}>Profesionales</Link>
-              <Link to="/cliente/carrito" onClick={() => setIsMenuOpen(false)}>Carrito</Link>
-              <Link to="/cliente/pedidos" onClick={() => setIsMenuOpen(false)}>Pedidos</Link>
-              <Link to="/cliente/citas" className="btn-nav btn-secondary" onClick={() => setIsMenuOpen(false)}>
-                <FontAwesomeIcon icon={faCalendar} /> Mis Citas
-              </Link>
-              <button onClick={handleLogout} className="btn-logout">
-                Cerrar Sesión
-              </button>
-            </>
-          )}
-
-          {userRole === 'profesional' && (
-            <>
-              <Link to="/profesional/dashboard" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
-              <Link to="/profesional/citas" onClick={() => setIsMenuOpen(false)}>Mis Citas</Link>
-              <Link to="/profesional/perfil" onClick={() => setIsMenuOpen(false)}>Mi Perfil</Link>
-              <Link to="/profesional/especialidades" onClick={() => setIsMenuOpen(false)}>Especialidades</Link>
+              {dashboardRoute && (
+                <Link to={dashboardRoute} onClick={() => setIsMenuOpen(false)}>
+                  Dashboard
+                </Link>
+              )}
               <button onClick={handleLogout} className="btn-logout">
                 Cerrar Sesión
               </button>

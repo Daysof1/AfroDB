@@ -70,6 +70,17 @@ const Servicio = sequelize.define('Servicio', {
     }
   },
 
+  imagen: {
+      type: DataTypes.STRING(255),       // VARCHAR(255) → nombre del archivo
+      allowNull: true,                   // Opcional: un producto puede no tener imagen
+      validate: {
+        is: {                            // Valida con expresión regular (regex)
+          args: /\.(jpg|jpeg|png|gif)$/i,  // Solo extensiones de imagen permitidas
+          msg: 'La imagen debe ser un archivo JPG, PNG o GIF'
+        }
+      }
+    },
+
   // 🔹 FK categoría
   categoriaId: {
     type: DataTypes.INTEGER,

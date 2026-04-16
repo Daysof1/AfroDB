@@ -51,18 +51,45 @@ export function clearSession() {
 export function getAssetUrl(path) {
   if (!path) return '/uploads/icono_DB.png';
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  if (path.startsWith('/')) return `${API_HOST}${path}`;
-  return `${API_HOST}/${path}`;
+  if (path.startsWith('/uploads/')) return `${API_HOST}${path}`;
+  if (path.startsWith('/')) return `${API_HOST}/uploads${path}`;
+  return `${API_HOST}/uploads/${path}`;
+}
+
+export async function fetchImageAsFile(imageUrl, fileNameHint = 'imagen') {
+  if (!imageUrl) return null;
+
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new ApiError('No se pudo cargar la imagen desde la URL indicada', response.status, null);
+  }
+
+  const blob = await response.blob();
+  const contentType = blob.type || response.headers.get('content-type') || 'image/jpeg';
+  const extension = contentType.includes('png')
+    ? 'png'
+    : contentType.includes('gif')
+      ? 'gif'
+      : contentType.includes('webp')
+        ? 'webp'
+        : 'jpg';
+  const safeName = String(fileNameHint).replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || 'imagen';
+
+  return new File([blob], `${safeName}.${extension}`, { type: contentType });
 }
 
 export async function apiRequest(path, options = {}) {
   const token = getToken();
   const hadToken = Boolean(token);
   const isAuthAction = path.startsWith('/auth/login') || path.startsWith('/auth/register');
+  const isFormData = options.body instanceof FormData;
   const headers = {
-    'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
+
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;

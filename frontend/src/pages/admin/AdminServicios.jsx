@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import '../Admin.css';
-import { apiRequest } from '../../api/client';
+import { apiRequest, getAssetUrl } from '../../api/client';
 
 export default function AdminServicios() {
   const [servicios, setServicios] = useState([]);
@@ -11,6 +11,7 @@ export default function AdminServicios() {
   const [success, setSuccess] = useState('');
 
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingServicioId, setEditingServicioId] = useState(null);
   const [newServicio, setNewServicio] = useState({
     nombre: '',
     descripcion: '',
@@ -19,7 +20,14 @@ export default function AdminServicios() {
     categoriaId: '',
     subcategoriaId: '',
     profesionalId: '',
+    imagen: null,
   });
+
+  const resetForm = () => {
+    setEditingServicioId(null);
+    setNewServicio({ nombre: '', descripcion: '', precio: '', duracion: '', categoriaId: '', subcategoriaId: '', profesionalId: '', imagen: null });
+    setSubcategorias([]);
+  };
 
   const loadServicios = async () => {
     try {
@@ -73,26 +81,49 @@ export default function AdminServicios() {
     try {
       setError('');
       setSuccess('');
-      await apiRequest('/admin/servicios', {
-        method: 'POST',
-        body: JSON.stringify({
-          nombre: newServicio.nombre,
-          descripcion: newServicio.descripcion,
-          precio: Number(newServicio.precio),
-          duracion: Number(newServicio.duracion),
-          categoriaId: Number(newServicio.categoriaId),
-          subcategoriaId: Number(newServicio.subcategoriaId),
-          profesionalId: Number(newServicio.profesionalId),
-        }),
+      const isEditing = Boolean(editingServicioId);
+      const formData = new FormData();
+      formData.append('nombre', newServicio.nombre);
+      formData.append('descripcion', newServicio.descripcion || '');
+      formData.append('precio', newServicio.precio);
+      formData.append('duracion', newServicio.duracion);
+      formData.append('categoriaId', newServicio.categoriaId);
+      formData.append('subcategoriaId', newServicio.subcategoriaId);
+      formData.append('profesionalId', newServicio.profesionalId);
+      if (newServicio.imagen) {
+        formData.append('imagen', newServicio.imagen);
+      }
+      await apiRequest(isEditing ? `/admin/servicios/${editingServicioId}` : '/admin/servicios', {
+        method: isEditing ? 'PUT' : 'POST',
+        body: formData,
       });
-      setSuccess('Servicio creado correctamente');
-      setNewServicio({ nombre: '', descripcion: '', precio: '', duracion: '', categoriaId: '', subcategoriaId: '', profesionalId: '' });
-      setSubcategorias([]);
+      setSuccess(isEditing ? 'Servicio actualizado correctamente' : 'Servicio creado correctamente');
+      resetForm();
       setIsFormOpen(false);
       await loadServicios();
     } catch (err) {
-      setError(err.message || 'No se pudo crear el servicio');
+      setError(err.message || 'No se pudo guardar el servicio');
     }
+  };
+
+  const handleEditarServicio = (servicio) => {
+    setError('');
+    setSuccess('');
+    setEditingServicioId(servicio.id);
+    setNewServicio({
+      nombre: servicio.nombre || '',
+      descripcion: servicio.descripcion || '',
+      precio: String(servicio.precio ?? ''),
+      duracion: String(servicio.duracion ?? ''),
+      categoriaId: String(servicio.categoriaId ?? ''),
+      subcategoriaId: String(servicio.subcategoriaId ?? ''),
+      profesionalId: String(servicio.profesionalId ?? ''),
+      imagen: null,
+    });
+    if (servicio.categoriaId) {
+      loadSubcategorias(servicio.categoriaId);
+    }
+    setIsFormOpen(true);
   };
 
   const handleEliminar = async (id) => {
@@ -108,7 +139,15 @@ export default function AdminServicios() {
     <div className="admin-page">
       <div className="page-header">
         <h1>Gestión de Servicios</h1>
-        <button className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            if (isFormOpen) {
+              resetForm();
+            }
+            setIsFormOpen(!isFormOpen);
+          }}
+        >
           {isFormOpen ? 'Cancelar' : '➕ Nuevo Servicio'}
         </button>
       </div>
@@ -118,7 +157,7 @@ export default function AdminServicios() {
 
       {isFormOpen && (
         <div className="form-container">
-          <h2>Agregar Nuevo Servicio</h2>
+          <h2>{editingServicioId ? 'Editar Servicio' : 'Agregar Nuevo Servicio'}</h2>
           <form onSubmit={handleCrearServicio}>
             <div className="form-group">
               <label>Nombre</label>
@@ -204,7 +243,17 @@ export default function AdminServicios() {
                 ))}
               </select>
             </div>
-            <button type="submit" className="btn btn-primary">Guardar Servicio</button>
+            <div className="form-group">
+              <label>Imagen</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setNewServicio({ ...newServicio, imagen: e.target.files?.[0] || null })}
+              />
+            </div>
+            <button type="submit" className="btn btn-primary">
+              {editingServicioId ? 'Actualizar Servicio' : 'Guardar Servicio'}
+            </button>
           </form>
         </div>
       )}
@@ -212,11 +261,12 @@ export default function AdminServicios() {
       <div className="cards-grid">
         {servicios.map((servicio) => (
           <div key={servicio.id} className="service-card">
+            <img src={getAssetUrl(servicio.imagen)} alt={servicio.nombre} className="table-img" style={{ width: '100%', height: '180px', marginBottom: '1rem' }} />
             <h3>{servicio.nombre}</h3>
             <p>{servicio.descripcion}</p>
             <p className="price">${Number(servicio.precio || 0).toLocaleString()}</p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary">✏️ Editar</button>
+              <button className="btn btn-sm btn-secondary" onClick={() => handleEditarServicio(servicio)}>✏️ Editar</button>
               <button className="btn btn-sm btn-danger" onClick={() => handleEliminar(servicio.id)}>🗑️ Eliminar</button>
             </div>
           </div>

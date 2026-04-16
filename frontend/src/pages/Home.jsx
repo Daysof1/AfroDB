@@ -3,12 +3,15 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faLeaf, faShoppingBag, faBell, faScissors } from '@fortawesome/free-solid-svg-icons';
 import ClienteCatalogo from './cliente/ClienteCatalogo';
 import ClienteServicios from './cliente/ClienteServicios';
+import { getAssetUrl } from '../api/client';
 import './Home.css';
 
 export default function Home() {
+  const heroBackgroundImage = `url('${getAssetUrl('/uploads/fondo.png')}')`;
+
   return (
     <div className="home-page">
-      <section className="hero-banner">
+      <section className="hero-banner" style={{ '--hero-bg-image': heroBackgroundImage }}>
         <div className="hero-content">
           <h1> Bienvenido a AfroDB</h1>
           <p>Tu plataforma de belleza, bienestar y servicios profesionales</p>

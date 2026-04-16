@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import '../Admin.css';
-import { apiRequest, getAssetUrl } from '../../api/client';
+import { apiRequest, fetchImageAsFile, getAssetUrl } from '../../api/client';
 
 export default function AuxiliarProductos() {
   const [productos, setProductos] = useState([]);
@@ -9,6 +9,8 @@ export default function AuxiliarProductos() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [editingOriginal, setEditingOriginal] = useState(null);
   const [newProduct, setNewProduct] = useState({
     nombre: '',
     descripcion: '',
@@ -16,7 +18,16 @@ export default function AuxiliarProductos() {
     stock: '',
     categoriaId: '',
     subcategoriaId: '',
+    imagen: null,
+    imagenUrl: '',
   });
+
+  const resetForm = () => {
+    setEditingProductId(null);
+    setEditingOriginal(null);
+    setNewProduct({ nombre: '', descripcion: '', precio: '', stock: '', categoriaId: '', subcategoriaId: '', imagen: null, imagenUrl: '' });
+    setSubcategorias([]);
+  };
 
   const loadProductos = async () => {
     try {
@@ -60,32 +71,77 @@ export default function AuxiliarProductos() {
     try {
       setError('');
       setSuccess('');
-      await apiRequest('/admin/productos', {
-        method: 'POST',
-        body: JSON.stringify({
-          nombre: newProduct.nombre,
-          descripcion: newProduct.descripcion,
-          precio: Number(newProduct.precio),
-          stock: Number(newProduct.stock),
-          categoriaId: Number(newProduct.categoriaId),
-          subcategoriaId: Number(newProduct.subcategoriaId),
-        }),
+      const isEditing = Boolean(editingProductId);
+      const categoriaChanged = String(newProduct.categoriaId) !== String(editingOriginal?.categoriaId ?? '');
+      const subcategoriaChanged = String(newProduct.subcategoriaId) !== String(editingOriginal?.subcategoriaId ?? '');
+      const imagenFile = newProduct.imagen || (newProduct.imagenUrl ? await fetchImageAsFile(newProduct.imagenUrl, newProduct.nombre || 'producto') : null);
+
+      if (!isEditing || categoriaChanged) {
+        // se envía abajo
+      }
+      if (!isEditing || subcategoriaChanged) {
+        // se envía abajo
+      }
+
+      const formData = new FormData();
+      formData.append('nombre', newProduct.nombre);
+      formData.append('descripcion', newProduct.descripcion || '');
+      formData.append('precio', String(Number(newProduct.precio)));
+      formData.append('stock', String(Number(newProduct.stock)));
+      if (!isEditing || categoriaChanged) formData.append('categoriaId', String(Number(newProduct.categoriaId)));
+      if (!isEditing || subcategoriaChanged) formData.append('subcategoriaId', String(Number(newProduct.subcategoriaId)));
+      if (imagenFile) formData.append('imagen', imagenFile);
+
+      await apiRequest(isEditing ? `/admin/productos/${editingProductId}` : '/admin/productos', {
+        method: isEditing ? 'PUT' : 'POST',
+        body: formData,
       });
-      setSuccess('Producto creado correctamente');
-      setNewProduct({ nombre: '', descripcion: '', precio: '', stock: '', categoriaId: '', subcategoriaId: '' });
-      setSubcategorias([]);
+      setSuccess(isEditing ? 'Producto actualizado correctamente' : 'Producto creado correctamente');
+      resetForm();
       setIsFormOpen(false);
       await loadProductos();
     } catch (err) {
-      setError(err.message || 'No se pudo crear el producto');
+      setError(err.message || 'No se pudo guardar el producto');
     }
+  };
+
+  const handleEditProduct = (producto) => {
+    setError('');
+    setSuccess('');
+    setEditingProductId(producto.id);
+    setEditingOriginal({
+      categoriaId: String(producto.categoriaId ?? ''),
+      subcategoriaId: String(producto.subcategoriaId ?? ''),
+    });
+    setNewProduct({
+      nombre: producto.nombre || '',
+      descripcion: producto.descripcion || '',
+      precio: String(producto.precio ?? ''),
+      stock: String(producto.stock ?? ''),
+      categoriaId: String(producto.categoriaId ?? ''),
+      subcategoriaId: String(producto.subcategoriaId ?? ''),
+        imagen: null,
+        imagenUrl: '',
+    });
+    if (producto.categoriaId) {
+      loadSubcategorias(producto.categoriaId);
+    }
+    setIsFormOpen(true);
   };
 
   return (
     <div className="admin-page">
       <div className="page-header">
         <h1>Auxiliar - Productos</h1>
-        <button className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            if (isFormOpen) {
+              resetForm();
+            }
+            setIsFormOpen(!isFormOpen);
+          }}
+        >
           {isFormOpen ? 'Cancelar' : '➕ Nuevo Producto'}
         </button>
       </div>
@@ -95,7 +151,7 @@ export default function AuxiliarProductos() {
 
       {isFormOpen && (
         <div className="form-container">
-          <h2>Agregar Nuevo Producto</h2>
+          <h2>{editingProductId ? 'Editar Producto' : 'Agregar Nuevo Producto'}</h2>
           <form onSubmit={handleAddProduct}>
             <div className="form-group">
               <label>Nombre</label>
@@ -139,7 +195,22 @@ export default function AuxiliarProductos() {
                 ))}
               </select>
             </div>
-            <button type="submit" className="btn btn-primary">Guardar Producto</button>
+            <div className="form-group">
+              <label>Imagen</label>
+              <input type="file" accept="image/*" onChange={(e) => setNewProduct({ ...newProduct, imagen: e.target.files?.[0] || null, imagenUrl: '' })} />
+            </div>
+            <div className="form-group">
+              <label>O pegar URL de imagen</label>
+              <input
+                type="url"
+                value={newProduct.imagenUrl}
+                onChange={(e) => setNewProduct({ ...newProduct, imagenUrl: e.target.value, imagen: null })}
+                placeholder="https://..."
+              />
+            </div>
+            <button type="submit" className="btn btn-primary">
+              {editingProductId ? 'Actualizar Producto' : 'Guardar Producto'}
+            </button>
           </form>
         </div>
       )}
@@ -152,6 +223,7 @@ export default function AuxiliarProductos() {
               <th>Nombre</th>
               <th>Precio</th>
               <th>Stock</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -161,6 +233,9 @@ export default function AuxiliarProductos() {
                 <td>{producto.nombre}</td>
                 <td>${Number(producto.precio || 0).toLocaleString()}</td>
                 <td>{Number(producto.stock || 0)}</td>
+                <td>
+                  <button className="btn btn-sm btn-secondary" onClick={() => handleEditProduct(producto)}>✏️ Editar</button>
+                </td>
               </tr>
             ))}
           </tbody>

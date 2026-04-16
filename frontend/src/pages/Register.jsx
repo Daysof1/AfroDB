@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Register.css';
-import { apiRequest } from '../api/client';
+import { apiRequest, getAssetUrl } from '../api/client';
 
 export default function Register() {
   const [tipoDocumento, setTipoDocumento] = useState('C.C.');
@@ -71,7 +71,7 @@ export default function Register() {
       <div className="register-container">
         <div className="register-content">
           <div className="register-illustration">
-            <div className="illustration-circle"><img src="/uploads/icono_DB.png" alt="AfroDB Logo" className="logo-image" /></div>
+            <div className="illustration-circle"><img src={getAssetUrl('/uploads/icono_DB.png')} alt="AfroDB Logo" className="logo-image" /></div>
             <h2>Únete a AfroDB</h2>
             <p>Tu plataforma de belleza y bienestar</p>
             <div className="help-text">

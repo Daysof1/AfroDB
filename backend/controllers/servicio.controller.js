@@ -13,6 +13,7 @@ const Servicio = require('../models/Servicio');
 const Categoria = require('../models/Categoria');
 const Subcategoria = require('../models/Subcategoria');
 const Usuario = require('../models/Usuario'); // profesional
+const { deleteFile } = require('../config/multer');
 
 /**
  * ============================================
@@ -127,6 +128,7 @@ const crearServicio = async (req, res) => {
       subcategoriaId,
       profesionalId
     } = req.body;
+    const imagen = req.file ? req.file.filename : null;
 
     // VALIDACIONES
     if (!nombre || !precio || !duracion || !categoriaId || !subcategoriaId || !profesionalId) {
@@ -153,6 +155,7 @@ const crearServicio = async (req, res) => {
       categoriaId,
       subcategoriaId,
       profesionalId,
+      imagen,
       activo: true
     });
 
@@ -164,6 +167,9 @@ const crearServicio = async (req, res) => {
 
   } catch (error) {
     console.error('Error en crearServicio:', error);
+    if (req.file) {
+      deleteFile(req.file.filename);
+    }
     res.status(500).json({
       success: false,
       message: 'Error al crear servicio',
@@ -201,6 +207,13 @@ const actualizarServicio = async (req, res) => {
       'activo'
     ];
 
+    if (req.file) {
+      if (servicio.imagen) {
+        deleteFile(servicio.imagen);
+      }
+      servicio.imagen = req.file.filename;
+    }
+
     campos.forEach(campo => {
       if (req.body[campo] !== undefined) {
         servicio[campo] = req.body[campo];
@@ -217,6 +230,9 @@ const actualizarServicio = async (req, res) => {
 
   } catch (error) {
     console.error('Error en actualizarServicio:', error);
+    if (req.file) {
+      deleteFile(req.file.filename);
+    }
     res.status(500).json({
       success: false,
       message: 'Error al actualizar servicio',
@@ -280,6 +296,10 @@ const eliminarServicio = async (req, res) => {
         success: false,
         message: 'Servicio no encontrado'
       });
+    }
+
+    if (servicio.imagen) {
+      deleteFile(servicio.imagen);
     }
 
     await servicio.destroy();

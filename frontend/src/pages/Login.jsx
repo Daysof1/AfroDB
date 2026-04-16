@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
-import { apiRequest, saveSession, normalizeRole } from '../api/client';
+import { apiRequest, saveSession, normalizeRole, getAssetUrl } from '../api/client';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -64,15 +64,9 @@ export default function Login() {
       <div className="login-container">
         <div className="login-content">
           <div className="login-illustration">
-            <div className="illustration-circle"><img src="/uploads/icono_DB.png" alt="AfroDB Logo" className="logo-image" /></div>
+            <div className="illustration-circle"><img src={getAssetUrl('/uploads/AfroDB.png')} alt="AfroDB Logo" className="logo-image" /></div>
             <h2>Bienvenido a AfroDB</h2>
             <p>Tu plataforma de belleza y bienestar</p>
-            <div className="help-text">
-              <p><strong>Prueba con:</strong></p>
-              <p>📧 admin@email.com | 🔑 123456</p>
-              <p>📧 profesional@email.com | 🔑 123456</p>
-              <p>📧 cliente@email.com | 🔑 123456</p>
-            </div>
           </div>
 
           <div className="login-form-wrapper">

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faBox, faBell, faChalkboard } from '@fortawesome/free-solid-svg-icons';
 import '../Admin.css';
 import { apiRequest } from '../../api/client';
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalProductos: 0,
     totalServicios: 0,
@@ -79,10 +81,10 @@ export default function AdminDashboard() {
       <div className="admin-section">
         <h2>Acciones Rápidas</h2>
         <div className="action-buttons">
-          <button className="action-btn btn-primary">➕ Nuevo Producto</button>
-          <button className="action-btn btn-primary">➕ Nuevo Servicio</button>
-          <button className="action-btn btn-secondary"><FontAwesomeIcon icon={faChalkboard} /> Reportes</button>
-          <button className="action-btn btn-secondary">⚙️ Configuración</button>
+          <button className="action-btn btn-primary" onClick={() => navigate('/admin/productos')}>➕ Nuevo Producto</button>
+          <button className="action-btn btn-primary" onClick={() => navigate('/admin/servicios')}>➕ Nuevo Servicio</button>
+          <button className="action-btn btn-secondary" onClick={() => navigate('/admin/citas')}><FontAwesomeIcon icon={faChalkboard} /> Reportes</button>
+          <button className="action-btn btn-secondary" onClick={() => navigate('/admin/usuarios')}>⚙️ Configuración</button>
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import './Footer.css';
+import { getAssetUrl } from '../api/client';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -8,7 +9,7 @@ export default function Footer() {
       <div className="footer-content">
         <div className="footer-logo-section">
           <div className="footer-logo">
-            <img src="/uploads/AfroDB.png" alt="AfroDB Logo" />
+            <img src={getAssetUrl('/uploads/AfroDB.png')} alt="AfroDB Logo" />
             <h3>AfroDB</h3>
           </div>
         </div>

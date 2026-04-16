@@ -16,7 +16,6 @@ export default function Sidebar({ userRole, onToggle }) {
   };
 
   const adminLinks = [
-    { icon: 'dashboard', label: 'Dashboard', href: '/admin/dashboard' },
     { icon: 'box', label: 'Productos', href: '/admin/productos' },
     { icon: 'bell', label: 'Servicios', href: '/admin/servicios' },
     { icon: 'folder', label: 'Categorías', href: '/admin/categorias' },
@@ -37,14 +36,12 @@ export default function Sidebar({ userRole, onToggle }) {
   ];
 
   const profesionalLinks = [
-    { icon: 'dashboard', label: 'Dashboard', href: '/profesional/dashboard' },
     { icon: 'calendar', label: 'Mis Citas', href: '/profesional/citas' },
     { icon: 'profile', label: 'Mi Perfil', href: '/profesional/perfil' },
     { icon: 'specialties', label: 'Especialidades', href: '/profesional/especialidades' },
   ];
 
   const auxiliarLinks = [
-    { icon: 'dashboard', label: 'Dashboard', href: '/auxiliar/dashboard' },
     { icon: 'box', label: 'Productos', href: '/auxiliar/productos' },
     { icon: 'bell', label: 'Servicios', href: '/auxiliar/servicios' },
     { icon: 'folder', label: 'Categorías', href: '/auxiliar/categorias' },
