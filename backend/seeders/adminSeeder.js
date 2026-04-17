@@ -7,7 +7,7 @@
  */
 
 // Importar el seeder de datos completos
-const datosCompletosSeeder = require('./datosCompletos.seeder');
+const { seedDatosCompletos } = require('./datosCompletos.seeders');
 
 /**
  * Función principal que ejecuta todos los seeders
@@ -15,7 +15,7 @@ const datosCompletosSeeder = require('./datosCompletos.seeder');
 const seedAdmin = async () => {
   try {
     // Ejecutar el seeder de datos completos
-    await datosCompletosSeeder();
+    await seedDatosCompletos();
   } catch (error) {
     console.error('❌ Error al ejecutar seeder:', error.message);
     throw error;
@@ -30,7 +30,7 @@ const runSeeders = async () => {
     console.log('\n🌱 Ejecutando seeders...\n');
     
     // Ejecutar seeder de datos completos
-    await datosCompletosSeeder();
+    await seedDatosCompletos();
     
     console.log('\n✅ Seeders ejecutados correctamente\n');
     

@@ -25,14 +25,9 @@ const { testConnection, syncDatabase, sequelize } = require ('./config/database'
 const {initAssociations} = require ('./models');
 
 // Importar seeders (opcional en este entorno)
-/** 
-let runSeeders = null;
-try {
-    ({ runSeeders } = require('./seeders/adminSeeder'));
-} catch (error) {
-    console.warn('⚠️ Seeders no disponibles, se omite carga inicial de datos');
-}
-    */
+
+const { runSeeders } = require('./seeders/adminSeeder');
+
 
 // crear aplicaciones express 
 
@@ -89,7 +84,7 @@ if (process.env.NODE_ENV === 'development') {
 app.get('/', (req, res) =>{
     res.json({
         success: true,
-        message: 'servidor E-commerce Backend esta corrriendo',
+        message: 'servidor AfroDb Backend esta corrriendo',
         version: '1.0.0',
         timestamp: new Date().toISOString()
     });
@@ -164,12 +159,13 @@ app.use((err, req, res, next) =>{
     if(err.name === 'MulterError'){
         return res.status(400).json({
             success: false,
-            message: 'Error al subir archivo'
+            message: 'Error al subir archivo',
+            error: err.message,
         })
     }
 
     //otros errores
-    res.status(500).json({
+    res.status(err.status || 500).json({
         success: false,
         message: err.message || 'Error interno del servidor',
         ...(process.env.NODE_ENV === 'development' && {stack : err.stack})
@@ -188,6 +184,7 @@ app.use((err, req, res, next) =>{
 const starServer = async () =>{
     try{
         //paso  1 comprabar la conexion a MYSQL
+        console.log('🚀 Iniciando servidor AfroDB Backend...\n');
         console.log('Conectando a MYSQL...');
         const dbConnected = await testConnection();
         if (!dbConnected){
@@ -205,42 +202,43 @@ const starServer = async () =>{
         // en pruebas forzar la recreación para mantener el esquema actualizado
         // (Jest establece JEST_WORKER_ID, y a veces NODE_ENV viene de .env)
         // en produccion debe ser false para no perder los datos
-        const forceSync = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
-        // En local suele venir NODE_ENV indefinido; tratamos eso como modo desarrollo.
-        const isProduction = process.env.NODE_ENV === 'production';
-        const alterTables = !isProduction;
+        const forceSync = process.env.FORCE_SYNC === 'true';
+        const alterTables = process.env.NODE_ENV === 'development';
         const dbSynced = await syncDatabase(forceSync, alterTables);
 
-        if(!dbSynced){
-            console.error('X error al sincronizar la base de datos');
+        if (!dbSynced) {
+             console.error('❌ Error al sincronizar la base de datos');
             process.exit(1);
         }
+        await runSeeders();
 
         // paso 3 ejecutar seeders solo bajo demanda explicita
         /** 
-        const runSeedersOnStart = process.env.RUN_SEEDERS_ON_START === 'true';
+        const runSeedersOnStart
         if (runSeedersOnStart && typeof runSeeders === 'function') {
             await runSeeders();
         }
             */
-
-        //paso 4 iniciar el servidor express (no en tests)
-        if (process.env.NODE_ENV !== 'test' && process.env.JEST_WORKER_ID === undefined) {
-            app.listen(PORT,() => {
-                console.log('\n ___________________________');
-                console.log(`Servidor corriendo en el puerto ${PORT}`);
-                console.log(`URL: http://localhost:${PORT}`);
-                console.log(`base datos ${process.env.DB_NAME}`);
-                console.log(`Modo: ${process.env.NODE_ENV}`);
-                console.log(`Servidor listo para peticiones`)
-            });
-        }
-
-    }catch (error){
-        console.error('X Error fatal al inicar el sercidor:', error.message);
-        process.exit(1);
+           // ...existing code...
+        app.listen(PORT, () => {
+            // Muestra un banner informativo en la consola del servidor
+            console.log('\n╔════════════════════════════════════════════════╗');
+            console.log(`║  ✅ Servidor corriendo en puerto ${PORT}          ║`);
+            console.log(`║  🌐 URL: http://localhost:${PORT}                ║`);
+            console.log(`║  📚 Documentación API: http://localhost:${PORT}  ║`);
+            console.log(`║  🗄️  Base de datos: ${process.env.DB_NAME}        ║`);
+            console.log(`║  🔧 Modo: ${process.env.NODE_ENV}                     ║`);
+            console.log('╚════════════════════════════════════════════════╝\n');
+            console.log('📝 Servidor listo para recibir peticiones...\n');
+        });
+    } catch (error) {
+        // Si ocurre cualquier error no esperado durante el arranque
+        console.error('❌ Error fatal al iniciar el servidor:', error.message);
+        process.exit(1);                               // Termina el proceso con código de error
     }
-};
+};  
+// ...existing code...
+            
 
 //manejo del cierre 
 //captura el ctrl + c para cerrar el sevidor correctamente

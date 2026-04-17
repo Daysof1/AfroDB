@@ -7,7 +7,6 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [debugInfo, setDebugInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -28,7 +27,6 @@ export default function Login() {
     try {
       setLoading(true);
       setError('');
-      setDebugInfo('');
 
       const response = await apiRequest('/auth/login', {
         method: 'POST',
@@ -60,27 +58,6 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDiagnosticarLogin = () => {
-    const emailNormalizado = email.trim().toLowerCase();
-    const payloadSeguro = {
-      endpoint: '/api/auth/login',
-      method: 'POST',
-      body: {
-        email: emailNormalizado,
-        passwordLength: password.length,
-      },
-      validaciones: {
-        emailVacio: !emailNormalizado,
-        passwordVacio: !password,
-        passwordMenorA6: password.length < 6,
-      },
-      nota: 'La contraseña real no se muestra por seguridad.',
-    };
-
-    setDebugInfo(JSON.stringify(payloadSeguro, null, 2));
-    setError('');
   };
 
   return (
@@ -130,23 +107,7 @@ export default function Login() {
               <button type="submit" className="btn-login" disabled={loading}>
                 {loading ? 'Ingresando...' : 'Ingresar'}
               </button>
-
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleDiagnosticarLogin}
-                style={{ marginTop: '0.75rem', width: '100%' }}
-              >
-                Diagnosticar Login
-              </button>
             </form>
-
-            {debugInfo && (
-              <div className="alert" style={{ marginTop: '1rem', background: '#f6f1e9', border: '1px solid #d7c4ad' }}>
-                <strong>Diagnóstico:</strong>
-                <pre style={{ marginTop: '0.5rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{debugInfo}</pre>
-              </div>
-            )}
 
             <div className="login-footer">
               <p>¿No tienes cuenta? <Link to="/register">Regístrate aquí</Link></p>
