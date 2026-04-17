@@ -12,25 +12,25 @@
 const Servicio = require('../models/Servicio');
 const Categoria = require('../models/Categoria');
 const Subcategoria = require('../models/Subcategoria');
-const Usuario = require('../models/Usuario'); // profesional
 const { deleteFile } = require('../config/multer');
+
+const esNombreImagenValido = (imagen) => /\.(jpg|jpeg|png|gif)$/i.test(String(imagen || ''));
 
 /**
  * ============================================
  * OBTENER SERVICIOS (PUBLICO / CLIENTE)
  * ============================================
  * GET /api/servicios
- * Query: ?categoriaId=&subcategoriaId=&profesionalId=&activo=true
+ * Query: ?categoriaId=&subcategoriaId=&activo=true
  */
 const getServicios = async (req, res) => {
   try {
-    const { categoriaId, subcategoriaId, profesionalId, activo } = req.query;
+    const { categoriaId, subcategoriaId, activo } = req.query;
 
     const where = {};
 
     if (categoriaId) where.categoriaId = categoriaId;
     if (subcategoriaId) where.subcategoriaId = subcategoriaId;
-    if (profesionalId) where.profesionalId = profesionalId;
     if (activo !== undefined) where.activo = activo === 'true';
 
     const servicios = await Servicio.findAll({
@@ -45,11 +45,6 @@ const getServicios = async (req, res) => {
           model: Subcategoria,
           as: 'subcategoria',
           attributes: ['id', 'nombre']
-        },
-        {
-          model: Usuario,
-          as: 'profesional',
-          attributes: ['id', 'nombre', 'email']
         }
       ],
       order: [['createdAt', 'DESC']]
@@ -84,8 +79,7 @@ const getServicioById = async (req, res) => {
     const servicio = await Servicio.findByPk(id, {
       include: [
         { model: Categoria, as: 'categoria' },
-        { model: Subcategoria, as: 'subcategoria' },
-        { model: Usuario, as: 'profesional', attributes: ['id', 'nombre', 'email'] }
+        { model: Subcategoria, as: 'subcategoria' }
       ]
     });
 
@@ -126,35 +120,88 @@ const crearServicio = async (req, res) => {
       duracion,
       categoriaId,
       subcategoriaId,
-      profesionalId
     } = req.body;
+    const parsedPrecio = parseFloat(precio);
+    const parsedDuracion = parseInt(duracion, 10);
+    const parsedCategoriaId = parseInt(categoriaId, 10);
+    const parsedSubcategoriaId = parseInt(subcategoriaId, 10);
     const imagen = req.file ? req.file.filename : null;
 
     // VALIDACIONES
-    if (!nombre || !precio || !duracion || !categoriaId || !subcategoriaId || !profesionalId) {
+    if (!nombre || !precio || !duracion || !categoriaId || !subcategoriaId) {
       return res.status(400).json({
         success: false,
         message: 'Todos los campos obligatorios deben ser enviados'
       });
     }
 
-    // Validar profesional
-    const profesional = await Usuario.findByPk(profesionalId);
-    if (!profesional || profesional.rol !== 'profesional') {
+    if (Number.isNaN(parsedPrecio) || parsedPrecio <= 0) {
       return res.status(400).json({
         success: false,
-        message: 'El usuario no es un profesional válido'
+        message: 'El precio debe ser mayor a 0'
+      });
+    }
+
+    if (Number.isNaN(parsedDuracion) || parsedDuracion < 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'La duración debe ser mayor a 0 minutos'
+      });
+    }
+
+    const categoria = await Categoria.findByPk(parsedCategoriaId);
+    if (!categoria) {
+      return res.status(404).json({
+        success: false,
+        message: `No existe una categoría con ID ${parsedCategoriaId}`
+      });
+    }
+    if (!categoria.activo) {
+      return res.status(400).json({
+        success: false,
+        message: `La categoría "${categoria.nombre}" está inactiva`
+      });
+    }
+
+    const subcategoria = await Subcategoria.findByPk(parsedSubcategoriaId);
+    if (!subcategoria) {
+      return res.status(404).json({
+        success: false,
+        message: `No existe una subcategoría con ID ${parsedSubcategoriaId}`
+      });
+    }
+    if (!subcategoria.activo) {
+      return res.status(400).json({
+        success: false,
+        message: `La subcategoría "${subcategoria.nombre}" está inactiva`
+      });
+    }
+    if (subcategoria.categoriaId !== parsedCategoriaId) {
+      return res.status(400).json({
+        success: false,
+        message: 'La subcategoría no pertenece a la categoría seleccionada'
+      });
+    }
+    if (categoria.tipo !== 'servicio') {
+      return res.status(400).json({
+        success: false,
+        message: 'La categoría no corresponde a servicios'
+      });
+    }
+    if (subcategoria.tipo !== 'servicio') {
+      return res.status(400).json({
+        success: false,
+        message: 'La subcategoría no corresponde a servicios'
       });
     }
 
     const servicio = await Servicio.create({
       nombre,
       descripcion,
-      precio,
-      duracion,
-      categoriaId,
-      subcategoriaId,
-      profesionalId,
+      precio: parsedPrecio,
+      duracion: parsedDuracion,
+      categoriaId: parsedCategoriaId,
+      subcategoriaId: parsedSubcategoriaId,
       imagen,
       activo: true
     });
@@ -167,6 +214,13 @@ const crearServicio = async (req, res) => {
 
   } catch (error) {
     console.error('Error en crearServicio:', error);
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Errores de validación',
+        errors: error.errors.map((e) => e.message)
+      });
+    }
     if (req.file) {
       deleteFile(req.file.filename);
     }
@@ -187,6 +241,12 @@ const crearServicio = async (req, res) => {
 const actualizarServicio = async (req, res) => {
   try {
     const { id } = req.params;
+    const { nombre, descripcion, precio, duracion, categoriaId, subcategoriaId, activo } = req.body;
+    const parsedPrecio = precio !== undefined ? parseFloat(precio) : undefined;
+    const parsedDuracion = duracion !== undefined ? parseInt(duracion, 10) : undefined;
+    const parsedCategoriaId = categoriaId !== undefined && categoriaId !== '' ? parseInt(categoriaId, 10) : undefined;
+    const parsedSubcategoriaId = subcategoriaId !== undefined && subcategoriaId !== '' ? parseInt(subcategoriaId, 10) : undefined;
+    const parsedActivo = activo !== undefined ? activo === 'true' || activo === true : undefined;
 
     const servicio = await Servicio.findByPk(id);
 
@@ -195,6 +255,71 @@ const actualizarServicio = async (req, res) => {
         success: false,
         message: 'Servicio no encontrado'
       });
+    }
+
+    if (parsedPrecio !== undefined && (Number.isNaN(parsedPrecio) || parsedPrecio <= 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'El precio debe ser mayor a 0'
+      });
+    }
+
+    if (parsedDuracion !== undefined && (Number.isNaN(parsedDuracion) || parsedDuracion < 1)) {
+      return res.status(400).json({
+        success: false,
+        message: 'La duración debe ser mayor a 0 minutos'
+      });
+    }
+
+    if (parsedCategoriaId !== undefined) {
+      const categoria = await Categoria.findByPk(parsedCategoriaId);
+      if (!categoria) {
+        return res.status(404).json({
+          success: false,
+          message: `No existe una categoría con ID ${parsedCategoriaId}`
+        });
+      }
+      if (!categoria.activo) {
+        return res.status(400).json({
+          success: false,
+          message: `La categoría "${categoria.nombre}" está inactiva`
+        });
+      }
+      if (categoria.tipo !== 'servicio') {
+        return res.status(400).json({
+          success: false,
+          message: 'La categoría no corresponde a servicios'
+        });
+      }
+    }
+
+    if (parsedSubcategoriaId !== undefined) {
+      const subcategoria = await Subcategoria.findByPk(parsedSubcategoriaId);
+      if (!subcategoria) {
+        return res.status(404).json({
+          success: false,
+          message: `No existe una subcategoría con ID ${parsedSubcategoriaId}`
+        });
+      }
+      if (!subcategoria.activo) {
+        return res.status(400).json({
+          success: false,
+          message: `La subcategoría "${subcategoria.nombre}" está inactiva`
+        });
+      }
+      const categoriaDeServicio = parsedCategoriaId !== undefined ? parsedCategoriaId : servicio.categoriaId;
+      if (subcategoria.categoriaId !== categoriaDeServicio) {
+        return res.status(400).json({
+          success: false,
+          message: 'La subcategoría no pertenece a la categoría seleccionada'
+        });
+      }
+      if (subcategoria.tipo !== 'servicio') {
+        return res.status(400).json({
+          success: false,
+          message: 'La subcategoría no corresponde a servicios'
+        });
+      }
     }
 
     const campos = [
@@ -212,6 +337,8 @@ const actualizarServicio = async (req, res) => {
         deleteFile(servicio.imagen);
       }
       servicio.imagen = req.file.filename;
+    } else if (servicio.imagen && !esNombreImagenValido(servicio.imagen)) {
+      servicio.imagen = null;
     }
 
     campos.forEach(campo => {
@@ -219,6 +346,14 @@ const actualizarServicio = async (req, res) => {
         servicio[campo] = req.body[campo];
       }
     });
+
+    if (nombre !== undefined) servicio.nombre = nombre;
+    if (descripcion !== undefined) servicio.descripcion = descripcion;
+    if (parsedPrecio !== undefined) servicio.precio = parsedPrecio;
+    if (parsedDuracion !== undefined) servicio.duracion = parsedDuracion;
+    if (parsedCategoriaId !== undefined) servicio.categoriaId = parsedCategoriaId;
+    if (parsedSubcategoriaId !== undefined) servicio.subcategoriaId = parsedSubcategoriaId;
+    if (parsedActivo !== undefined) servicio.activo = parsedActivo;
 
     await servicio.save();
 
@@ -230,6 +365,13 @@ const actualizarServicio = async (req, res) => {
 
   } catch (error) {
     console.error('Error en actualizarServicio:', error);
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Errores de validación',
+        errors: error.errors.map((e) => e.message)
+      });
+    }
     if (req.file) {
       deleteFile(req.file.filename);
     }

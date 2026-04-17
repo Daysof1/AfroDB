@@ -22,8 +22,14 @@ const Servicio = require('../models/Servicio');
  */
 const getProfesionales = async (req, res) => {
   try {
+    const { activo } = req.query;
+    const where = { rol: 'profesional' };
+    if (activo !== undefined) {
+      where.activo = activo === 'true';
+    }
+
     const profesionales = await Usuario.findAll({
-      where: { rol: 'profesional', activo: true },
+      where,
       include: [{
         model: Especialidad,
         as: 'especialidades',
@@ -408,7 +414,7 @@ const eliminarEspecialidad = async (req, res) => {
 const actualizarProfesional = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, email, telefono, activo } = req.body;
+    const { tipo_documento, documento, nombre, apellido, email, telefono, direccion, activo } = req.body;
 
     const profesional = await Usuario.findByPk(id);
 
@@ -419,9 +425,13 @@ const actualizarProfesional = async (req, res) => {
       });
     }
 
+    if (tipo_documento !== undefined) profesional.tipo_documento = tipo_documento;
+    if (documento !== undefined) profesional.documento = documento;
     if (nombre !== undefined) profesional.nombre = nombre;
+    if (apellido !== undefined) profesional.apellido = apellido;
     if (email !== undefined) profesional.email = email;
     if (telefono !== undefined) profesional.telefono = telefono;
+    if (direccion !== undefined) profesional.direccion = direccion;
     if (activo !== undefined) profesional.activo = activo;
 
     await profesional.save();

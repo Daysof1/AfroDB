@@ -72,10 +72,10 @@ const Servicio = sequelize.define('Servicio', {
 
   imagen: {
       type: DataTypes.STRING(255),       // VARCHAR(255) → nombre del archivo
-      allowNull: true,                   // Opcional: un producto puede no tener imagen
+      allowNull: true,                   // Opcional: un servicio puede no tener imagen
       validate: {
         is: {                            // Valida con expresión regular (regex)
-          args: /\.(jpg|jpeg|png|gif)$/i,  // Solo extensiones de imagen permitidas
+          args: /\.(jpg|jpeg|png|gif)$/i,
           msg: 'La imagen debe ser un archivo JPG, PNG o GIF'
         }
       }
@@ -115,21 +115,6 @@ const Servicio = sequelize.define('Servicio', {
     }
   },
 
-  profesionalId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'usuarios',
-      key: 'id'
-    },
-    onUpdate: 'CASCADE',
-    onDelete: 'RESTRICT',
-    validate: {
-      notNull: {
-        msg: 'Debe seleccionar un profesional'
-      }
-    }
-  },
 
   activo: {
     type: DataTypes.BOOLEAN,
@@ -146,7 +131,6 @@ const Servicio = sequelize.define('Servicio', {
     { fields: ['nombre'] },
     { fields: ['categoriaId'] },
     { fields: ['subcategoriaId'] },
-    { fields: ['profesionalId'] },
     { fields: ['activo'] }
   ],
 

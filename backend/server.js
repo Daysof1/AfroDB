@@ -24,8 +24,15 @@ const { testConnection, syncDatabase, sequelize } = require ('./config/database'
 // Importar modelos y asociaciones 
 const {initAssociations} = require ('./models');
 
-// Importar seeders 
-const { runSeeders } = require('./seeders/adminSeeder');
+// Importar seeders (opcional en este entorno)
+/** 
+let runSeeders = null;
+try {
+    ({ runSeeders } = require('./seeders/adminSeeder'));
+} catch (error) {
+    console.warn('⚠️ Seeders no disponibles, se omite carga inicial de datos');
+}
+    */
 
 // crear aplicaciones express 
 
@@ -209,8 +216,13 @@ const starServer = async () =>{
             process.exit(1);
         }
 
-        // paso 3 ejecutar seeders datos iniciales
-        await runSeeders();
+        // paso 3 ejecutar seeders solo bajo demanda explicita
+        /** 
+        const runSeedersOnStart = process.env.RUN_SEEDERS_ON_START === 'true';
+        if (runSeedersOnStart && typeof runSeeders === 'function') {
+            await runSeeders();
+        }
+            */
 
         //paso 4 iniciar el servidor express (no en tests)
         if (process.env.NODE_ENV !== 'test' && process.env.JEST_WORKER_ID === undefined) {

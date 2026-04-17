@@ -165,14 +165,12 @@ Servicio.belongsTo(Subcategoria, {
 });
 
 Usuario.hasMany(Servicio, {
-  foreignKey: 'profesionalId',
   as: 'servicios',
   onDelete: 'RESTRICT',
   onUpdate: 'CASCADE'
 });
 
 Servicio.belongsTo(Usuario, {
-  foreignKey: 'profesionalId',
   as: 'profesional',
   onDelete: 'RESTRICT',
   onUpdate: 'CASCADE'
