@@ -9,6 +9,9 @@ export default function ClienteCatalogo() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const limite = 9;
 
   const [filtroCategoria, setFiltroCategoria] = useState('Todos');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState('Todas');
@@ -18,8 +21,9 @@ export default function ClienteCatalogo() {
     const loadProductos = async () => {
       try {
         setLoading(true);
-        const response = await apiRequest('/catalogo/productos');
+        const response = await apiRequest(`/catalogo/productos?pagina=${pagina}&limite=${limite}`);
         setProductos(response?.data?.productos || []);
+        setTotalPaginas(response?.data?.paginacion?.totalPaginas || 1);
       } catch (err) {
         setError(err.message || 'No se pudieron cargar productos');
       } finally {
@@ -28,7 +32,7 @@ export default function ClienteCatalogo() {
     };
 
     loadProductos();
-  }, []);
+  }, [pagina]);
 
   const categorias = useMemo(() => {
     const unique = new Set(
@@ -141,6 +145,28 @@ export default function ClienteCatalogo() {
           </div>
         ))}
       </div>
+
+      {totalPaginas > 1 && (
+        <div className="pagination">
+          <button
+            disabled={pagina === 1}
+            onClick={() => setPagina(pagina - 1)}
+            className="btn btn-secondary"
+          >
+            ← Anterior
+          </button>
+          <span className="pagination-info">
+            Página {pagina} de {totalPaginas}
+          </span>
+          <button
+            disabled={pagina === totalPaginas}
+            onClick={() => setPagina(pagina + 1)}
+            className="btn btn-secondary"
+          >
+            Siguiente →
+          </button>
+        </div>
+      )}
 
       {productosFiltrados.length === 0 && (
         <div className="empty-state">

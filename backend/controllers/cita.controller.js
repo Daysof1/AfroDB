@@ -11,6 +11,15 @@ const Cita = require('../models/Cita');
 const Servicio = require('../models/Servicio');
 const CitaServicio = require('../models/CitaServicio');
 const Usuario = require('../models/Usuario');
+const Subcategoria = require('../models/Subcategoria');
+const Especialidad = require('../models/Especialidades');
+
+const normalizarTexto = (texto = '') =>
+  String(texto)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
 
 
 // ==========================================
@@ -36,6 +45,13 @@ const crearCita = async (req, res) => {
     // VALIDACIÓN 2: obtener servicios
     const serviciosDB = await Servicio.findAll({
       where: { id: servicios, activo: true },
+      include: [
+        {
+          model: Subcategoria,
+          as: 'subcategoria',
+          attributes: ['id', 'nombre']
+        }
+      ],
       transaction: t
     });
 
@@ -56,24 +72,115 @@ const crearCita = async (req, res) => {
       total += parseFloat(s.precio);
     }
 
+    const nombresRequeridos = Array.from(new Set(
+      serviciosDB
+        .map((s) => s?.subcategoria?.nombre)
+        .filter(Boolean)
+    ));
+
+    const especialidadesActivas = await Especialidad.findAll({
+      where: { activo: true },
+      attributes: ['id', 'nombre'],
+      transaction: t
+    });
+
+    const especialidadesPorNombre = new Map(
+      especialidadesActivas.map((esp) => [normalizarTexto(esp.nombre), esp])
+    );
+
+    const especialidadesRequeridas = [];
+    const sinEspecialidadConfigurada = [];
+
+    for (const nombre of nombresRequeridos) {
+      const especialidad = especialidadesPorNombre.get(normalizarTexto(nombre));
+      if (!especialidad) {
+        sinEspecialidadConfigurada.push(nombre);
+      } else {
+        especialidadesRequeridas.push(especialidad);
+      }
+    }
+
+    if (sinEspecialidadConfigurada.length > 0) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: `Falta configurar especialidades para: ${sinEspecialidadConfigurada.join(', ')}`
+      });
+    }
+
+    const idsEspecialidadesRequeridas = especialidadesRequeridas.map((esp) => esp.id);
+
     // 🔥 ASIGNAR PROFESIONAL
     let profesionalAsignado = profesionalId;
 
+    const profesionalCumpleEspecialidades = (profesional) => {
+      const idsEspecialidadesProfesional = new Set(
+        (profesional.especialidades || []).map((esp) => esp.id)
+      );
+
+      return idsEspecialidadesRequeridas.every((id) => idsEspecialidadesProfesional.has(id));
+    };
+
     if (!profesionalAsignado) {
-      const profesional = await Usuario.findOne({
-        where: { rol: 'profesional' },
+      const profesionalesDisponibles = await Usuario.findAll({
+        where: { rol: 'profesional', activo: true },
+        include: [{
+          model: Especialidad,
+          as: 'especialidades',
+          attributes: ['id', 'nombre'],
+          through: { attributes: [] },
+          required: false
+        }],
         transaction: t
       });
 
-      if (!profesional) {
+      const profesionalCompatible = profesionalesDisponibles.find(profesionalCumpleEspecialidades);
+
+      if (!profesionalCompatible) {
         await t.rollback();
         return res.status(400).json({
           success: false,
-          message: 'No hay profesionales disponibles'
+          message: `No hay profesionales con las especialidades requeridas: ${especialidadesRequeridas.map((esp) => esp.nombre).join(', ')}`
         });
       }
 
-      profesionalAsignado = profesional.id;
+      profesionalAsignado = profesionalCompatible.id;
+    } else {
+      const profesionalSeleccionado = await Usuario.findOne({
+        where: { id: profesionalAsignado, rol: 'profesional', activo: true },
+        include: [{
+          model: Especialidad,
+          as: 'especialidades',
+          attributes: ['id', 'nombre'],
+          through: { attributes: [] },
+          required: false
+        }],
+        transaction: t
+      });
+
+      if (!profesionalSeleccionado) {
+        await t.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Profesional no encontrado o inactivo'
+        });
+      }
+
+      if (!profesionalCumpleEspecialidades(profesionalSeleccionado)) {
+        const idsEspecialidadesProfesional = new Set(
+          (profesionalSeleccionado.especialidades || []).map((esp) => esp.id)
+        );
+
+        const faltantes = especialidadesRequeridas
+          .filter((esp) => !idsEspecialidadesProfesional.has(esp.id))
+          .map((esp) => esp.nombre);
+
+        await t.rollback();
+        return res.status(400).json({
+          success: false,
+          message: `El profesional seleccionado no cubre las especialidades requeridas. Faltan: ${faltantes.join(', ')}`
+        });
+      }
     }
 
     // VALIDAR DISPONIBILIDAD

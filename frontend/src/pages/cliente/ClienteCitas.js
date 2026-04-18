@@ -1,10 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
 import { apiRequest } from '../../api/client.js';
 
+const normalizarTexto = (texto = '') =>
+  String(texto)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
 export default function ClienteCitas() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [citas, setCitas] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [profesionales, setProfesionales] = useState([]);
@@ -13,6 +23,73 @@ export default function ClienteCitas() {
   const [error, setError] = useState('');
 
   const [isFormOpen, setIsFormOpen] = useState(false);
+
+  const servicioPreseleccionadoId = useMemo(() => {
+    const servicioIdDesdeState = location?.state?.servicioId;
+    if (servicioIdDesdeState !== undefined && servicioIdDesdeState !== null && servicioIdDesdeState !== '') {
+      return Number(servicioIdDesdeState);
+    }
+
+    const params = new URLSearchParams(location.search);
+    const servicioIdDesdeQuery = params.get('servicio');
+    if (!servicioIdDesdeQuery) {
+      return null;
+    }
+
+    return Number(servicioIdDesdeQuery);
+  }, [location.search, location.state]);
+
+  const profesionalPreseleccionadoId = useMemo(() => {
+    const profesionalIdDesdeState = location?.state?.profesionalId;
+    if (profesionalIdDesdeState !== undefined && profesionalIdDesdeState !== null && profesionalIdDesdeState !== '') {
+      return String(profesionalIdDesdeState);
+    }
+
+    const params = new URLSearchParams(location.search);
+    const profesionalIdDesdeQuery = params.get('profesional');
+    if (!profesionalIdDesdeQuery) {
+      return null;
+    }
+
+    return String(profesionalIdDesdeQuery);
+  }, [location.search, location.state]);
+
+  const nombresEspecialidadesRequeridas = Array.from(new Set(
+    servicios
+      .filter((servicio) => formData.servicioIds.includes(servicio.id))
+      .map((servicio) => servicio?.subcategoria?.nombre)
+      .filter(Boolean)
+      .map(normalizarTexto)
+  ));
+
+  const profesionalesCompatibles = profesionales.filter((profesional) => {
+    if (nombresEspecialidadesRequeridas.length === 0) {
+      return true;
+    }
+
+    const especialidadesProfesional = new Set(
+      (profesional.especialidades || []).map((esp) => normalizarTexto(esp.nombre))
+    );
+
+    return nombresEspecialidadesRequeridas.every((nombre) => especialidadesProfesional.has(nombre));
+  });
+
+  const toggleServicio = (servicioId) => {
+    setFormData((prev) => {
+      const yaSeleccionado = prev.servicioIds.includes(servicioId);
+      if (yaSeleccionado) {
+        return {
+          ...prev,
+          servicioIds: prev.servicioIds.filter((id) => id !== servicioId),
+        };
+      }
+
+      return {
+        ...prev,
+        servicioIds: [...prev.servicioIds, servicioId],
+      };
+    });
+  };
 
   const loadData = async () => {
     try {
@@ -37,6 +114,47 @@ export default function ClienteCitas() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    const hasServicioPrefill = Number.isFinite(servicioPreseleccionadoId)
+      && servicios.some((servicio) => Number(servicio.id) === Number(servicioPreseleccionadoId));
+
+    const hasProfesionalPrefill = !!profesionalPreseleccionadoId
+      && profesionales.some((profesional) => String(profesional.id) === String(profesionalPreseleccionadoId));
+
+    if (!hasServicioPrefill && !hasProfesionalPrefill) {
+      return;
+    }
+
+    setIsFormOpen(true);
+    setFormData((prev) => {
+      const next = { ...prev };
+
+      if (hasServicioPrefill) {
+        next.servicioIds = prev.servicioIds.includes(servicioPreseleccionadoId)
+          ? prev.servicioIds
+          : [...prev.servicioIds, servicioPreseleccionadoId];
+      }
+
+      if (hasProfesionalPrefill) {
+        next.profesionalId = String(profesionalPreseleccionadoId);
+      }
+
+      return next;
+    });
+
+    if (location.search || location.state?.servicioId || location.state?.profesionalId) {
+      navigate('/cliente/citas', { replace: true });
+    }
+  }, [
+    servicioPreseleccionadoId,
+    profesionalPreseleccionadoId,
+    servicios,
+    profesionales,
+    location.search,
+    location.state,
+    navigate,
+  ]);
+
   const formatEstado = (estado) => {
     const value = (estado || '').toLowerCase();
     if (value === 'confirmada') return 'Confirmada';
@@ -49,11 +167,16 @@ export default function ClienteCitas() {
   const handleCrearCita = async (e) => {
     e.preventDefault();
     try {
+      if (!formData.servicioIds.length) {
+        setError('Debes seleccionar al menos un servicio');
+        return;
+      }
+
       await apiRequest('/cliente/citas', {
         method: 'POST',
         body: JSON.stringify({
           profesionalId: formData.profesionalId || undefined,
-          servicios: formData.servicioIds.map((id) => Number(id)),
+          servicios: formData.servicioIds,
           fecha: formData.fecha,
           hora: formData.hora,
         }),
@@ -95,28 +218,35 @@ export default function ClienteCitas() {
               <label>Profesional</label>
               <select value={formData.profesionalId} onChange={(e) => setFormData({ ...formData, profesionalId: e.target.value })}>
                 <option value="">Selecciona un profesional</option>
-                {profesionales.map((prof) => (
+                {profesionalesCompatibles.map((prof) => (
                   <option key={prof.id} value={prof.id}>{prof.nombre}</option>
                 ))}
               </select>
+              {formData.servicioIds.length > 0 && profesionalesCompatibles.length === 0 && (
+                <small>No hay profesionales que cubran todas las especialidades requeridas por los servicios seleccionados.</small>
+              )}
             </div>
             <div className="form-group">
               <label>Servicios</label>
-              <select
-                multiple
-                size="5"
-                value={formData.servicioIds}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  servicioIds: Array.from(e.target.selectedOptions, (option) => option.value),
+              <div className="servicios-selector-grid">
+                {servicios.map((servicio) => {
+                  const checked = formData.servicioIds.includes(servicio.id);
+                  return (
+                    <label
+                      key={servicio.id}
+                      className={`servicio-selector-item ${checked ? 'selected' : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleServicio(servicio.id)}
+                      />
+                      <span>{servicio.nombre}</span>
+                    </label>
+                  );
                 })}
-                required
-              >
-                <option value="" disabled>Selecciona uno o más servicios</option>
-                {servicios.map((servicio) => (
-                  <option key={servicio.id} value={servicio.id}>{servicio.nombre}</option>
-                ))}
-              </select>
+              </div>
+              <small>{formData.servicioIds.length} servicio(s) seleccionado(s)</small>
             </div>
             <div className="form-group">
               <label>Fecha</label>

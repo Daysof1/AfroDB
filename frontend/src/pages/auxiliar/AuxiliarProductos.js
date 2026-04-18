@@ -8,6 +8,9 @@ export default function AuxiliarProductos() {
   const [subcategorias, setSubcategorias] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const limite = 10;
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
   const [editingOriginal, setEditingOriginal] = useState(null);
@@ -33,8 +36,9 @@ export default function AuxiliarProductos() {
 
   const loadProductos = async () => {
     try {
-      const response = await apiRequest('/admin/productos');
+      const response = await apiRequest(`/admin/productos?pagina=${pagina}&limite=${limite}`);
       setProductos(response?.data?.productos || []);
+      setTotalPaginas(response?.data?.paginacion?.totalPaginas || 1);
     } catch (err) {
       setError(err.message || 'No se pudieron cargar productos');
     }
@@ -66,7 +70,7 @@ export default function AuxiliarProductos() {
   useEffect(() => {
     loadProductos();
     loadCategorias();
-  }, []);
+  }, [pagina]);
 
   const categoriasFiltro = useMemo(() => {
     const unique = new Set(
@@ -339,6 +343,28 @@ export default function AuxiliarProductos() {
       {productosFiltrados.length === 0 && (
         <div className="empty-state">
           <p>No se encontraron productos con esos filtros</p>
+        </div>
+      )}
+
+      {totalPaginas > 1 && (
+        <div className="pagination">
+          <button
+            disabled={pagina === 1}
+            onClick={() => setPagina(pagina - 1)}
+            className="btn btn-secondary"
+          >
+            ← Anterior
+          </button>
+          <span className="pagination-info">
+            Página {pagina} de {totalPaginas}
+          </span>
+          <button
+            disabled={pagina === totalPaginas}
+            onClick={() => setPagina(pagina + 1)}
+            className="btn btn-secondary"
+          >
+            Siguiente →
+          </button>
         </div>
       )}
     </div>

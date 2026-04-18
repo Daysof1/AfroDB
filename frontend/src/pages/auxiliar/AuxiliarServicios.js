@@ -13,6 +13,9 @@ export default function AuxiliarServicios() {
   const [filtroCategoria, setFiltroCategoria] = useState('Todos');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState('Todas');
   const [busqueda, setBusqueda] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const limite = 10;
   const [newServicio, setNewServicio] = useState({
     nombre: '',
     descripcion: '',
@@ -31,8 +34,9 @@ export default function AuxiliarServicios() {
 
   const loadServicios = async () => {
     try {
-      const response = await apiRequest('/admin/servicios');
+      const response = await apiRequest(`/admin/servicios?pagina=${pagina}&limite=${limite}`);
       setServicios(response?.data?.servicios || []);
+      setTotalPaginas(response?.data?.paginacion?.totalPaginas || 1);
     } catch (err) {
       setError(err.message || 'No se pudieron cargar servicios');
     }
@@ -65,7 +69,7 @@ export default function AuxiliarServicios() {
   useEffect(() => {
     loadServicios();
     loadCategorias();
-  }, []);
+  }, [pagina]);
 
   const categoriasFiltro = useMemo(() => {
     const unique = new Set(
@@ -316,6 +320,28 @@ export default function AuxiliarServicios() {
       {serviciosFiltrados.length === 0 && (
         <div className="empty-state">
           <p>No se encontraron servicios con esos filtros</p>
+        </div>
+      )}
+
+      {totalPaginas > 1 && (
+        <div className="pagination">
+          <button
+            disabled={pagina === 1}
+            onClick={() => setPagina(pagina - 1)}
+            className="btn btn-secondary"
+          >
+            ← Anterior
+          </button>
+          <span className="pagination-info">
+            Página {pagina} de {totalPaginas}
+          </span>
+          <button
+            disabled={pagina === totalPaginas}
+            onClick={() => setPagina(pagina + 1)}
+            className="btn btn-secondary"
+          >
+            Siguiente →
+          </button>
         </div>
       )}
     </div>

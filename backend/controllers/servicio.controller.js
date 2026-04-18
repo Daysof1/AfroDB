@@ -21,19 +21,28 @@ const esNombreImagenValido = (imagen) => /\.(jpg|jpeg|png|gif)$/i.test(String(im
  * OBTENER SERVICIOS (PUBLICO / CLIENTE)
  * ============================================
  * GET /api/servicios
- * Query: ?categoriaId=&subcategoriaId=&activo=true
+ * Query: ?categoriaId=&subcategoriaId=&activo=true&pagina=1&limite=100
  */
 const getServicios = async (req, res) => {
   try {
-    const { categoriaId, subcategoriaId, activo } = req.query;
+    const { categoriaId, subcategoriaId, activo, buscar, pagina = 1, limite = 100} = req.query;
+    const { Op } = require('sequelize');
 
     const where = {};
 
     if (categoriaId) where.categoriaId = categoriaId;
     if (subcategoriaId) where.subcategoriaId = subcategoriaId;
     if (activo !== undefined) where.activo = activo === 'true';
+    if (buscar) {
+      where[Op.or] = [
+        { nombre: { [Op.like]: `%${buscar}%` } },
+        { descripcion: { [Op.like]: `%${buscar}%` } }
+      ];
+    }
 
-    const servicios = await Servicio.findAll({
+    const offset = (parseInt(pagina) - 1) * parseInt(limite);
+
+    const { count, rows: servicios } = await Servicio.findAndCountAll({
       where,
       include: [
         {
@@ -47,13 +56,22 @@ const getServicios = async (req, res) => {
           attributes: ['id', 'nombre']
         }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
+      limit: parseInt(limite),
+      offset
     });
 
     res.json({
       success: true,
-      count: servicios.length,
-      data: { servicios }
+      data: {
+        servicios,
+        paginacion: {
+          total: count,
+          pagina: parseInt(pagina),
+          limite: parseInt(limite),
+          totalPaginas: Math.ceil(count / parseInt(limite))
+        }
+      }
     });
 
   } catch (error) {
