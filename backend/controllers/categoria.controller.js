@@ -342,63 +342,32 @@ const eliminarCategoria = async (req, res) => {
 
 /**
  * ============================================
- * ESTADÍSTICAS DE CATEGORÍA
+ * ESTADÍSTICAS GENERALES DE CATEGORÍAS
  * ============================================
  */
-const getEstadisticasCategoria = async (req, res) => {
+const getEstadisticasCategorias = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const categoria = await Categoria.findByPk(id);
-    if (!categoria) {
-      return res.status(404).json({
-        success: false,
-        message: 'Categoría no encontrada'
-      });
-    }
-
-    const totalSub = await Subcategoria.count({ where: { categoriaId: id } });
-    const subActivas = await Subcategoria.count({ where: { categoriaId: id, activo: true } });
-
-    const totalProd = await Producto.count({ where: { categoriaId: id } });
-    const prodActivos = await Producto.count({ where: { categoriaId: id, activo: true } });
-
-    const totalServ = await Servicio.count({ where: { categoriaId: id } });
-    const servActivos = await Servicio.count({ where: { categoriaId: id, activo: true } });
+    const totalCategorias = await Categoria.count();
+    const categoriasActivas = await Categoria.count({ where: { activo: true } });
+    const totalProductos = await Producto.count();
+    const totalServicios = await Servicio.count();
 
     res.json({
       success: true,
       data: {
-        categoria: {
-          id: categoria.id,
-          nombre: categoria.nombre
-        },
-        estadisticas: {
-          subcategorias: {
-            total: totalSub,
-            activas: subActivas,
-            inactivas: totalSub - subActivas
-          },
-          productos: {
-            total: totalProd,
-            activos: prodActivos,
-            inactivos: totalProd - prodActivos
-          },
-          servicios: {
-            total: totalServ,
-            activos: servActivos,
-            inactivos: totalServ - servActivos
-          }
-        }
-      }
+        total: totalCategorias,
+        activas: categoriasActivas,
+        inactivas: totalCategorias - categoriasActivas,
+        totalProductos,
+        totalServicios,
+      },
     });
-
   } catch (error) {
-    console.error('Error en stats:', error);
+    console.error('Error en getEstadisticasCategorias:', error);
     res.status(500).json({
       success: false,
-      message: 'Error en estadísticas',
-      error: error.message
+      message: 'Error al obtener estadísticas de categorías',
+      error: error.message,
     });
   }
 };
@@ -410,5 +379,5 @@ module.exports = {
   actualizarCategoria,
   toggleCategoria,
   eliminarCategoria,
-  getEstadisticasCategoria
+  getEstadisticasCategorias,
 };

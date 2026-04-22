@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendar, faBox, faBell, faChalkboard } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCalendar,
+  faBox,
+  faBell,
+  faChalkboard,
+  faShoppingCart,
+  faTags,
+  faSitemap,
+} from '@fortawesome/free-solid-svg-icons';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 
@@ -12,6 +20,9 @@ export default function AdminDashboard() {
     totalServicios: 0,
     totalCitas: 0,
     totalUsuarios: 0,
+    totalPedidos: 0,
+    totalCategorias: 0,
+    totalSubcategorias: 0,
   });
   const [actividades, setActividades] = useState([]);
   const [error, setError] = useState('');
@@ -37,12 +48,24 @@ export default function AdminDashboard() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [productosRes, serviciosRes, citasRes, usuariosRes, pedidosRes] = await Promise.all([
+        const [
+          productosRes,
+          serviciosRes,
+          citasRes,
+          usuariosRes,
+          pedidosRes,
+          pedidoStatsRes,
+          categoriasStatsRes,
+          subcategoriasStatsRes,
+        ] = await Promise.all([
           apiRequest('/admin/productos'),
           apiRequest('/admin/servicios'),
           apiRequest('/admin/citas'),
           apiRequest('/admin/usuarios'),
           apiRequest('/admin/pedidos'),
+          apiRequest('/admin/pedidos/estadisticas'),
+          apiRequest('/admin/categorias/estadisticas'),
+          apiRequest('/admin/subcategorias/estadisticas'),
         ]);
 
         const productos = productosRes?.data?.productos || [];
@@ -54,6 +77,9 @@ export default function AdminDashboard() {
           totalServicios: (serviciosRes?.data?.servicios || []).length,
           totalCitas: citas.length,
           totalUsuarios: (usuariosRes?.data?.usuarios || []).length,
+          totalPedidos: pedidoStatsRes?.data?.data?.totalPedidos || 0,
+          totalCategorias: categoriasStatsRes?.data?.data?.total || 0,
+          totalSubcategorias: subcategoriasStatsRes?.data?.data?.total || 0,
         });
 
         const actividadProductos = productos.slice(0, 5).map((producto) => ({
@@ -126,6 +152,27 @@ export default function AdminDashboard() {
           <div className="stat-info">
             <h3>Usuarios</h3>
             <p className="stat-number">{stats.totalUsuarios}</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon"><FontAwesomeIcon icon={faShoppingCart} /></div>
+          <div className="stat-info">
+            <h3>Pedidos</h3>
+            <p className="stat-number">{stats.totalPedidos}</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon"><FontAwesomeIcon icon={faTags} /></div>
+          <div className="stat-info">
+            <h3>Categorías</h3>
+            <p className="stat-number">{stats.totalCategorias}</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon"><FontAwesomeIcon icon={faSitemap} /></div>
+          <div className="stat-info">
+            <h3>Subcategorías</h3>
+            <p className="stat-number">{stats.totalSubcategorias}</p>
           </div>
         </div>
       </div>

@@ -320,56 +320,28 @@ const eliminarSubcategoria = async (req, res) => {
 
 /**
  * ============================================
- * ESTADÍSTICAS DE SUBCATEGORÍA
+ * ESTADÍSTICAS GENERALES DE SUBCATEGORÍAS
  * ============================================
  */
-const getEstadisticasSubcategoria = async (req, res) => {
+const getEstadisticasSubcategorias = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const subcategoria = await Subcategoria.findByPk(id);
-
-    if (!subcategoria) {
-      return res.status(404).json({
-        success: false,
-        message: 'Subcategoría no encontrada'
-      });
-    }
-
-    const totalProd = await Producto.count({ where: { subcategoriaId: id } });
-    const prodActivos = await Producto.count({ where: { subcategoriaId: id, activo: true } });
-
-    const totalServ = await Servicio.count({ where: { subcategoriaId: id } });
-    const servActivos = await Servicio.count({ where: { subcategoriaId: id, activo: true } });
+    const totalSubcategorias = await Subcategoria.count();
+    const subcategoriasActivas = await Subcategoria.count({ where: { activo: true } });
 
     res.json({
       success: true,
       data: {
-        subcategoria: {
-          id: subcategoria.id,
-          nombre: subcategoria.nombre
-        },
-        estadisticas: {
-          productos: {
-            total: totalProd,
-            activos: prodActivos,
-            inactivos: totalProd - prodActivos
-          },
-          servicios: {
-            total: totalServ,
-            activos: servActivos,
-            inactivos: totalServ - servActivos
-          }
-        }
-      }
+        total: totalSubcategorias,
+        activas: subcategoriasActivas,
+        inactivas: totalSubcategorias - subcategoriasActivas,
+      },
     });
-
   } catch (error) {
-    console.error('Error en statsSubcategoria:', error);
+    console.error('Error en getEstadisticasSubcategorias:', error);
     res.status(500).json({
       success: false,
-      message: 'Error en estadísticas',
-      error: error.message
+      message: 'Error al obtener estadísticas de subcategorías',
+      error: error.message,
     });
   }
 };
@@ -381,5 +353,5 @@ module.exports = {
   actualizarSubcategoria,
   toggleSubcategoria,
   eliminarSubcategoria,
-  getEstadisticasSubcategoria
+  getEstadisticasSubcategorias,
 };

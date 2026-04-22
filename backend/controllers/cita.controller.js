@@ -348,7 +348,7 @@ const crearCita = async (req, res) => {
 const getMisCitas = async (req, res) => {
   try {
     const citas = await Cita.findAll({
-      where: { usuarioId: req.usuario.id }, /////
+      where: { usuarioId: req.usuario.id },
       include: [
         {
           model: Usuario,
@@ -363,9 +363,23 @@ const getMisCitas = async (req, res) => {
       order: [['fecha', 'DESC']]
     });
 
+    const citasConServiciosCompletos = citas.map(cita => {
+      const servicios = cita.Servicios.map(servicio => {
+        return {
+          ...servicio.toJSON(),
+          UsuarioId: cita.usuarioId,
+          profesionalId: servicio.CitaServicio.profesionalId
+        };
+      });
+      return {
+        ...cita.toJSON(),
+        Servicios: servicios
+      };
+    });
+
     res.json({
       success: true,
-      data: { citas }
+      data: { citas: citasConServiciosCompletos }
     });
 
   } catch (error) {
@@ -690,49 +704,64 @@ const actualizarEstadoCita = async (req, res) => {
 
 
 // ==========================================
-// 📅 CITAS DEL PROFESIONAL
+// 🗓️ CITAS DEL PROFESIONAL
 // ==========================================
 
 const getCitasProfesional = async (req, res) => {
   try {
-    const rol = (req.usuario?.rol || '').toLowerCase().trim();
-    const where = {};
-
-    // Profesional: solo ve sus propias citas.
-    if (rol === 'profesional') {
-      where.profesionalId = req.usuario.id;
-    }
-
-    // Admin/Auxiliar: puede filtrar por profesionalId opcionalmente.
-    if (['administrador', 'auxiliar'].includes(rol) && req.query.profesionalId) {
-      where.profesionalId = req.query.profesionalId;
-    }
-
+    // Encuentra todas las citas en las que el profesional actual está involucrado a través de CitaServicio.
     const citas = await Cita.findAll({
-      where,
       include: [
         {
           model: Usuario,
           as: 'cliente',
-          attributes: ['id', 'nombre', 'email', 'telefono']
+          attributes: ['id', 'nombre', 'email']
         },
         {
           model: Servicio,
-          through: { attributes: ['precio', 'duracion', 'profesionalId'] }
+          through: { attributes: ['profesionalId', 'precio', 'duracion'] },
+          required: true
+        },
+        {
+          model: CitaServicio,
+          where: { profesionalId: req.usuario.id },
+          attributes: [], // No necesitamos las columnas de CitaServicio aquí directamente
+          required: true
         }
       ],
-      order: [['fecha', 'DESC']]
+      order: [['fecha', 'DESC'], ['hora', 'DESC']],
+      distinct: true // Asegura que cada cita se devuelva solo una vez
+    });
+
+    // Transforma la respuesta para que cada servicio tenga los IDs correctos.
+    const citasTransformadas = citas.map(cita => {
+      const serviciosTransformados = cita.Servicios.map(servicio => {
+        // El profesionalId correcto está en la tabla intermedia CitaServicio
+        const profesionalIdDelServicio = servicio.CitaServicio.profesionalId;
+
+        return {
+          ...servicio.toJSON(),
+          UsuarioId: cita.usuarioId, // El ID del cliente de la cita
+          profesionalId: profesionalIdDelServicio // El ID del profesional que hizo este servicio
+        };
+      });
+
+      return {
+        ...cita.toJSON(),
+        Servicios: serviciosTransformados
+      };
     });
 
     res.json({
       success: true,
-      data: { citas }
+      data: { citas: citasTransformadas }
     });
 
   } catch (error) {
+    console.error('Error al obtener las citas del profesional:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al obtener citas',
+      message: 'Error al obtener las citas del profesional',
       error: error.message
     });
   }

@@ -296,49 +296,7 @@ const eliminarEspecialidad = async (req, res) => {
   }
 };
 
-/**
- * Obtener estadísticas de especialidad (ADMIN)
- * 
- * GET /api/admin/especialidades/:id/stats
- */
-const getEstadisticasEspecialidad = async (req, res) => {
-  try {
-    const { id } = req.params;
 
-    const especialidad = await Especialidad.scope('withInactive').findByPk(id);
-
-    if (!especialidad) {
-      return res.status(404).json({
-        success: false,
-        message: 'Especialidad no encontrada'
-      });
-    }
-
-    const totalProfesionales = await especialidad.countProfesionales();
-
-    res.json({
-      success: true,
-      data: {
-        especialidad: {
-          id: especialidad.id,
-          nombre: especialidad.nombre,
-          activo: especialidad.activo
-        },
-        estadisticas: {
-          totalProfesionales
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('Error en getEstadisticasEspecialidad:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al obtener estadísticas',
-      error: error.message
-    });
-  }
-};
 
 module.exports = {
   getEspecialidades,
@@ -346,6 +304,5 @@ module.exports = {
   crearEspecialidad,
   actualizarEspecialidad,
   toggleEspecialidad,
-  eliminarEspecialidad,
-  getEstadisticasEspecialidad
+  eliminarEspecialidad
 };

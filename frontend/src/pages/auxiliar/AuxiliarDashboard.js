@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBox, faBell, faCalendar, faClipboardList } from '@fortawesome/free-solid-svg-icons';
+import {
+  faBox,
+  faBell,
+  faCalendar,
+  faClipboardList,
+  faTags,
+  faSitemap,
+} from '@fortawesome/free-solid-svg-icons';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 
@@ -11,6 +18,8 @@ export default function AuxiliarDashboard() {
     totalServicios: 0,
     totalCitas: 0,
     totalPedidos: 0,
+    totalCategorias: 0,
+    totalSubcategorias: 0,
   });
   const [actividades, setActividades] = useState([]);
   const [error, setError] = useState('');
@@ -36,11 +45,20 @@ export default function AuxiliarDashboard() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [productosRes, serviciosRes, citasRes, pedidosRes] = await Promise.all([
+        const [
+          productosRes,
+          serviciosRes,
+          citasRes,
+          pedidosRes,
+          categoriasStatsRes,
+          subcategoriasStatsRes,
+        ] = await Promise.all([
           apiRequest('/admin/productos'),
           apiRequest('/admin/servicios'),
           apiRequest('/admin/citas'),
           apiRequest('/admin/pedidos'),
+          apiRequest('/admin/categorias/estadisticas'),
+          apiRequest('/admin/subcategorias/estadisticas'),
         ]);
 
         const productos = productosRes?.data?.productos || [];
@@ -53,6 +71,8 @@ export default function AuxiliarDashboard() {
           totalServicios: servicios.length,
           totalCitas: citas.length,
           totalPedidos: pedidos.length,
+          totalCategorias: categoriasStatsRes?.data?.data?.total || 0,
+          totalSubcategorias: subcategoriasStatsRes?.data?.data?.total || 0,
         });
 
         const actividadProductos = productos.slice(0, 5).map((producto) => ({
@@ -131,6 +151,20 @@ export default function AuxiliarDashboard() {
           <div className="stat-info">
             <h3>Pedidos</h3>
             <p className="stat-number">{stats.totalPedidos}</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon"><FontAwesomeIcon icon={faTags} /></div>
+          <div className="stat-info">
+            <h3>Categorías</h3>
+            <p className="stat-number">{stats.totalCategorias}</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon"><FontAwesomeIcon icon={faSitemap} /></div>
+          <div className="stat-info">
+            <h3>Subcategorías</h3>
+            <p className="stat-number">{stats.totalSubcategorias}</p>
           </div>
         </div>
       </div>

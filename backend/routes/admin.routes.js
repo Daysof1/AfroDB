@@ -41,9 +41,9 @@ router.use(verificarAuth, esAdminOAuxiliar);
 // CATEGORÍAS
 // ==========================================
 
+router.get('/categorias/estadisticas', categoriaController.getEstadisticasCategorias);
 router.get('/categorias', categoriaController.getCategorias);
 router.get('/categorias/:id', categoriaController.getCategoriaById);
-router.get('/categorias/:id/stats', categoriaController.getEstadisticasCategoria);
 router.post('/categorias', categoriaController.crearCategoria);
 router.put('/categorias/:id', categoriaController.actualizarCategoria);
 router.patch('/categorias/:id/toggle', categoriaController.toggleCategoria);
@@ -53,9 +53,9 @@ router.delete('/categorias/:id', soloAdministrador, categoriaController.eliminar
 // SUBCATEGORÍAS
 // ==========================================
 
+router.get('/subcategorias/estadisticas', subcategoriaController.getEstadisticasSubcategorias);
 router.get('/subcategorias', subcategoriaController.getSubcategorias);
 router.get('/subcategorias/:id', subcategoriaController.getSubcategoriaById);
-router.get('/subcategorias/:id/stats', subcategoriaController.getEstadisticasSubcategoria);
 router.post('/subcategorias', subcategoriaController.crearSubcategoria);
 router.put('/subcategorias/:id', subcategoriaController.actualizarSubcategoria);
 router.patch('/subcategorias/:id/toggle', subcategoriaController.toggleSubcategoria);
@@ -67,8 +67,8 @@ router.delete('/subcategorias/:id', soloAdministrador, subcategoriaController.el
 
 router.get('/productos', productoController.getProductos);
 router.get('/productos/:id', productoController.getProductoById);
-router.post('/productos', upload.single('imagen'), productoController.crearProducto);
-router.put('/productos/:id', upload.single('imagen'), productoController.actualizarProducto);
+router.post('/productos', productoController.crearProducto);
+router.put('/productos/:id', productoController.actualizarProducto);
 router.patch('/productos/:id/toggle', productoController.toggleProducto);
 router.patch('/productos/:id/stock', productoController.actualizarStock);
 router.delete('/productos/:id', soloAdministrador, productoController.eliminarProducto);
@@ -79,8 +79,8 @@ router.delete('/productos/:id', soloAdministrador, productoController.eliminarPr
 
 router.get('/servicios', servicioController.getServicios);
 router.get('/servicios/:id', servicioController.getServicioById);
-router.post('/servicios', upload.single('imagen'), servicioController.crearServicio);
-router.put('/servicios/:id', upload.single('imagen'), servicioController.actualizarServicio);
+router.post('/servicios', servicioController.crearServicio);
+router.put('/servicios/:id', servicioController.actualizarServicio);
 router.patch('/servicios/:id/toggle', servicioController.toggleServicio);
 router.delete('/servicios/:id', soloAdministrador, servicioController.eliminarServicio);
 
@@ -97,7 +97,7 @@ router.get('/citas/profesional', citaController.getCitasProfesional);
 // USUARIOS
 // ==========================================
 
-router.get('/usuarios/stats', usuarioController.getEstadisticasUsuarios);
+router.get('/usuarios/estadisticas', usuarioController.getEstadisticasUsuarios);
 router.get('/usuarios', usuarioController.getUsuarios);
 router.get('/usuarios/:id', usuarioController.getUsuarioById);
 router.post('/usuarios', soloAdministrador, usuarioController.crearUsuario);
@@ -123,9 +123,8 @@ router.get('/especialidades/:id', especialidadController.getEspecialidadById);
 router.post('/especialidades', especialidadController.crearEspecialidad);
 router.put('/especialidades/:id', especialidadController.actualizarEspecialidad);
 router.patch('/especialidades/:id/toggle', especialidadController.toggleEspecialidad);
-router.get('/especialidades/:id/stats', especialidadController.getEstadisticasEspecialidad);
-router.delete('/especialidades/:id', soloAdministrador, especialidadController.eliminarEspecialidad);
 
+router.delete('/especialidades/:id', soloAdministrador, especialidadController.eliminarEspecialidad);
 // ==========================================
 // 🔥 PROFESIONALES
 // ==========================================
