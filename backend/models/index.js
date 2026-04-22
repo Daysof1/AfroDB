@@ -231,6 +231,16 @@ CitaServicio.belongsTo(Servicio, {
   foreignKey: 'servicioId'
 });
 
+Usuario.hasMany(CitaServicio, {
+  foreignKey: 'profesionalId',
+  as: 'serviciosAsignadosEnCitas'
+});
+
+CitaServicio.belongsTo(Usuario, {
+  foreignKey: 'profesionalId',
+  as: 'profesional'
+});
+
 //Especialidades //
 
 Usuario.belongsToMany(Especialidad, {

@@ -47,6 +47,18 @@ const CitaServicio = sequelize.define('CitaServicio', {
     onDelete: 'CASCADE'
   },
 
+  // FK -> Profesional asignado a este servicio dentro de la cita
+  profesionalId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'usuarios',
+      key: 'id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL'
+  },
+
   // 🔥 PRECIO HISTÓRICO
   precio: {
     type: DataTypes.DECIMAL(10, 2),
@@ -95,6 +107,7 @@ const CitaServicio = sequelize.define('CitaServicio', {
   indexes: [
     { fields: ['citaId'] },
     { fields: ['servicioId'] },
+    { fields: ['profesionalId'] },
     {
       unique: true,
       fields: ['citaId', 'servicioId'], // evita duplicados

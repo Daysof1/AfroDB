@@ -18,7 +18,10 @@ export default function ClienteCitas() {
   const [citas, setCitas] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [profesionales, setProfesionales] = useState([]);
-  const [formData, setFormData] = useState({ profesionalId: '', servicioIds: [], fecha: '', hora: '' });
+  const [formData, setFormData] = useState({ profesionalId: '', profesionalesIds: [], servicioIds: [], fecha: '', hora: '' });
+  const [usarSeleccionMultiple, setUsarSeleccionMultiple] = useState(false);
+  const [reprogramandoId, setReprogramandoId] = useState(null);
+  const [reprogramacionData, setReprogramacionData] = useState({ fecha: '', hora: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -62,17 +65,29 @@ export default function ClienteCitas() {
       .map(normalizarTexto)
   ));
 
-  const profesionalesCompatibles = profesionales.filter((profesional) => {
-    if (nombresEspecialidadesRequeridas.length === 0) {
-      return true;
-    }
+  const profesionalesCompatiblesIds = new Set(
+    profesionales
+      .filter((profesional) => {
+        if (nombresEspecialidadesRequeridas.length === 0) {
+          return true;
+        }
 
-    const especialidadesProfesional = new Set(
-      (profesional.especialidades || []).map((esp) => normalizarTexto(esp.nombre))
-    );
+        const especialidadesProfesional = new Set(
+          (profesional.especialidades || []).map((esp) => normalizarTexto(esp.nombre))
+        );
 
-    return nombresEspecialidadesRequeridas.every((nombre) => especialidadesProfesional.has(nombre));
-  });
+        return nombresEspecialidadesRequeridas.every((nombre) => especialidadesProfesional.has(nombre));
+      })
+      .map((profesional) => Number(profesional.id))
+  );
+
+  const profesionalesPorId = useMemo(() => {
+    const map = new Map();
+    profesionales.forEach((profesional) => {
+      map.set(Number(profesional.id), profesional.nombre || `Profesional ${profesional.id}`);
+    });
+    return map;
+  }, [profesionales]);
 
   const toggleServicio = (servicioId) => {
     setFormData((prev) => {
@@ -137,6 +152,9 @@ export default function ClienteCitas() {
 
       if (hasProfesionalPrefill) {
         next.profesionalId = String(profesionalPreseleccionadoId);
+        next.profesionalesIds = prev.profesionalesIds.includes(Number(profesionalPreseleccionadoId))
+          ? prev.profesionalesIds
+          : [...prev.profesionalesIds, Number(profesionalPreseleccionadoId)];
       }
 
       return next;
@@ -175,13 +193,17 @@ export default function ClienteCitas() {
       await apiRequest('/cliente/citas', {
         method: 'POST',
         body: JSON.stringify({
-          profesionalId: formData.profesionalId || undefined,
+          profesionalId: usarSeleccionMultiple ? undefined : (formData.profesionalId || undefined),
+          profesionalesIds: usarSeleccionMultiple && formData.profesionalesIds.length > 0
+            ? formData.profesionalesIds
+            : undefined,
           servicios: formData.servicioIds,
           fecha: formData.fecha,
           hora: formData.hora,
         }),
       });
-      setFormData({ profesionalId: '', servicioIds: [], fecha: '', hora: '' });
+      setFormData({ profesionalId: '', profesionalesIds: [], servicioIds: [], fecha: '', hora: '' });
+      setUsarSeleccionMultiple(false);
       setIsFormOpen(false);
       await loadData();
     } catch (err) {
@@ -195,6 +217,42 @@ export default function ClienteCitas() {
       await loadData();
     } catch (err) {
       setError(err.message || 'No se pudo cancelar la cita');
+    }
+  };
+
+  const abrirReprogramacion = (cita) => {
+    setError('');
+    setReprogramandoId(cita.id);
+    setReprogramacionData({
+      fecha: cita.fecha || '',
+      hora: (cita.hora || '').slice(0, 5),
+    });
+  };
+
+  const cancelarReprogramacion = () => {
+    setReprogramandoId(null);
+    setReprogramacionData({ fecha: '', hora: '' });
+  };
+
+  const handleReprogramarCita = async (id) => {
+    try {
+      if (!reprogramacionData.fecha || !reprogramacionData.hora) {
+        setError('Debes elegir una nueva fecha y hora para reprogramar');
+        return;
+      }
+
+      await apiRequest(`/cliente/citas/${id}/reprogramar`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          fecha: reprogramacionData.fecha,
+          hora: reprogramacionData.hora,
+        }),
+      });
+
+      cancelarReprogramacion();
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'No se pudo reprogramar la cita');
     }
   };
 
@@ -216,14 +274,92 @@ export default function ClienteCitas() {
           <form onSubmit={handleCrearCita}>
             <div className="form-group">
               <label>Profesional</label>
-              <select value={formData.profesionalId} onChange={(e) => setFormData({ ...formData, profesionalId: e.target.value })}>
-                <option value="">Selecciona un profesional</option>
-                {profesionalesCompatibles.map((prof) => (
+              <select
+                value={formData.profesionalId}
+                onChange={(e) => setFormData({ ...formData, profesionalId: e.target.value })}
+                disabled={usarSeleccionMultiple}
+              >
+                <option value="">Asignación automática por servicio</option>
+                {profesionales.map((prof) => (
                   <option key={prof.id} value={prof.id}>{prof.nombre}</option>
                 ))}
               </select>
-              {formData.servicioIds.length > 0 && profesionalesCompatibles.length === 0 && (
-                <small>No hay profesionales que cubran todas las especialidades requeridas por los servicios seleccionados.</small>
+              <small>
+                Si no seleccionas profesional, el sistema asigna uno o varios según especialidad por servicio.
+              </small>
+              {formData.profesionalId && formData.servicioIds.length > 0 && !profesionalesCompatiblesIds.has(Number(formData.profesionalId)) && (
+                <small>
+                  El profesional elegido no cubre todos los servicios; los faltantes se asignarán automáticamente.
+                </small>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label className="selector-multiple-toggle">
+                <input
+                  type="checkbox"
+                  checked={usarSeleccionMultiple}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setUsarSeleccionMultiple(checked);
+                    if (checked) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        profesionalId: '',
+                      }));
+                    } else {
+                      setFormData((prev) => ({
+                        ...prev,
+                        profesionalesIds: [],
+                      }));
+                    }
+                  }}
+                />
+                <span>Quiero escoger varios profesionales (opcional)</span>
+              </label>
+
+              {usarSeleccionMultiple && (
+                <>
+                  <div className="servicios-selector-grid">
+                    {profesionales.map((profesional) => {
+                      const selected = formData.profesionalesIds.includes(Number(profesional.id));
+
+                      return (
+                        <label
+                          key={profesional.id}
+                          className={`servicio-selector-item ${selected ? 'selected' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={() => {
+                              setFormData((prev) => {
+                                const id = Number(profesional.id);
+                                const yaSeleccionado = prev.profesionalesIds.includes(id);
+
+                                if (yaSeleccionado) {
+                                  return {
+                                    ...prev,
+                                    profesionalesIds: prev.profesionalesIds.filter((pid) => pid !== id),
+                                  };
+                                }
+
+                                return {
+                                  ...prev,
+                                  profesionalesIds: [...prev.profesionalesIds, id],
+                                };
+                              });
+                            }}
+                          />
+                          <span>{profesional.nombre}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <small>
+                    {formData.profesionalesIds.length} profesional(es) seleccionado(s). Si no cubren todos los servicios, la cita no se podrá crear.
+                  </small>
+                </>
               )}
             </div>
             <div className="form-group">
@@ -284,12 +420,67 @@ export default function ClienteCitas() {
                   <p><strong>Duración total:</strong> {Number(cita.duracionTotal || 0)} min</p>
                   <p><strong>Total:</strong> ${Number(cita.total || 0).toLocaleString()}</p>
                   <p><strong>Notas:</strong> {cita.notas || 'Sin notas'}</p>
+                  {!!(cita.Servicios || []).length && (
+                    <div className="cita-servicios-detalle">
+                      <strong>Asignación por servicio:</strong>
+                      <ul>
+                        {(cita.Servicios || []).map((servicio) => {
+                          const profesionalAsignadoId = Number(servicio?.CitaServicio?.profesionalId || 0);
+                          const nombreProfesional = profesionalesPorId.get(profesionalAsignadoId)
+                            || cita?.profesional?.nombre
+                            || 'Sin asignar';
+
+                          return (
+                            <li key={`${cita.id}-${servicio.id}`}>
+                              {servicio.nombre}: {nombreProfesional}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 <div className="cita-actions">
-                  <button className="btn btn-sm btn-secondary">Reprogramar</button>
+                  <button
+                    className="btn btn-sm btn-secondary"
+                    onClick={() => (reprogramandoId === cita.id ? cancelarReprogramacion() : abrirReprogramacion(cita))}
+                  >
+                    {reprogramandoId === cita.id ? 'Cerrar' : 'Reprogramar'}
+                  </button>
                   <button className="btn btn-sm btn-danger" onClick={() => handleCancelarCita(cita.id)}>Cancelar</button>
                 </div>
+
+                {reprogramandoId === cita.id && (
+                  <div className="cita-reprogramar-box">
+                    <div className="form-group">
+                      <label>Nueva fecha</label>
+                      <input
+                        type="date"
+                        value={reprogramacionData.fecha}
+                        onChange={(e) => setReprogramacionData({ ...reprogramacionData, fecha: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Nueva hora</label>
+                      <input
+                        type="time"
+                        value={reprogramacionData.hora}
+                        onChange={(e) => setReprogramacionData({ ...reprogramacionData, hora: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="cita-reprogramar-actions">
+                      <button className="btn btn-sm btn-primary" onClick={() => handleReprogramarCita(cita.id)}>
+                        Guardar nueva fecha
+                      </button>
+                      <button className="btn btn-sm btn-secondary" onClick={cancelarReprogramacion}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

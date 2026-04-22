@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShoppingBag, faCartShopping } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
@@ -6,6 +6,8 @@ import { apiRequest, getAssetUrl } from '../../api/client.js';
 
 export default function ClienteCatalogo() {
   const [productos, setProductos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [subcategorias, setSubcategorias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -13,15 +15,55 @@ export default function ClienteCatalogo() {
   const [totalPaginas, setTotalPaginas] = useState(1);
   const limite = 9;
 
-  const [filtroCategoria, setFiltroCategoria] = useState('Todos');
+  const [filtroCategoria, setFiltroCategoria] = useState('Todas');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState('Todas');
   const [busqueda, setBusqueda] = useState('');
+
+  useEffect(() => {
+    const loadCategorias = async () => {
+      try {
+        const response = await apiRequest('/catalogo/categorias');
+        setCategorias(response?.data?.categorias || []);
+      } catch (err) {
+        setError(err.message || 'No se pudieron cargar categorías');
+      }
+    };
+
+    loadCategorias();
+  }, []);
+
+  useEffect(() => {
+    const loadSubcategorias = async () => {
+      if (filtroCategoria === 'Todas') {
+        setSubcategorias([]);
+        setFiltroSubcategoria('Todas');
+        return;
+      }
+
+      try {
+        const response = await apiRequest(`/catalogo/categorias/${filtroCategoria}/subcategorias`);
+        setSubcategorias(response?.data?.subcategorias || []);
+      } catch (err) {
+        setError(err.message || 'No se pudieron cargar subcategorías');
+      }
+    };
+
+    loadSubcategorias();
+  }, [filtroCategoria]);
 
   useEffect(() => {
     const loadProductos = async () => {
       try {
         setLoading(true);
-        const response = await apiRequest(`/catalogo/productos?pagina=${pagina}&limite=${limite}`);
+
+        const params = new URLSearchParams();
+        params.set('pagina', String(pagina));
+        params.set('limite', String(limite));
+        if (busqueda.trim()) params.set('buscar', busqueda.trim());
+        if (filtroCategoria !== 'Todas') params.set('categoriaId', filtroCategoria);
+        if (filtroSubcategoria !== 'Todas') params.set('subcategoriaId', filtroSubcategoria);
+
+        const response = await apiRequest(`/catalogo/productos?${params.toString()}`);
         setProductos(response?.data?.productos || []);
         setTotalPaginas(response?.data?.paginacion?.totalPaginas || 1);
       } catch (err) {
@@ -32,46 +74,23 @@ export default function ClienteCatalogo() {
     };
 
     loadProductos();
-  }, [pagina]);
+  }, [pagina, busqueda, filtroCategoria, filtroSubcategoria]);
 
-  const categorias = useMemo(() => {
-    const unique = new Set(
-      productos
-        .map((p) => p?.categoria?.nombre || 'Sin categoría')
-        .filter(Boolean),
-    );
-    return ['Todos', ...Array.from(unique)];
-  }, [productos]);
+  const onChangeBusqueda = (event) => {
+    setPagina(1);
+    setBusqueda(event.target.value);
+  };
 
-  const subcategorias = useMemo(() => {
-    const unique = new Set(
-      productos
-        .filter((p) => {
-          const categoriaNombre = p?.categoria?.nombre || 'Sin categoría';
-          return filtroCategoria === 'Todos' || categoriaNombre === filtroCategoria;
-        })
-        .map((p) => p?.subcategoria?.nombre || 'Sin subcategoría')
-        .filter(Boolean),
-    );
+  const onChangeCategoria = (event) => {
+    setPagina(1);
+    setFiltroCategoria(event.target.value);
+    setFiltroSubcategoria('Todas');
+  };
 
-    return ['Todas', ...Array.from(unique)];
-  }, [productos, filtroCategoria]);
-
-  useEffect(() => {
-    if (!subcategorias.includes(filtroSubcategoria)) {
-      setFiltroSubcategoria('Todas');
-    }
-  }, [subcategorias, filtroSubcategoria]);
-
-  const productosFiltrados = productos.filter((p) => {
-    const categoriaNombre = p?.categoria?.nombre || 'Sin categoría';
-    const subcategoriaNombre = p?.subcategoria?.nombre || 'Sin subcategoría';
-    return (
-      (filtroCategoria === 'Todos' || categoriaNombre === filtroCategoria) &&
-      (filtroSubcategoria === 'Todas' || subcategoriaNombre === filtroSubcategoria) &&
-      p.nombre.toLowerCase().includes(busqueda.toLowerCase())
-    );
-  });
+  const onChangeSubcategoria = (event) => {
+    setPagina(1);
+    setFiltroSubcategoria(event.target.value);
+  };
 
   const handleAgregarAlCarrito = async (productoId) => {
     try {
@@ -97,28 +116,31 @@ export default function ClienteCatalogo() {
           type="text"
           placeholder="Buscar productos..."
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={onChangeBusqueda}
           className="search-input"
         />
         <select
           value={filtroCategoria}
-          onChange={(e) => setFiltroCategoria(e.target.value)}
+          onChange={onChangeCategoria}
           className="search-input"
         >
+          <option value="Todas">Categoria: Todas</option>
           {categorias.map((categoria) => (
-            <option key={categoria} value={categoria}>
-              Categoria: {categoria}
+            <option key={categoria.id} value={String(categoria.id)}>
+              Categoria: {categoria.nombre}
             </option>
           ))}
         </select>
         <select
           value={filtroSubcategoria}
-          onChange={(e) => setFiltroSubcategoria(e.target.value)}
+          onChange={onChangeSubcategoria}
           className="search-input"
+          disabled={filtroCategoria === 'Todas'}
         >
+          <option value="Todas">Subcategoria: Todas</option>
           {subcategorias.map((subcategoria) => (
-            <option key={subcategoria} value={subcategoria}>
-              Subcategoria: {subcategoria}
+            <option key={subcategoria.id} value={String(subcategoria.id)}>
+              Subcategoria: {subcategoria.nombre}
             </option>
           ))}
         </select>
@@ -129,7 +151,7 @@ export default function ClienteCatalogo() {
       {message && <div className="alert alert-success">{message}</div>}
 
       <div className="productos-grid">
-        {productosFiltrados.map((producto) => (
+        {productos.map((producto) => (
           <div key={producto.id} className="producto-card">
             <div className="cliente-image-frame cliente-image-frame-producto">
               <img className="cliente-card-img" src={getAssetUrl(producto.imagen)} alt={producto.nombre} />
@@ -168,7 +190,7 @@ export default function ClienteCatalogo() {
         </div>
       )}
 
-      {productosFiltrados.length === 0 && (
+      {productos.length === 0 && (
         <div className="empty-state">
           <p>No se encontraron productos</p>
         </div>

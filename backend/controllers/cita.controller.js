@@ -13,6 +13,7 @@ const CitaServicio = require('../models/CitaServicio');
 const Usuario = require('../models/Usuario');
 const Subcategoria = require('../models/Subcategoria');
 const Especialidad = require('../models/Especialidades');
+const { Op } = require('sequelize');
 
 const normalizarTexto = (texto = '') =>
   String(texto)
@@ -31,7 +32,34 @@ const crearCita = async (req, res) => {
   const t = await sequelize.transaction();
 
   try {
-    const { fecha, hora, servicios, profesionalId } = req.body;
+    const { fecha, hora, servicios, profesionalId, profesionalesIds } = req.body;
+
+    // VALIDACIÓN 0: fecha y hora obligatorias y en futuro
+    if (!fecha || !hora) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Debe indicar fecha y hora para agendar la cita'
+      });
+    }
+
+    const fechaHoraSeleccionada = new Date(`${fecha}T${hora}`);
+    if (Number.isNaN(fechaHoraSeleccionada.getTime())) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'La fecha u hora ingresada no es válida'
+      });
+    }
+
+    const ahora = new Date();
+    if (fechaHoraSeleccionada <= ahora) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede agendar una cita en una fecha u hora que ya pasó'
+      });
+    }
 
     // VALIDACIÓN 1: servicios obligatorios
     if (!servicios || servicios.length === 0) {
@@ -110,53 +138,49 @@ const crearCita = async (req, res) => {
 
     const idsEspecialidadesRequeridas = especialidadesRequeridas.map((esp) => esp.id);
 
-    // 🔥 ASIGNAR PROFESIONAL
-    let profesionalAsignado = profesionalId;
+    // 🔥 ASIGNACIÓN DE PROFESIONALES
+    // Una cita puede incluir varios servicios y cada servicio puede quedar con profesional distinto.
+    const profesionalesDisponibles = await Usuario.findAll({
+      where: { rol: 'profesional', activo: true },
+      include: [{
+        model: Especialidad,
+        as: 'especialidades',
+        attributes: ['id', 'nombre'],
+        through: { attributes: [] },
+        required: false
+      }],
+      transaction: t
+    });
 
-    const profesionalCumpleEspecialidades = (profesional) => {
-      const idsEspecialidadesProfesional = new Set(
-        (profesional.especialidades || []).map((esp) => esp.id)
-      );
+    const profesionalesPorId = new Map(
+      profesionalesDisponibles.map((p) => [p.id, p])
+    );
 
-      return idsEspecialidadesRequeridas.every((id) => idsEspecialidadesProfesional.has(id));
-    };
+    const especialidadPorNombreNormalizado = new Map(
+      especialidadesRequeridas.map((esp) => [normalizarTexto(esp.nombre), esp])
+    );
 
-    if (!profesionalAsignado) {
-      const profesionalesDisponibles = await Usuario.findAll({
-        where: { rol: 'profesional', activo: true },
-        include: [{
-          model: Especialidad,
-          as: 'especialidades',
-          attributes: ['id', 'nombre'],
-          through: { attributes: [] },
-          required: false
-        }],
-        transaction: t
-      });
+    let profesionalSeleccionado = null;
+    let profesionalesPreferidos = [];
 
-      const profesionalCompatible = profesionalesDisponibles.find(profesionalCumpleEspecialidades);
+    if (Array.isArray(profesionalesIds) && profesionalesIds.length > 0) {
+      const idsUnicos = Array.from(new Set(profesionalesIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)));
 
-      if (!profesionalCompatible) {
+      profesionalesPreferidos = idsUnicos
+        .map((id) => profesionalesPorId.get(id))
+        .filter(Boolean);
+
+      if (profesionalesPreferidos.length !== idsUnicos.length) {
         await t.rollback();
-        return res.status(400).json({
+        return res.status(404).json({
           success: false,
-          message: `No hay profesionales con las especialidades requeridas: ${especialidadesRequeridas.map((esp) => esp.nombre).join(', ')}`
+          message: 'Uno o más profesionales seleccionados no existen o están inactivos'
         });
       }
+    }
 
-      profesionalAsignado = profesionalCompatible.id;
-    } else {
-      const profesionalSeleccionado = await Usuario.findOne({
-        where: { id: profesionalAsignado, rol: 'profesional', activo: true },
-        include: [{
-          model: Especialidad,
-          as: 'especialidades',
-          attributes: ['id', 'nombre'],
-          through: { attributes: [] },
-          required: false
-        }],
-        transaction: t
-      });
+    if (profesionalId) {
+      profesionalSeleccionado = profesionalesPorId.get(Number(profesionalId)) || null;
 
       if (!profesionalSeleccionado) {
         await t.rollback();
@@ -165,40 +189,87 @@ const crearCita = async (req, res) => {
           message: 'Profesional no encontrado o inactivo'
         });
       }
+    }
 
-      if (!profesionalCumpleEspecialidades(profesionalSeleccionado)) {
-        const idsEspecialidadesProfesional = new Set(
-          (profesionalSeleccionado.especialidades || []).map((esp) => esp.id)
-        );
+    const serviciosAsignados = [];
 
-        const faltantes = especialidadesRequeridas
-          .filter((esp) => !idsEspecialidadesProfesional.has(esp.id))
-          .map((esp) => esp.nombre);
+    const profesionalTieneEspecialidad = (profesional, especialidadId) => {
+      const idsEspecialidades = new Set((profesional.especialidades || []).map((esp) => esp.id));
+      return idsEspecialidades.has(especialidadId);
+    };
 
+    for (const servicio of serviciosDB) {
+      const nombreSubcategoria = servicio?.subcategoria?.nombre;
+      const especialidad = especialidadPorNombreNormalizado.get(normalizarTexto(nombreSubcategoria));
+
+      let profesionalParaServicio = null;
+
+      if (profesionalesPreferidos.length > 0 && especialidad) {
+        profesionalParaServicio = profesionalesPreferidos.find((p) => profesionalTieneEspecialidad(p, especialidad.id)) || null;
+      }
+
+      if (profesionalSeleccionado && especialidad && profesionalTieneEspecialidad(profesionalSeleccionado, especialidad.id)) {
+        profesionalParaServicio = profesionalSeleccionado;
+      } else if (especialidad) {
+        // Si el cliente seleccionó una lista de profesionales, se respeta esa lista.
+        if (!profesionalParaServicio) {
+          const candidatos = profesionalesPreferidos.length > 0 ? profesionalesPreferidos : profesionalesDisponibles;
+          profesionalParaServicio = candidatos.find((p) => profesionalTieneEspecialidad(p, especialidad.id)) || null;
+        }
+      }
+
+      if (!profesionalParaServicio) {
         await t.rollback();
         return res.status(400).json({
           success: false,
-          message: `El profesional seleccionado no cubre las especialidades requeridas. Faltan: ${faltantes.join(', ')}`
+          message: `No hay profesional disponible con la especialidad requerida para el servicio: ${servicio.nombre}`
         });
       }
+
+      serviciosAsignados.push({
+        servicio,
+        profesionalId: profesionalParaServicio.id
+      });
     }
 
-    // VALIDAR DISPONIBILIDAD
-    const citaExistente = await Cita.findOne({
-      where: {
-        profesionalId: profesionalAsignado,
-        fecha,
-        hora
-      },
-      transaction: t
-    });
+    const profesionalesAsignadosIds = Array.from(new Set(serviciosAsignados.map((s) => s.profesionalId)));
 
-    if (citaExistente) {
-      await t.rollback();
-      return res.status(400).json({
-        success: false,
-        message: 'El profesional ya tiene una cita en ese horario'
+    for (const profesionalAsignadoId of profesionalesAsignadosIds) {
+      const citaExistente = await Cita.findOne({
+        where: {
+          profesionalId: profesionalAsignadoId,
+          fecha,
+          hora
+        },
+        transaction: t
       });
+
+      if (citaExistente) {
+        await t.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Uno de los profesionales asignados ya tiene una cita en ese horario'
+        });
+      }
+
+      const detalleOcupado = await CitaServicio.findOne({
+        where: { profesionalId: profesionalAsignadoId },
+        include: [{
+          model: Cita,
+          where: { fecha, hora },
+          attributes: ['id'],
+          required: true
+        }],
+        transaction: t
+      });
+
+      if (detalleOcupado) {
+        await t.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Uno de los profesionales asignados ya tiene una cita en ese horario'
+        });
+      }
     }
 
     // ==========================================
@@ -207,7 +278,7 @@ const crearCita = async (req, res) => {
 
     const cita = await Cita.create({
       usuarioId: req.usuario.id,
-      profesionalId: profesionalAsignado,
+      profesionalId: profesionalSeleccionado ? profesionalSeleccionado.id : profesionalesAsignadosIds[0],
       fecha,
       hora,
       duracionTotal,
@@ -219,10 +290,12 @@ const crearCita = async (req, res) => {
     // CREAR DETALLES (CitaServicio)
     // ==========================================
 
-    for (const s of serviciosDB) {
+    for (const asignacion of serviciosAsignados) {
+      const s = asignacion.servicio;
       await CitaServicio.create({
         citaId: cita.id,
         servicioId: s.id,
+        profesionalId: asignacion.profesionalId,
         precio: s.precio,
         duracion: s.duracion,
         cantidad: 1
@@ -245,7 +318,7 @@ const crearCita = async (req, res) => {
         },
         {
           model: Servicio,
-          through: { attributes: ['precio', 'duracion'] }
+          through: { attributes: ['precio', 'duracion', 'profesionalId'] }
         }
       ]
     });
@@ -284,7 +357,7 @@ const getMisCitas = async (req, res) => {
         },
         {
           model: Servicio,
-          through: { attributes: ['precio', 'duracion'] }
+          through: { attributes: ['precio', 'duracion', 'profesionalId'] }
         }
       ],
       order: [['fecha', 'DESC']]
@@ -332,7 +405,7 @@ const getCitaById = async (req, res) => {
         },
         {
           model: Servicio,
-          through: { attributes: ['precio', 'duracion'] }
+          through: { attributes: ['precio', 'duracion', 'profesionalId'] }
         }
       ]
     });
@@ -400,6 +473,135 @@ const cancelarCita = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al cancelar cita',
+      error: error.message
+    });
+  }
+};
+
+// ==========================================
+// 🔁 REPROGRAMAR CITA - CLIENTE
+// ==========================================
+
+const reprogramarCita = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fecha, hora } = req.body;
+
+    if (!fecha || !hora) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debe indicar fecha y hora para reprogramar la cita'
+      });
+    }
+
+    const fechaHoraSeleccionada = new Date(`${fecha}T${hora}`);
+    if (Number.isNaN(fechaHoraSeleccionada.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'La fecha u hora ingresada no es válida'
+      });
+    }
+
+    const ahora = new Date();
+    if (fechaHoraSeleccionada <= ahora) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede reprogramar una cita a una fecha u hora que ya pasó'
+      });
+    }
+
+    const cita = await Cita.findOne({
+      where: {
+        id,
+        usuarioId: req.usuario.id
+      }
+    });
+
+    if (!cita) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cita no encontrada'
+      });
+    }
+
+    if (!['pendiente', 'confirmada', 'cancelada'].includes(cita.estado)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Solo se pueden reprogramar citas pendientes, confirmadas o canceladas'
+      });
+    }
+
+    const detalles = await CitaServicio.findAll({
+      where: { citaId: cita.id },
+      attributes: ['profesionalId']
+    });
+
+    const profesionalesAsignados = new Set();
+    if (cita.profesionalId) {
+      profesionalesAsignados.add(Number(cita.profesionalId));
+    }
+
+    for (const detalle of detalles) {
+      if (detalle.profesionalId) {
+        profesionalesAsignados.add(Number(detalle.profesionalId));
+      }
+    }
+
+    for (const profesionalId of profesionalesAsignados) {
+      const citaExistente = await Cita.findOne({
+        where: {
+          profesionalId,
+          fecha,
+          hora,
+          id: { [Op.ne]: cita.id }
+        }
+      });
+
+      if (citaExistente) {
+        return res.status(400).json({
+          success: false,
+          message: 'Uno de los profesionales asignados ya tiene una cita en ese horario'
+        });
+      }
+
+      const detalleOcupado = await CitaServicio.findOne({
+        where: { profesionalId },
+        include: [{
+          model: Cita,
+          where: {
+            fecha,
+            hora,
+            id: { [Op.ne]: cita.id }
+          },
+          attributes: ['id'],
+          required: true
+        }]
+      });
+
+      if (detalleOcupado) {
+        return res.status(400).json({
+          success: false,
+          message: 'Uno de los profesionales asignados ya tiene una cita en ese horario'
+        });
+      }
+    }
+
+    cita.fecha = fecha;
+    cita.hora = hora;
+    if (cita.estado === 'cancelada') {
+      cita.estado = 'pendiente';
+    }
+    await cita.save();
+
+    res.json({
+      success: true,
+      message: 'Cita reprogramada exitosamente',
+      data: { cita }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al reprogramar cita',
       error: error.message
     });
   }
@@ -516,7 +718,7 @@ const getCitasProfesional = async (req, res) => {
         },
         {
           model: Servicio,
-          through: { attributes: ['precio', 'duracion'] }
+          through: { attributes: ['precio', 'duracion', 'profesionalId'] }
         }
       ],
       order: [['fecha', 'DESC']]
@@ -547,6 +749,7 @@ module.exports = {
   getMisCitas,
   getCitaById,
   cancelarCita,
+  reprogramarCita,
 
   // ADMIN
   getAllCitas,

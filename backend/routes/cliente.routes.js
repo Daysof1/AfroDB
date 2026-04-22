@@ -87,6 +87,9 @@ router.get('/cliente/citas/:id', verificarAuth, esCliente, citaController.getCit
 // Cancelar cita
 router.put('/cliente/citas/:id/cancelar', verificarAuth, esCliente, citaController.cancelarCita);
 
+// Reprogramar cita
+router.put('/cliente/citas/:id/reprogramar', verificarAuth, esCliente, citaController.reprogramarCita);
+
 // ==========================================
 // EXPORTAR ROUTER
 // ==========================================
