@@ -23,6 +23,7 @@ import AdminEspecialidades from './pages/admin/AdminEspecialidades.js';
 import AdminProfesionales from './pages/admin/AdminProfesionales.js';
 import AdminUsuarios from './pages/admin/AdminUsuarios.js';
 import AdminCitas from './pages/admin/AdminCitas.js';
+import AdminPedidos from './pages/admin/AdminPedidos.js';
 
 // Páginas Cliente
 import ClienteCatalogo from './pages/cliente/ClienteCatalogo.js';
@@ -154,6 +155,7 @@ function App() {
                   <Route path="/admin/profesionales" element={<AdminProfesionales />} />
                   <Route path="/admin/usuarios" element={<AdminUsuarios />} />
                   <Route path="/admin/citas" element={<AdminCitas />} />
+                  <Route path="/admin/pedidos" element={<AdminPedidos />} />
                 </>
               )}
 

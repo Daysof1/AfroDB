@@ -4,6 +4,8 @@ import { apiRequest } from '../../api/client.js';
 
 export default function AuxiliarCategorias() {
   const [categorias, setCategorias] = useState([]);
+  const [filteredCategorias, setFilteredCategorias] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -22,6 +24,16 @@ export default function AuxiliarCategorias() {
   useEffect(() => {
     loadCategorias();
   }, []);
+
+  useEffect(() => {
+    const lowercasedFilter = searchTerm.toLowerCase();
+    const filtered = categorias.filter(
+      (cat) =>
+        (cat.nombre && cat.nombre.toLowerCase().includes(lowercasedFilter)) ||
+        (cat.descripcion && cat.descripcion.toLowerCase().includes(lowercasedFilter))
+    );
+    setFilteredCategorias(filtered);
+  }, [searchTerm, categorias]);
 
   const handleCrear = async (e) => {
     e.preventDefault();
@@ -80,6 +92,16 @@ export default function AuxiliarCategorias() {
         </button>
       </div>
 
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Buscar categoría..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="search-input"
+        />
+      </div>
+
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
@@ -119,7 +141,7 @@ export default function AuxiliarCategorias() {
       )}
 
       <div className="cards-grid">
-        {categorias.map((cat) => (
+        {filteredCategorias.map((cat) => (
           <div key={cat.id} className="service-card">
             <h3>{cat.nombre}</h3>
             <p>{cat.descripcion || 'Sin descripción'}</p>

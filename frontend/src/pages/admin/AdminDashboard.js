@@ -77,9 +77,9 @@ export default function AdminDashboard() {
           totalServicios: (serviciosRes?.data?.servicios || []).length,
           totalCitas: citas.length,
           totalUsuarios: (usuariosRes?.data?.usuarios || []).length,
-          totalPedidos: pedidoStatsRes?.data?.data?.totalPedidos || 0,
-          totalCategorias: categoriasStatsRes?.data?.data?.total || 0,
-          totalSubcategorias: subcategoriasStatsRes?.data?.data?.total || 0,
+          totalPedidos: pedidoStatsRes?.data?.totalPedidos || 0,
+          totalCategorias: categoriasStatsRes?.data?.total || 0,
+          totalSubcategorias: subcategoriasStatsRes?.data?.total || 0,
         });
 
         const actividadProductos = productos.slice(0, 5).map((producto) => ({
@@ -182,8 +182,8 @@ export default function AdminDashboard() {
         <div className="action-buttons">
           <button className="action-btn btn-primary" onClick={() => navigate('/admin/productos')}>➕ Nuevo Producto</button>
           <button className="action-btn btn-primary" onClick={() => navigate('/admin/servicios')}>➕ Nuevo Servicio</button>
-          <button className="action-btn btn-secondary" onClick={() => navigate('/admin/citas')}><FontAwesomeIcon icon={faChalkboard} /> Reportes</button>
-          <button className="action-btn btn-secondary" onClick={() => navigate('/admin/usuarios')}>⚙️ Configuración</button>
+          <button className="action-btn btn-secondary" onClick={() => navigate('/admin/citas')}>📋 Ver citas</button>
+          <button className="action-btn btn-secondary" onClick={() => navigate('/admin/usuarios')}>⚙️ Ver usuarios</button>
         </div>
       </div>
 

@@ -7,6 +7,7 @@ export default function AdminProfesionales() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState({
     tipo_documento: 'C.C.',
     documento: '',
@@ -43,18 +44,23 @@ export default function AdminProfesionales() {
       direccion: profesional.direccion || '',
       activo: profesional.activo,
     });
+    setIsFormOpen(true);
   };
 
-  const handleSave = async (id) => {
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!editingId) return;
+
     try {
       setError('');
       setSuccess('');
-      await apiRequest(`/admin/profesionales/${id}`, {
+      await apiRequest(`/admin/profesionales/${editingId}`, {
         method: 'PUT',
         body: JSON.stringify(formData),
       });
       setSuccess('Profesional actualizado correctamente');
       setEditingId(null);
+      setIsFormOpen(false);
       await loadProfesionales();
     } catch (err) {
       setError(err.message || 'No se pudo actualizar el profesional');
@@ -85,6 +91,11 @@ export default function AdminProfesionales() {
     }
   };
 
+  const handleCancel = () => {
+    setEditingId(null);
+    setIsFormOpen(false);
+  };
+
   return (
     <div className="admin-page">
       <div className="page-header">
@@ -94,37 +105,81 @@ export default function AdminProfesionales() {
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
-      <div className="cards-grid">
-        {profesionales.map((profesional) => (
-          <div key={profesional.id} className="service-card">
-            <h3>{profesional.nombre} {profesional.apellido || ''}</h3>
-            <p><strong>Tipo Doc:</strong> {editingId === profesional.id ? (
-              <select value={formData.tipo_documento} onChange={(e) => setFormData({ ...formData, tipo_documento: e.target.value })}>
+      {isFormOpen && (
+        <div className="form-container">
+          <h2>Editar Profesional</h2>
+          <form onSubmit={handleSave}>
+            <div className="form-group">
+              <label>Tipo de Documento</label>
+              <select
+                value={formData.tipo_documento}
+                onChange={(e) => setFormData({ ...formData, tipo_documento: e.target.value })}
+              >
                 <option value="C.C.">C.C.</option>
                 <option value="T.I.">T.I.</option>
                 <option value="C.E.">C.E.</option>
                 <option value="P.A.">P.A.</option>
                 <option value="otro">Otro</option>
               </select>
-            ) : (profesional.tipo_documento || 'N/A')}</p>
-            <p><strong>Documento:</strong> {editingId === profesional.id ? (
-              <input value={formData.documento} onChange={(e) => setFormData({ ...formData, documento: e.target.value })} />
-            ) : (profesional.documento || 'N/A')}</p>
-            <p><strong>Nombre:</strong> {editingId === profesional.id ? (
-              <input value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} />
-            ) : profesional.nombre}</p>
-            <p><strong>Apellido:</strong> {editingId === profesional.id ? (
-              <input value={formData.apellido} onChange={(e) => setFormData({ ...formData, apellido: e.target.value })} />
-            ) : (profesional.apellido || 'N/A')}</p>
-            <p><strong>Email:</strong> {editingId === profesional.id ? (
-              <input value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-            ) : profesional.email}</p>
-            <p><strong>Teléfono:</strong> {editingId === profesional.id ? (
-              <input value={formData.telefono} onChange={(e) => setFormData({ ...formData, telefono: e.target.value })} />
-            ) : (profesional.telefono || 'N/A')}</p>
-            <p><strong>Dirección:</strong> {editingId === profesional.id ? (
-              <input value={formData.direccion} onChange={(e) => setFormData({ ...formData, direccion: e.target.value })} />
-            ) : (profesional.direccion || 'N/A')}</p>
+            </div>
+            <div className="form-group">
+              <label>Documento</label>
+              <input
+                value={formData.documento}
+                onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label>Nombre</label>
+              <input
+                value={formData.nombre}
+                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label>Apellido</label>
+              <input
+                value={formData.apellido}
+                onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label>Teléfono</label>
+              <input
+                value={formData.telefono}
+                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label>Dirección</label>
+              <input
+                value={formData.direccion}
+                onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+              />
+            </div>
+            <div className="form-actions">
+              <button type="submit" className="btn btn-primary">Guardar Cambios</button>
+              <button type="button" className="btn btn-secondary" onClick={handleCancel}>Cancelar</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="cards-grid">
+        {profesionales.map((profesional) => (
+          <div key={profesional.id} className="service-card">
+            <h3>{profesional.nombre} {profesional.apellido || ''}</h3>
+            <p><strong>Documento:</strong> {profesional.documento || 'N/A'}</p>
+            <p><strong>Email:</strong> {profesional.email}</p>
+            <p><strong>Teléfono:</strong> {profesional.telefono || 'N/A'}</p>
             <p><strong>Rol:</strong> {profesional.rol || 'profesional'}</p>
             <p><strong>Especialidades:</strong> {(profesional.especialidades || []).map((e) => e.nombre).join(', ') || 'Sin especialidades'}</p>
             <p>
@@ -133,11 +188,7 @@ export default function AdminProfesionales() {
               </span>
             </p>
             <div className="card-actions">
-              {editingId === profesional.id ? (
-                <button className="btn btn-sm btn-primary" onClick={() => handleSave(profesional.id)}>Guardar</button>
-              ) : (
-                <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(profesional)}>✏️ Editar</button>
-              )}
+              <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(profesional)}>✏️ Editar</button>
               <button
                 className={`btn btn-sm ${profesional.activo ? 'btn-warning' : 'btn-success'}`}
                 onClick={() => handleToggleActivo(profesional)}

@@ -24,6 +24,7 @@ export default function Sidebar({ userRole, onToggle }) {
     { icon: 'professionals', label: 'Profesionales', href: '/admin/profesionales' },
     { icon: 'profile', label: 'Usuarios', href: '/admin/usuarios' },
     { icon: 'calendar', label: 'Citas', href: '/admin/citas' },
+    { icon: 'box', label: 'Pedidos', href: '/admin/pedidos' },
   ];
 
   const clienteLinks = [

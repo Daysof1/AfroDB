@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 
-export default function AuxiliarPedidos() {
+export default function AdminPedidos() {
   const [pedidos, setPedidos] = useState([]);
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -47,7 +47,7 @@ export default function AuxiliarPedidos() {
   return (
     <div className="admin-page">
       <div className="page-header">
-        <h1>Auxiliar - Pedidos</h1>
+        <h1>Gestión de Pedidos</h1>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -99,4 +99,3 @@ export default function AuxiliarPedidos() {
     </div>
   );
 }
-

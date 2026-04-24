@@ -4,6 +4,8 @@ import { apiRequest } from '../../api/client.js';
 
 export default function AuxiliarSubcategorias() {
   const [subcategorias, setSubcategorias] = useState([]);
+  const [filteredSubcategorias, setFilteredSubcategorias] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [categorias, setCategorias] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -27,6 +29,17 @@ export default function AuxiliarSubcategorias() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    const lowercasedFilter = searchTerm.toLowerCase();
+    const filtered = subcategorias.filter(
+      (sub) =>
+        (sub.nombre && sub.nombre.toLowerCase().includes(lowercasedFilter)) ||
+        (sub.descripcion && sub.descripcion.toLowerCase().includes(lowercasedFilter)) ||
+        (sub.categoria?.nombre && sub.categoria.nombre.toLowerCase().includes(lowercasedFilter))
+    );
+    setFilteredSubcategorias(filtered);
+  }, [searchTerm, subcategorias]);
 
   const handleCrear = async (e) => {
     e.preventDefault();
@@ -86,6 +99,16 @@ export default function AuxiliarSubcategorias() {
         </button>
       </div>
 
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Buscar subcategoría..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="search-input"
+        />
+      </div>
+
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
@@ -117,7 +140,7 @@ export default function AuxiliarSubcategorias() {
       )}
 
       <div className="cards-grid">
-        {subcategorias.map((subcategoria) => (
+        {filteredSubcategorias.map((subcategoria) => (
           <div key={subcategoria.id} className="service-card">
             <h3>{subcategoria.nombre}</h3>
             <p>{subcategoria.descripcion || 'Sin descripción'}</p>

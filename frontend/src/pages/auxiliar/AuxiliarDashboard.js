@@ -71,8 +71,8 @@ export default function AuxiliarDashboard() {
           totalServicios: servicios.length,
           totalCitas: citas.length,
           totalPedidos: pedidos.length,
-          totalCategorias: categoriasStatsRes?.data?.data?.total || 0,
-          totalSubcategorias: subcategoriasStatsRes?.data?.data?.total || 0,
+          totalCategorias: categoriasStatsRes?.data?.total || 0,
+          totalSubcategorias: subcategoriasStatsRes?.data?.total || 0,
         });
 
         const actividadProductos = productos.slice(0, 5).map((producto) => ({

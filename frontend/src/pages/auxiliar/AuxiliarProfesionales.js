@@ -123,19 +123,6 @@ export default function AuxiliarProfesionales() {
                 {profesional.activo ? '✓ Activo' : '✗ Inactivo'}
               </span>
             </p>
-            <div className="card-actions">
-              {editingId === profesional.id ? (
-                <button className="btn btn-sm btn-primary" onClick={() => handleSave(profesional.id)}>Guardar</button>
-              ) : (
-                <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(profesional)}>✏️ Editar</button>
-              )}
-              <button
-                className={`btn btn-sm ${profesional.activo ? 'btn-warning' : 'btn-success'}`}
-                onClick={() => handleToggleActivo(profesional)}
-              >
-                {profesional.activo ? '⊘ Desactivar' : '✓ Activar'}
-              </button>
-            </div>
           </div>
         ))}
       </div>
