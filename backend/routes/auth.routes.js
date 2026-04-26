@@ -39,7 +39,11 @@ const {
   login,             // Función que autentica al usuario y retorna un token JWT
   getMe,             // Función que retorna los datos del usuario autenticado
   updateMe,          // Función que actualiza el perfil del usuario autenticado
-  changePassword     // Función que permite cambiar la contraseña
+  changePassword,    // Función que permite cambiar la contraseña
+  forgotPassword,    // Función para iniciar recuperación de contraseña
+  validateResetToken,// Función para validar token de recuperación
+  resetPassword,     // Función para restablecer contraseña con token
+  changePasswordPublic // Función para cambiar contraseña sin login
 } = require('../controllers/auth.controller');
 
 // ==========================================
@@ -89,6 +93,9 @@ router.post('/register', register);
 // Respuesta exitosa (200 OK):
 //   { success: true, data: { usuario: { id, nombre, email, rol, ... }, token: "eyJ..." } }
 router.post('/login', login);
+router.post('/forgot-password', forgotPassword);
+router.get('/reset-password/:token', validateResetToken);
+router.post('/reset-password/:token', resetPassword);
 
 // ==========================================
 // RUTAS PROTEGIDAS (Requieren autenticación)

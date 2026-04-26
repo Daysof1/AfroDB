@@ -175,6 +175,24 @@ const Usuario = sequelize.define('Usuario', {
     type: DataTypes.BOOLEAN,           // TINYINT(1) en MySQL → true (1) o false (0)
     allowNull: false,                  // Obligatorio
     defaultValue: true                 // Por defecto se crea activo
+  },
+
+  // Token para recuperación de contraseña
+  resetPasswordToken: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    validate: {
+      len: {
+        args: [0, 255],
+        msg: 'resetPasswordToken debe tener como máximo 255 caracteres'
+      }
+    }
+  },
+
+  // Fecha de expiración del token de recuperación de contraseña
+  resetPasswordExpires: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 
 }, {

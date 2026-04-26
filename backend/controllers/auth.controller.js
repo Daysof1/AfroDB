@@ -10,10 +10,14 @@
 // Importa el modelo Usuario desde la carpeta models.
 // Este modelo representa la tabla 'Usuario' en la BD y permite hacer operaciones CRUD.
 const Usuario = require('../models/Usuario');
+const { Op } = require('sequelize');
 
 // Importa la función generateToken desde config/jwt.js.
 // Se usa para crear un token JWT después de un registro o login exitoso.
 const { generateToken } = require('../config/jwt');
+
+// Importa crypto para generar tokens seguros de recuperación de contraseña.
+const crypto = require('crypto');
 
 /**
  * Registrar nuevo usuario
@@ -405,6 +409,158 @@ const changePassword = async (req, res) => {
   }
 };
 
+/**
+ * Solicitud de recuperación de contraseña
+ *
+ * Busca el usuario por email, genera un token seguro y guarda la expiración.
+ * No revela si el email existe para evitar enumeración de cuentas.
+ *
+ * Ruta: POST /api/auth/forgot-password
+ * Body: { email }
+ */
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'El email es requerido'
+      });
+    }
+
+    const usuario = await Usuario.findOne({ where: { email } });
+
+    if (usuario) {
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiration = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+      usuario.resetPasswordToken = token;
+      usuario.resetPasswordExpires = expiration;
+      await usuario.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Si el email está registrado, se ha enviado un enlace de recuperación'
+    });
+  } catch (error) {
+    console.error('Error en forgotPassword:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al procesar la solicitud de recuperación de contraseña',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Verifica token de recuperación de contraseña
+ *
+ * Ruta: GET /api/auth/reset-password/:token
+ */
+const validateResetToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token no proporcionado'
+      });
+    }
+
+    const usuario = await Usuario.findOne({
+      where: {
+        resetPasswordToken: token,
+        resetPasswordExpires: {
+          [Op.gt]: new Date()
+        }
+      }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        message: 'Token inválido o expirado'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Token válido'
+    });
+  } catch (error) {
+    console.error('Error en validateResetToken:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al validar token de recuperación de contraseña',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Restablece la contraseña usando el token válido
+ *
+ * Ruta: POST /api/auth/reset-password/:token
+ * Body: { passwordNueva }
+ */
+const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { passwordNueva } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token no proporcionado'
+      });
+    }
+
+    if (!passwordNueva || passwordNueva.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña nueva debe tener al menos 6 caracteres'
+      });
+    }
+
+    const usuario = await Usuario.findOne({
+      where: {
+        resetPasswordToken: token,
+        resetPasswordExpires: {
+          [Op.gt]: new Date()
+        }
+      }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        message: 'Token inválido o expirado'
+      });
+    }
+
+    usuario.password = passwordNueva;
+    usuario.resetPasswordToken = null;
+    usuario.resetPasswordExpires = null;
+    await usuario.save();
+
+    res.json({
+      success: true,
+      message: 'Contraseña restablecida exitosamente'
+    });
+  } catch (error) {
+    console.error('Error en resetPassword:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al restablecer la contraseña',
+      error: error.message
+    });
+  }
+};
+
+
 // Exporta todas las funciones del controlador como un objeto.
 // Estas funciones se importan en routes/auth.routes.js para asociarlas a las rutas.
 // Ejemplo en rutas: router.post('/register', authController.register);
@@ -413,5 +569,8 @@ module.exports = {
   login,            // POST /api/auth/login - Inicio de sesión
   getMe,            // GET /api/auth/me - Obtener perfil propio
   updateMe,         // PUT /api/auth/me - Actualizar perfil propio
-  changePassword    // PUT /api/auth/change-password - Cambiar contraseña
+  changePassword,   // PUT /api/auth/change-password - Cambiar contraseña
+  forgotPassword,   // POST /api/auth/forgot-password - Solicitar recuperación
+  validateResetToken, // GET /api/auth/reset-password/:token - Validar token
+  resetPassword,    // POST /api/auth/reset-password/:token - Restablecer contraseña
 };

@@ -12,6 +12,11 @@ import Footer from './components/Footer.js';
 import Home from './pages/Home.js';
 import Login from './pages/Login.js';
 import Register from './pages/Register.js';
+import ForgotPassword from './pages/ForgotPassword.js';
+import ResetPassword from './pages/ResetPassword.js';
+import ChangePassword from './pages/ChangePassword.js';
+import Profile from './pages/Profile.js';
+
 
 // Páginas Admin
 import AdminDashboard from './pages/admin/AdminDashboard.js';
@@ -132,6 +137,16 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password/:token" element={<ResetPassword />} />
+                </>
+              )}
+
+              {/* RUTAS PARA USUARIOS AUTENTICADOS */}
+              {isAuthenticated && (
+                <>
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/change-password" element={<ChangePassword />} />
                 </>
               )}
 

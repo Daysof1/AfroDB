@@ -68,6 +68,7 @@ export default function Navbar({ userRole, onLogout }) {
           {/* SI ESTÁ AUTENTICADO: SOLO ACCIONES GLOBALES (NO DUPLICAR SIDEBAR) */}
           {userRole && (
             <>
+              <Link to="/profile">Mi Perfil</Link>
               {dashboardRoute && <Link to={dashboardRoute}>Dashboard</Link>}
               <button onClick={handleLogout} className="btn-logout">
                 Cerrar Sesión
@@ -102,6 +103,9 @@ export default function Navbar({ userRole, onLogout }) {
 
           {userRole && (
             <>
+              <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                Mi Perfil
+              </Link>
               {dashboardRoute && (
                 <Link to={dashboardRoute} onClick={() => setIsMenuOpen(false)}>
                   Dashboard

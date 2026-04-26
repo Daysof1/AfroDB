@@ -110,6 +110,7 @@ export default function Login() {
             </form>
 
             <div className="login-footer">
+              <p><Link to="/forgot-password">¿Olvidaste tu contraseña?</Link></p>
               <p>¿No tienes cuenta? <Link to="/register">Regístrate aquí</Link></p>
               <p style={{ fontSize: '0.85rem', color: '#999', marginTop: '1rem' }}>
                 El sistema reconocerá automáticamente tu rol

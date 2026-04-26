@@ -157,10 +157,49 @@
   font-weight: 500;
 }
 
+.alert-success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
 .alert-error {
   background: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
+}
+
+.login-links {
+  margin-top: 2rem;
+  text-align: center;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+ /*estilos del boton volver a perfil*/
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #f0f0f0;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.btn-back:hover {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: white;
+  transform: translateX(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn-back:active {
+  transform: translateX(-2px);
 }
 
 /* RESPONSIVE */
