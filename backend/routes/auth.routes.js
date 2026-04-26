@@ -43,7 +43,6 @@ const {
   forgotPassword,    // Función para iniciar recuperación de contraseña
   validateResetToken,// Función para validar token de recuperación
   resetPassword,     // Función para restablecer contraseña con token
-  changePasswordPublic // Función para cambiar contraseña sin login
 } = require('../controllers/auth.controller');
 
 // ==========================================
