@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faBell, faClock, faSackDollar } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
-import { apiRequest, getAssetUrl, normalizeRole } from '../../api/client.js';
+import { apiRequest, getAssetUrl, getStoredRole, isAuthenticated } from '../../api/client.js';
 
 export default function ClienteServicios() {
   const navigate = useNavigate();
@@ -20,11 +20,11 @@ export default function ClienteServicios() {
   const limite = 9;
 
   const handleAgendarCita = (servicioId) => {
-    const userRole = normalizeRole(localStorage.getItem('userRole'));
+    const userRole = getStoredRole();
 
-    // Si está autenticado como cliente, va a agendar cita
-    if (userRole === 'cliente') {
-      navigate(`/cliente/citas?servicio=${servicioId}`, {
+    // Clientes, admin y auxiliar autenticados pueden agendar citas
+    if (isAuthenticated() && ['cliente', 'admin', 'auxiliar'].includes(userRole)) {
+      navigate(`/agenda/citas?servicio=${servicioId}`, {
         state: { servicioId },
       });
     } else {

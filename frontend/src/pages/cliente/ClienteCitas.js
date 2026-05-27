@@ -161,7 +161,7 @@ export default function ClienteCitas() {
     });
 
     if (location.search || location.state?.servicioId || location.state?.profesionalId) {
-      navigate('/cliente/citas', { replace: true });
+      navigate('/agenda/citas', { replace: true });
     }
   }, [
     servicioPreseleccionadoId,

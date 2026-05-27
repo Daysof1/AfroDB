@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import './App.css';
-import { clearSession } from './api/client.js';
+import { clearSession, getStoredRole, getToken } from './api/client.js';
 
 // Componentes compartidos
 import Navbar from './components/Navbar.js';
@@ -56,18 +56,21 @@ function App() {
   const [globalNotice, setGlobalNotice] = useState('');
 
   useEffect(() => {
-    // Verificar si hay usuario autenticado
-    const savedRole = localStorage.getItem('userRole');
-    if (savedRole) {
+    const syncSessionState = () => {
+      const token = getToken();
+      const savedRole = token ? getStoredRole() : null;
       setUserRole(savedRole);
-    }
+    };
+
+    syncSessionState();
   }, [authChanged]); // Se ejecuta cuando authChanged cambia
 
   // Escuchar evento personalizado de cambio de autenticación
   useEffect(() => {
     const handleAuthChange = () => {
-      const savedRole = localStorage.getItem('userRole');
-      setUserRole(savedRole || null);
+      const token = getToken();
+      const savedRole = token ? getStoredRole() : null;
+      setUserRole(savedRole);
     };
     
     window.addEventListener('authChange', handleAuthChange);
@@ -77,8 +80,9 @@ function App() {
   // Escuchar cambios en localStorage desde otra pestaña/ventana
   useEffect(() => {
     const handleStorageChange = () => {
-      const savedRole = localStorage.getItem('userRole');
-      setUserRole(savedRole || null);
+      const token = getToken();
+      const savedRole = token ? getStoredRole() : null;
+      setUserRole(savedRole);
     };
     
     window.addEventListener('storage', handleStorageChange);
@@ -96,7 +100,7 @@ function App() {
     return () => window.removeEventListener('sessionExpired', handleSessionExpired);
   }, []);
 
-  const isAuthenticated = userRole !== null;
+  const isAuthenticated = Boolean(getToken() && userRole);
 
   const getDefaultRouteByRole = () => {
     if (userRole === 'admin') return '/admin/dashboard';
@@ -104,6 +108,8 @@ function App() {
     if (userRole === 'profesional') return '/profesional/dashboard';
     return '/cliente/catalogo';
   };
+
+  const canScheduleAppointments = isAuthenticated && ['cliente', 'admin', 'auxiliar'].includes(userRole);
 
   const handleLogout = () => {
     clearSession();
@@ -126,6 +132,9 @@ function App() {
           
           <main className={`content ${isAuthenticated ? 'with-sidebar' : 'full-width'} ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
             <Routes>
+              <Route path="/cliente/catalogo" element={<ClienteCatalogo />} />
+              <Route path="/cliente/carrito" element={<ClienteCarrito />} />
+
               {/* RUTAS PÚBLICAS - Solo si no está autenticado */}
               {!isAuthenticated && (
                 <>
@@ -147,6 +156,7 @@ function App() {
               {isAuthenticated && userRole === 'admin' && (
                 <>
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  <Route path="/admin/carrito" element={<ClienteCarrito />} />
                   <Route path="/admin/productos" element={<AdminProductos />} />
                   <Route path="/admin/servicios" element={<AdminServicios />} />
                   <Route path="/admin/categorias" element={<AdminCategorias />} />
@@ -159,11 +169,17 @@ function App() {
                 </>
               )}
 
+              {canScheduleAppointments && (
+                <Route path="/agenda/citas" element={<ClienteCitas />} />
+              )}
+
+              {isAuthenticated && ['admin', 'auxiliar'].includes(userRole) && (
+                <Route path="/cliente/servicios" element={<ClienteServicios />} />
+              )}
+
               {/* RUTAS CLIENTE - Protegidas */}
               {isAuthenticated && userRole === 'cliente' && (
                 <>
-                  <Route path="/cliente/catalogo" element={<ClienteCatalogo />} />
-                  <Route path="/cliente/carrito" element={<ClienteCarrito />} />
                   <Route path="/cliente/pedidos" element={<ClientePedidos />} />
                   <Route path="/cliente/profesionales" element={<ClienteProfesionales />} />
                   <Route path="/cliente/servicios" element={<ClienteServicios />} />
@@ -175,6 +191,9 @@ function App() {
               {isAuthenticated && userRole === 'profesional' && (
                 <>
                   <Route path="/profesional/dashboard" element={<ProfesionalDashboard />} />
+                  <Route path="/profesional/carrito" element={<ClienteCarrito />} />
+                  <Route path="/profesional/pedidos" element={<ClientePedidos />} />
+                  <Route path="/profesional/servicios" element={<ClienteServicios />} />
                   <Route path="/profesional/citas" element={<ProfesionalCitas />} />
                   <Route path="/profesional/perfil" element={<ProfesionalPerfil />} />
                   <Route path="/profesional/especialidades" element={<ProfesionalEspecialidades />} />
@@ -185,6 +204,7 @@ function App() {
               {isAuthenticated && userRole === 'auxiliar' && (
                 <>
                   <Route path="/auxiliar/dashboard" element={<AuxiliarDashboard />} />
+                  <Route path="/auxiliar/carrito" element={<ClienteCarrito />} />
                   <Route path="/auxiliar/productos" element={<AuxiliarProductos />} />
                   <Route path="/auxiliar/servicios" element={<AuxiliarServicios />} />
                   <Route path="/auxiliar/categorias" element={<AuxiliarCategorias />} />

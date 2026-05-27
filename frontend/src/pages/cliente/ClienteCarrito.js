@@ -3,10 +3,33 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCartShopping } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
-import { apiRequest, getAssetUrl } from '../../api/client.js';
+import {
+  apiRequest,
+  clearLocalCart,
+  getAssetUrl,
+  getLocalCartItems,
+  isAuthenticated,
+  getStoredRole,
+  removeLocalCartItem,
+  updateLocalCartItemCantidad,
+} from '../../api/client.js';
 
 export default function ClienteCarrito() {
   const navigate = useNavigate();
+  const authenticated = isAuthenticated();
+  const userRole = getStoredRole();
+  const useServerCart = authenticated;
+  const canCheckout = authenticated;
+  const getCheckoutRoute = () => {
+    if (userRole === 'admin') return '/admin/pedidos';
+    if (userRole === 'auxiliar') return '/auxiliar/pedidos';
+    return '/cliente/pedidos';
+  };
+  const pageTitle = userRole === 'admin'
+    ? 'Carrito de Administración'
+    : userRole === 'auxiliar'
+      ? 'Carrito del Auxiliar'
+      : 'Mi Carrito';
   const [carrito, setCarrito] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,6 +46,12 @@ export default function ClienteCarrito() {
     try {
       setLoading(true);
       setError('');
+
+      if (!useServerCart) {
+        setCarrito(getLocalCartItems());
+        return;
+      }
+
       const response = await apiRequest('/cliente/carrito');
       setCarrito(response?.data?.items || []);
     } catch (err) {
@@ -37,6 +66,8 @@ export default function ClienteCarrito() {
   }, []);
 
   useEffect(() => {
+    if (!canCheckout) return;
+
     const loadProfileData = async () => {
       try {
         const response = await apiRequest('/auth/me');
@@ -52,21 +83,28 @@ export default function ClienteCarrito() {
     };
 
     loadProfileData();
-  }, []);
+  }, [canCheckout]);
 
   const total = carrito.reduce((sum, item) => sum + (Number(item.precioUnitario || 0) * Number(item.cantidad || 0)), 0);
 
   const handleActualizarCantidad = async (id, nuevaCantidad) => {
     try {
-      if (nuevaCantidad <= 0) {
-        await apiRequest(`/cliente/carrito/${id}`, { method: 'DELETE' });
+      if (!useServerCart) {
+        const updatedItems = nuevaCantidad <= 0
+          ? removeLocalCartItem(id)
+          : updateLocalCartItemCantidad(id, nuevaCantidad);
+        setCarrito(updatedItems);
       } else {
-        await apiRequest(`/cliente/carrito/${id}`, {
-          method: 'PUT',
-          body: JSON.stringify({ cantidad: nuevaCantidad }),
-        });
+        if (nuevaCantidad <= 0) {
+          await apiRequest(`/cliente/carrito/${id}`, { method: 'DELETE' });
+        } else {
+          await apiRequest(`/cliente/carrito/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ cantidad: nuevaCantidad }),
+          });
+        }
+        await loadCarrito();
       }
-      await loadCarrito();
     } catch (err) {
       setError(err.message || 'No se pudo actualizar el carrito');
     }
@@ -74,8 +112,12 @@ export default function ClienteCarrito() {
 
   const handleEliminar = async (id) => {
     try {
-      await apiRequest(`/cliente/carrito/${id}`, { method: 'DELETE' });
-      await loadCarrito();
+      if (!useServerCart) {
+        setCarrito(removeLocalCartItem(id));
+      } else {
+        await apiRequest(`/cliente/carrito/${id}`, { method: 'DELETE' });
+        await loadCarrito();
+      }
     } catch (err) {
       setError(err.message || 'No se pudo eliminar el item');
     }
@@ -88,7 +130,11 @@ export default function ClienteCarrito() {
     try {
       setError('');
       setPaymentMessage('');
-      await apiRequest('/cliente/carrito', { method: 'DELETE' });
+      if (!useServerCart) {
+        clearLocalCart();
+      } else {
+        await apiRequest('/cliente/carrito', { method: 'DELETE' });
+      }
       setCarrito([]);
       setPaymentMessage('Carrito vaciado correctamente.');
     } catch (err) {
@@ -103,6 +149,11 @@ export default function ClienteCarrito() {
   };
 
   const handleGenerarPago = async () => {
+    if (!canCheckout) {
+      setError('Debes iniciar sesión para generar el pago');
+      return;
+    }
+
     if (!checkoutData.direccionEnvio.trim()) {
       setError('La dirección de envío es obligatoria para generar el pago');
       return;
@@ -135,7 +186,8 @@ export default function ClienteCarrito() {
           ? `Pago generado correctamente. Pedido #${pedidoId} creado.`
           : 'Pago generado correctamente. Tu pedido fue creado.',
       );
-      navigate('/cliente/pedidos');
+      clearLocalCart();
+      navigate(getCheckoutRoute());
     } catch (err) {
       setError(err.message || 'No se pudo generar el pago');
     } finally {
@@ -146,8 +198,20 @@ export default function ClienteCarrito() {
   return (
     <div className="cliente-page">
       <div className="page-header">
-        <h1><FontAwesomeIcon icon={faCartShopping} /> Mi Carrito</h1>
+        <h1><FontAwesomeIcon icon={faCartShopping} /> {pageTitle}</h1>
       </div>
+
+      {!authenticated && (
+        <div className="alert alert-info">
+          Puedes agregar productos y ver tu carrito sin iniciar sesión, pero necesitas una cuenta de cliente para pagar.
+        </div>
+      )}
+
+      {authenticated && !canCheckout && (
+        <div className="alert alert-info">
+          Esta sección permite revisar el carrito, pero necesitas iniciar sesión para finalizar la compra.
+        </div>
+      )}
 
       {loading && <p>Cargando carrito...</p>}
       {error && <div className="alert alert-error">{error}</div>}
@@ -259,8 +323,12 @@ export default function ClienteCarrito() {
               />
             </div>
 
-            <button className="btn btn-primary btn-block" onClick={handleGenerarPago} disabled={processingPayment}>
-              {processingPayment ? 'Generando pago...' : 'Generar Pago'}
+            <button
+              className="btn btn-primary btn-block"
+              onClick={handleGenerarPago}
+              disabled={processingPayment || !canCheckout}
+            >
+              {processingPayment ? 'Generando pago...' : canCheckout ? 'Generar Pago' : 'Inicia sesión para pagar'}
             </button>
             <button className="btn btn-danger btn-block" onClick={handleVaciarCarrito} disabled={processingPayment}>
               Vaciar Carrito

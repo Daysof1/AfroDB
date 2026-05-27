@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faScissors } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
-import { apiRequest, getAssetUrl } from '../../api/client.js';
+import { apiRequest, getAssetUrl, getStoredRole, isAuthenticated } from '../../api/client.js';
 
 export default function ClienteProfesionales() {
   const navigate = useNavigate();
@@ -15,9 +15,16 @@ export default function ClienteProfesionales() {
   const [error, setError] = useState('');
 
   const handleAgendarCita = (profesionalId) => {
-    navigate(`/cliente/citas?profesional=${profesionalId}`, {
-      state: { profesionalId },
-    });
+    const userRole = getStoredRole();
+
+    if (isAuthenticated() && ['cliente', 'admin', 'auxiliar'].includes(userRole)) {
+      navigate(`/agenda/citas?profesional=${profesionalId}`, {
+        state: { profesionalId },
+      });
+      return;
+    }
+
+    navigate('/login');
   };
 
   const handleVerPerfil = async (profesionalId) => {

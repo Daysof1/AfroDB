@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendar } from '@fortawesome/free-solid-svg-icons';
+import { faCalendar, faBell, faShoppingBag } from '@fortawesome/free-solid-svg-icons';
 import './Navbar.css';
 import { getAssetUrl } from '../api/client.js';
 
@@ -25,12 +25,14 @@ export default function Navbar({ userRole, onLogout }) {
   };
 
   const handleAgendarCita = () => {
-    if (userRole === 'cliente') {
-      navigate('/cliente/citas');
+    if (['cliente', 'admin', 'auxiliar'].includes(userRole)) {
+      navigate('/agenda/citas');
       return;
     }
     navigate('/login');
   };
+
+  const showCatalogAndServices = ['admin', 'auxiliar', 'profesional'].includes(userRole);
 
   const getDashboardRoute = () => {
     if (userRole === 'admin') return '/admin/dashboard';
@@ -56,6 +58,7 @@ export default function Navbar({ userRole, onLogout }) {
           {!userRole && (
             <>
               <Link to="/">Inicio</Link>
+              <Link to="/cliente/carrito">Carrito</Link>
               <Link to="/login" className="btn-nav btn-primary">
                 Iniciar Sesión
               </Link>
@@ -68,6 +71,12 @@ export default function Navbar({ userRole, onLogout }) {
           {/* SI ESTÁ AUTENTICADO: SOLO ACCIONES GLOBALES (NO DUPLICAR SIDEBAR) */}
           {userRole && (
             <>
+              {showCatalogAndServices && (
+                <>
+                  <Link to="/cliente/catalogo">Catálogo</Link>
+                  <Link to="/cliente/servicios">Servicios</Link>
+                </>
+              )}
               {dashboardRoute && <Link to={dashboardRoute}>Dashboard</Link>}
               <button onClick={handleLogout} className="btn-logout">
                 Cerrar Sesión
@@ -88,9 +97,7 @@ export default function Navbar({ userRole, onLogout }) {
           {!userRole && (
             <>
               <Link to="/" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
-              <button onClick={() => { handleAgendarCita(); setIsMenuOpen(false); }} className="btn-nav btn-secondary">
-                <FontAwesomeIcon icon={faCalendar} /> Agendar Cita
-              </button>
+              <Link to="/cliente/carrito" onClick={() => setIsMenuOpen(false)}>Carrito</Link>
               <Link to="/login" className="btn-nav btn-primary" onClick={() => setIsMenuOpen(false)}>
                 Iniciar Sesión
               </Link>
@@ -102,6 +109,27 @@ export default function Navbar({ userRole, onLogout }) {
 
           {userRole && (
             <>
+              {showCatalogAndServices && (
+                <>
+                  <Link to="/cliente/catalogo" onClick={() => setIsMenuOpen(false)}>
+                    <FontAwesomeIcon icon={faShoppingBag} /> Catálogo
+                  </Link>
+                  <Link to="/cliente/servicios" onClick={() => setIsMenuOpen(false)}>
+                    <FontAwesomeIcon icon={faBell} /> Servicios
+                  </Link>
+                  {['cliente', 'admin', 'auxiliar'].includes(userRole) && (
+                    <button
+                      onClick={() => {
+                        handleAgendarCita();
+                        setIsMenuOpen(false);
+                      }}
+                      className="btn-nav btn-secondary"
+                    >
+                      <FontAwesomeIcon icon={faCalendar} /> Agendar Cita
+                    </button>
+                  )}
+                </>
+              )}
               {dashboardRoute && (
                 <Link to={dashboardRoute} onClick={() => setIsMenuOpen(false)}>
                   Dashboard

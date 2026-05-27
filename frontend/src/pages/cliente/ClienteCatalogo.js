@@ -2,9 +2,18 @@ import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShoppingBag, faCartShopping } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
-import { apiRequest, getAssetUrl } from '../../api/client.js';
+import {
+  apiRequest,
+  addItemToLocalCart,
+  getAssetUrl,
+  isAuthenticated,
+  getStoredRole,
+} from '../../api/client.js';
 
 export default function ClienteCatalogo() {
+  const authenticated = isAuthenticated();
+  const userRole = getStoredRole();
+  const useServerCart = authenticated;
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [subcategorias, setSubcategorias] = useState([]);
@@ -94,10 +103,17 @@ export default function ClienteCatalogo() {
 
   const handleAgregarAlCarrito = async (productoId) => {
     try {
-      await apiRequest('/cliente/carrito', {
-        method: 'POST',
-        body: JSON.stringify({ productoId, cantidad: 1 }),
-      });
+      const producto = productos.find((item) => String(item.id) === String(productoId));
+
+      if (useServerCart) {
+        await apiRequest('/cliente/carrito', {
+          method: 'POST',
+          body: JSON.stringify({ productoId, cantidad: 1 }),
+        });
+      } else {
+        addItemToLocalCart(producto, 1);
+      }
+
       setMessage('Producto agregado al carrito');
       setTimeout(() => setMessage(''), 1800);
     } catch (err) {

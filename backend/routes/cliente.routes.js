@@ -12,7 +12,6 @@ const router = express.Router();
 // IMPORTACIÓN DE MIDDLEWARES
 // ==========================================
 const { verificarAuth } = require('../middleware/auth');
-const { esCliente, esProfesional } = require('../middleware/checkRole'); // 👈 agregado esProfesional
 
 // ==========================================
 // IMPORTACIÓN DE CONTROLADORES
@@ -76,19 +75,19 @@ router.put('/cliente/pedidos/:id/cancelar', verificarAuth, pedidoController.canc
 // ============================================
 
 // Crear cita
-router.post('/cliente/citas', verificarAuth, esCliente, citaController.crearCita);
+router.post('/cliente/citas', verificarAuth, citaController.crearCita);
 
 // Ver mis citas
-router.get('/cliente/citas', verificarAuth, esCliente, citaController.getMisCitas);
+router.get('/cliente/citas', verificarAuth, citaController.getMisCitas);
 
 // Ver detalle de cita
-router.get('/cliente/citas/:id', verificarAuth, esCliente, citaController.getCitaById);
+router.get('/cliente/citas/:id', verificarAuth, citaController.getCitaById);
 
 // Cancelar cita
-router.put('/cliente/citas/:id/cancelar', verificarAuth, esCliente, citaController.cancelarCita);
+router.put('/cliente/citas/:id/cancelar', verificarAuth, citaController.cancelarCita);
 
 // Reprogramar cita
-router.put('/cliente/citas/:id/reprogramar', verificarAuth, esCliente, citaController.reprogramarCita);
+router.put('/cliente/citas/:id/reprogramar', verificarAuth, citaController.reprogramarCita);
 
 // ==========================================
 // EXPORTAR ROUTER
