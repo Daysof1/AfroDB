@@ -77,6 +77,8 @@ export default function Navbar({ userRole, onLogout }) {
                   <Link to="/cliente/servicios">Servicios</Link>
                 </>
               )}
+              <Link to="/profile">Mi Perfil</Link>
+
               {dashboardRoute && <Link to={dashboardRoute}>Dashboard</Link>}
               <button onClick={handleLogout} className="btn-logout">
                 Cerrar Sesión
@@ -117,25 +119,37 @@ export default function Navbar({ userRole, onLogout }) {
                   <Link to="/cliente/servicios" onClick={() => setIsMenuOpen(false)}>
                     <FontAwesomeIcon icon={faBell} /> Servicios
                   </Link>
-                  {['cliente', 'admin', 'auxiliar'].includes(userRole) && (
-                    <button
-                      onClick={() => {
-                        handleAgendarCita();
-                        setIsMenuOpen(false);
-                      }}
-                      className="btn-nav btn-secondary"
-                    >
-                      <FontAwesomeIcon icon={faCalendar} /> Agendar Cita
-                    </button>
-                  )}
                 </>
               )}
+
+              <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                Mi Perfil
+              </Link>
+
+              {['cliente', 'admin', 'auxiliar'].includes(userRole) && (
+                <button
+                  onClick={() => {
+                    handleAgendarCita();
+                    setIsMenuOpen(false);
+                  }}
+                  className="btn-nav btn-secondary"
+                >
+                  <FontAwesomeIcon icon={faCalendar} /> Agendar Cita
+                </button>
+              )}
+
               {dashboardRoute && (
                 <Link to={dashboardRoute} onClick={() => setIsMenuOpen(false)}>
                   Dashboard
                 </Link>
               )}
-              <button onClick={handleLogout} className="btn-logout">
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setIsMenuOpen(false);
+                }}
+                className="btn-logout"
+              >
                 Cerrar Sesión
               </button>
             </>
