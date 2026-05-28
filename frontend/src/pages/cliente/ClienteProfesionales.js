@@ -17,7 +17,7 @@ export default function ClienteProfesionales() {
   const handleAgendarCita = (profesionalId) => {
     const userRole = getStoredRole();
 
-    if (isAuthenticated() && ['cliente', 'admin', 'auxiliar'].includes(userRole)) {
+    if (isAuthenticated() && ['cliente', 'admin', 'auxiliar', 'profesional'].includes(userRole)) {
       navigate(`/agenda/citas?profesional=${profesionalId}`, {
         state: { profesionalId },
       });

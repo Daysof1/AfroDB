@@ -42,7 +42,6 @@ export default function Sidebar({ userRole, onToggle }) {
     { icon: 'box', label: 'Mis Pedidos', href: '/profesional/pedidos' },
     { icon: 'bell', label: 'Servicios', href: '/profesional/servicios' },
     { icon: 'calendar', label: 'Mis Citas', href: '/profesional/citas' },
-    { icon: 'profile', label: 'Mi Perfil', href: '/profesional/perfil' },
     { icon: 'specialties', label: 'Especialidades', href: '/profesional/especialidades' },
   ];
 

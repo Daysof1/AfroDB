@@ -25,7 +25,7 @@ export default function Navbar({ userRole, onLogout }) {
   };
 
   const handleAgendarCita = () => {
-    if (['cliente', 'admin', 'auxiliar'].includes(userRole)) {
+    if (['cliente', 'admin', 'auxiliar', 'profesional'].includes(userRole)) {
       navigate('/agenda/citas');
       return;
     }
@@ -33,6 +33,7 @@ export default function Navbar({ userRole, onLogout }) {
   };
 
   const showCatalogAndServices = ['admin', 'auxiliar', 'profesional'].includes(userRole);
+  const servicesRoute = userRole === 'profesional' ? '/profesional/servicios' : '/cliente/servicios';
 
   const getDashboardRoute = () => {
     if (userRole === 'admin') return '/admin/dashboard';
@@ -74,7 +75,7 @@ export default function Navbar({ userRole, onLogout }) {
               {showCatalogAndServices && (
                 <>
                   <Link to="/cliente/catalogo">Catálogo</Link>
-                  <Link to="/cliente/servicios">Servicios</Link>
+                  <Link to={servicesRoute}>Servicios</Link>
                 </>
               )}
               <Link to="/profile">Mi Perfil</Link>
@@ -116,7 +117,7 @@ export default function Navbar({ userRole, onLogout }) {
                   <Link to="/cliente/catalogo" onClick={() => setIsMenuOpen(false)}>
                     <FontAwesomeIcon icon={faShoppingBag} /> Catálogo
                   </Link>
-                  <Link to="/cliente/servicios" onClick={() => setIsMenuOpen(false)}>
+                  <Link to={servicesRoute} onClick={() => setIsMenuOpen(false)}>
                     <FontAwesomeIcon icon={faBell} /> Servicios
                   </Link>
                 </>
@@ -126,7 +127,7 @@ export default function Navbar({ userRole, onLogout }) {
                 Mi Perfil
               </Link>
 
-              {['cliente', 'admin', 'auxiliar'].includes(userRole) && (
+              {['cliente', 'admin', 'auxiliar', 'profesional'].includes(userRole) && (
                 <button
                   onClick={() => {
                     handleAgendarCita();

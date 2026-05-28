@@ -22,8 +22,8 @@ export default function ClienteServicios() {
   const handleAgendarCita = (servicioId) => {
     const userRole = getStoredRole();
 
-    // Clientes, admin y auxiliar autenticados pueden agendar citas
-    if (isAuthenticated() && ['cliente', 'admin', 'auxiliar'].includes(userRole)) {
+    // Clientes, admin, auxiliar y profesionales autenticados pueden agendar citas
+    if (isAuthenticated() && ['cliente', 'admin', 'auxiliar', 'profesional'].includes(userRole)) {
       navigate(`/agenda/citas?servicio=${servicioId}`, {
         state: { servicioId },
       });

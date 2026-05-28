@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
-import { apiRequest, saveSession, normalizeRole, getAssetUrl } from '../api/client.js';
+import { apiRequest, saveSession, normalizeRole, getAssetUrl, getLocalCartItems, clearLocalCart } from '../api/client.js';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -41,6 +41,31 @@ export default function Login() {
       }
 
       saveSession({ token, usuario });
+      // Migrar carrito local al carrito del usuario autenticado
+      const localItems = getLocalCartItems();
+      if (Array.isArray(localItems) && localItems.length > 0) {
+        try {
+          for (const item of localItems) {
+            // Intentar agregar cada producto al carrito del servidor
+            // Se ignoran errores individuales para no bloquear el login
+            try {
+              await apiRequest('/cliente/carrito', {
+                method: 'POST',
+                body: JSON.stringify({ productoId: item.productoId, cantidad: item.cantidad }),
+              });
+            } catch (err) {
+              // Loguear y continuar con el siguiente item
+              console.warn('No se pudo migrar item al carrito:', item, err.message || err);
+            }
+          }
+        } catch (err) {
+          console.warn('Error migrando carrito local:', err.message || err);
+        } finally {
+          // Limpiar el carrito local una vez intentada la migración
+          clearLocalCart();
+        }
+      }
+
       window.dispatchEvent(new Event('authChange'));
 
       const role = normalizeRole(usuario.rol);

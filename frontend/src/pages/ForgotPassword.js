@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Login.css';
-import { apiRequest } from '../api/client.js';
+import { apiRequest, getAssetUrl } from '../api/client.js';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -41,7 +41,7 @@ export default function ForgotPassword() {
       <div className="login-container">
         <div className="login-content">
           <div className="login-illustration">
-            <div className="illustration-circle"><span>?</span></div>
+            <div className="illustration-circle"><img src={getAssetUrl('/uploads/AfroDB.png')} alt="AfroDB Logo" className="logo-image" /></div>
             <h2>Recuperar Contraseña</h2>
             <p>Ingresa tu correo y te enviaremos el enlace para restablecerla.</p>
           </div>

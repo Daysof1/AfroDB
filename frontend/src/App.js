@@ -114,7 +114,7 @@ function App() {
     return '/cliente/catalogo';
   };
 
-  const canScheduleAppointments = isAuthenticated && ['cliente', 'admin', 'auxiliar'].includes(userRole);
+  const canScheduleAppointments = isAuthenticated && ['cliente', 'admin', 'auxiliar', 'profesional'].includes(userRole);
 
   const handleLogout = () => {
     clearSession();

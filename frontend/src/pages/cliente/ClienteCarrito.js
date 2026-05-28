@@ -323,13 +323,19 @@ export default function ClienteCarrito() {
               />
             </div>
 
-            <button
-              className="btn btn-primary btn-block"
-              onClick={handleGenerarPago}
-              disabled={processingPayment || !canCheckout}
-            >
-              {processingPayment ? 'Generando pago...' : canCheckout ? 'Generar Pago' : 'Inicia sesión para pagar'}
-            </button>
+            {canCheckout ? (
+              <button
+                className="btn btn-primary btn-block"
+                onClick={handleGenerarPago}
+                disabled={processingPayment}
+              >
+                {processingPayment ? 'Generando pago...' : 'Generar Pago'}
+              </button>
+            ) : (
+              <Link to="/login" className="btn btn-primary btn-block">
+                Iniciar sesión para pagar
+              </Link>
+            )}
             <button className="btn btn-danger btn-block" onClick={handleVaciarCarrito} disabled={processingPayment}>
               Vaciar Carrito
             </button>
