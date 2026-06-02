@@ -10,7 +10,8 @@ export default function AdminProductos() {
   const [success, setSuccess] = useState('');
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
-  const limite = 10;
+  // Este límite sólo se usa para traer cada lote desde el backend.
+  const limite = 100;
   const [filtroCategoria, setFiltroCategoria] = useState('Todos');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState('Todas');
   const [busqueda, setBusqueda] = useState('');

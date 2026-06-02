@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo } from "react";
 //flatlist lista optimizada con virtualizacion para mostrar grandes cantidades de datos
 //modal mostrar detalles de contenido en ventanas emergentes
 
-import { ActivityIndicator, Alert, Dimensions, FlatList, Modal, Image, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, FlatList, Modal, Image, ImageBackground, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from "react-native";
 
 //Ionicons liberia de iconos cevtoriales para react native 
 import { Ionicons } from "@expo/vector-icons";
@@ -59,12 +59,20 @@ const CARD_WIDTH = (SCREEN_WIDTH - 32 - CARD_GAP) /2;
 //ITEMS_POR_PAGINA numro de productos por agin a usando paginacion 
 const ITEMS_POR_PAGINA = 15;
 
+// Layout para tarjetas de características: dos columnas (2 arriba, 2 abajo)
+const FEATURE_GAP = 10;
+const FEATURE_CARD_WIDTH = (SCREEN_WIDTH - 32 - FEATURE_GAP) / 2;
+
 const FEATURES = [
-  { icon: 'cube-outline', title: 'Tienda Online', desc: 'Compra productos de belleza naturales y de calidad', color: '#a57c63', bg: '#f3e6d8' },
-  { icon: 'shield-checkmark', title: 'Profesionales Certificados', desc: 'Especialistas en cuidado personal y belleza', color: '#8c6a4a', bg: '#efe0d1' },
-  { icon: 'headset', title: 'Agenda Citas Fácil', desc: 'Reserva tus servicios de forma rápida y segura', color: '#c8a27a', bg: '#f6eadf' },
-  { icon: 'leaf', title: '100% Natural', desc: 'Productos y servicios con ingredientes naturales', color: '#6b8e6f', bg: '#e7f1e8' },
+  { icon: 'bag-handle', title: 'Tienda Online', desc: 'Compra productos de belleza naturales y de calidad', color: '#553e30', bg: '#efe0d1' },
+  { icon: 'cut', title: 'Profesionales Certificados', desc: 'Especialistas en cuidado personal y belleza', color: '#553e30', bg: '#efe0d1' },
+  { icon: 'calendar-clear', title: 'Agenda Citas Fácil', desc: 'Reserva tus servicios de forma rápida y segura', color: '#553e30', bg: '#efe0d1' },
+  { icon: 'leaf', title: '100% Natural', desc: 'Productos y servicios con ingredientes naturales', color: '#553e30', bg: '#efe0d1' },
 ] as const;
+
+// Usar la imagen alojada en el backend (carpeta UPLOADS)
+// `catalogoService.buildImageUrl` convierte la ruta relativa en URL completa.
+const AFRODB_IMAGE = catalogoService.buildImageUrl('uploads/fondo.png');
 
 /**
  * Componente principal HOME SCREEN 
@@ -217,47 +225,25 @@ export default function HomeScreen() {
   const ListHeader = () => (
     <>
       {/* ── HERO BANNER ─────────────────────────────────────────────────── */}
-      {/* Tarjeta índigo con título, subtítulo y 3 estadísticas en tiempo real */}
-      <View style={styles.hero}>
+      {/* Tarjeta índigo con título, subtítulo */}
+      <ImageBackground source={{ uri: AFRODB_IMAGE }} style={styles.hero} imageStyle={{ borderRadius: 24 }}>
+        <View style={styles.heroOverlay} />
         {/* Etiqueta superior en mayúsculas pequeñas */}
         <ThemedText style={styles.heroLabel}>TIENDA OFICIAL</ThemedText>
         {/* Título principal con salto de línea usando {'\n'} */}
         <ThemedText style={styles.heroTitle}>
-          Bienvenido a{'\n'}AfroDB
+          Bienvenido a{''}AfroDB
         </ThemedText>
         <ThemedText style={styles.heroSubtitle}>
           Tu plataforma de belleza, bienestar y servicios profesionales.
         </ThemedText>
-        {/* Fila de 3 estadísticas dinámicas */}
-        <View style={styles.heroStatsRow}>
-          {/* Stat 1: total de productos en el catálogo */}
-          <View style={styles.heroStat}>
-            <ThemedText style={styles.heroStatValue}>{productos.length}</ThemedText>
-            <ThemedText style={styles.heroStatLabel}>Productos</ThemedText>
-          </View>
-          {/* Stat 2: número de categorías disponibles */}
-          <View style={styles.heroStat}>
-            <ThemedText style={styles.heroStatValue}>{categorias.length}</ThemedText>
-            <ThemedText style={styles.heroStatLabel}>Categorías</ThemedText>
-          </View>
-          {/* Stat 3: ítems en el carrito del usuario */}
-          <View style={styles.heroStat}>
-            <ThemedText style={styles.heroStatValue}>{totalItems}</ThemedText>
-            <ThemedText style={styles.heroStatLabel}>En carrito</ThemedText>
-          </View>
-        </View>
-      </View>
+      </ImageBackground>
 
       {/* ── TARJETAS DE CARACTERÍSTICAS ─────────────────────────────────── */}
-      {/* ScrollView horizontal: permite deslizar las tarjetas sin ocultar otras */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false} // Oculta la barra de scroll horizontal.
-        contentContainerStyle={styles.featuresRow}>
-        {/* Genera una tarjeta por cada entrada en FEATURES */}
+      {/* Cuadrícula 2x2: dos columnas por fila para mejor legibilidad */}
+      <View style={styles.featuresRow}>
         {FEATURES.map((f) => (
-          <View key={f.title} style={styles.featureCard}>
-            {/* Círculo de color con el ícono de la característica */}
+          <View key={f.title} style={[styles.featureCard, { width: FEATURE_CARD_WIDTH, marginBottom: FEATURE_GAP }]}> 
             <View style={[styles.featureIconCircle, { backgroundColor: f.bg }]}>
               <Ionicons name={f.icon as any} size={22} color={f.color} />
             </View>
@@ -265,43 +251,6 @@ export default function HomeScreen() {
             <ThemedText style={styles.featureDesc}>{f.desc}</ThemedText>
           </View>
         ))}
-      </ScrollView>
-
-      {/* ── PREVIEW DE SERVICIOS PÚBLICOS ─────────────────────────────── */}
-      <View style={styles.servicesSection}>
-        <View style={styles.sectionHeader}>
-          <ThemedText style={styles.sectionTitle}>Nuestros Servicios</ThemedText>
-          <ThemedText style={styles.sectionCount}>Visible sin iniciar sesión</ThemedText>
-        </View>
-        <ThemedText style={styles.sectionSubtitle}>Servicios profesionales ofrecidos por nuestros especialistas</ThemedText>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.servicesRow}>
-          {servicios.length > 0 ? servicios.map((servicio) => (
-            <View key={servicio.id} style={styles.serviceCard}>
-              <Image
-                source={{ uri: catalogoService.buildImageUrl(servicio.imagen) }}
-                style={styles.serviceImage}
-                resizeMode="cover"
-              />
-              <View style={styles.serviceBody}>
-                <ThemedText style={styles.serviceTitle} numberOfLines={2}>{servicio.nombre}</ThemedText>
-                <ThemedText style={styles.serviceDesc} numberOfLines={2}>{servicio.descripcion || 'Servicio disponible en AfroDB.'}</ThemedText>
-                <View style={styles.serviceMetaRow}>
-                  <View style={styles.serviceMetaPill}>
-                    <Ionicons name="time-outline" size={12} color="#a57c63" />
-                    <ThemedText style={styles.serviceMetaText}>{servicio.duracion || '-'} min</ThemedText>
-                  </View>
-                  <View style={styles.serviceMetaPill}>
-                    <Ionicons name="cash-outline" size={12} color="#a57c63" />
-                    <ThemedText style={styles.serviceMetaText}>${Number(servicio.precio || 0).toLocaleString('es-CO')}</ThemedText>
-                  </View>
-                </View>
-              </View>
-            </View>
-          )) : (
-            <ThemedText style={styles.emptyText}>No hay servicios para mostrar.</ThemedText>
-          )}
-        </ScrollView>
       </View>
 
       {/* ── BUSCADOR ────────────────────────────────────────────────────── */}
@@ -581,10 +530,21 @@ const styles = StyleSheet.create({
   hero: {
     borderRadius: 24,
     padding: 22,
+    // backgroundColor kept as fallback if image fails to load
     backgroundColor: '#a57c63',
     marginTop: 16,
     marginBottom: 16,
     gap: 10,                    // Espacio entre cada hijo directo.
+  },
+  // Overlay semi-transparente para mejorar la legibilidad del texto sobre la imagen
+  heroOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.28)'
   },
   // Etiqueta pequeña en mayúsculas con espaciado de letras (tracking).
   heroLabel: {
@@ -632,7 +592,9 @@ const styles = StyleSheet.create({
   // ── CARACTERÍSTICAS ───────────────────────────────
   // Contenedor del scroll horizontal de tarjetas de características.
   featuresRow: {
-    gap: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     paddingBottom: 4,
     marginBottom: 16,
   },
@@ -701,9 +663,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  // Cada tarjeta de característica: ancho fijo, sombra sutil.
+  // Cada tarjeta de característica: sombra sutil; el ancho se aplica inline.
   featureCard: {
-    width: 128,
     borderRadius: 16,
     padding: 14,
     backgroundColor: '#fff',
@@ -713,7 +674,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,               // Sombra en Android.
+    elevation: 2,
     gap: 6,
   },
   // Círculo de color que contiene el ícono de la característica.
