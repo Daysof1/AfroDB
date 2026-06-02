@@ -23,6 +23,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../src/context/AuthContext";
 import { useCarrito } from "../../src/context/CarritoContext"
+import catalogoService from '../../src/services/catalogoService';
 
 //carritoctx define la forma de los datos que devuelve useCarrito
 //TypeScript necesita esto porque CarritoContext.js esta en javaScript 
@@ -198,7 +199,7 @@ export default function CarritoScreen() {
                   {/* Imagen del producto. Si no tiene imagen, usa un placeholder genérico.
                       La URL apunta al servidor backend local (10.0.2.2 = localhost en emulador Android) */}
                   <Image
-                    source={{ uri: item.imagen ? `http://10.0.2.2:5000/${item.imagen}` : 'https://via.placeholder.com/70' }}
+                    source={{ uri: item.imagen ? catalogoService.buildImageUrl(item.imagen) : 'https://via.placeholder.com/70' }}
                     style={styles.image}
                   />
 

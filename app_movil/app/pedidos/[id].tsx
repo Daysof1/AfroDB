@@ -22,6 +22,7 @@ import { ThemedText } from '../../components/themed-text';
 import { ThemedView } from '../../components/themed-view';
 //ciente http axios con JWT
 import pedidoService from '../../src/services/pedidoService';
+import catalogoService from '../../src/services/catalogoService';
 type ProductoDetalle = {
     nombre?: string;
     imagen?: string;
@@ -211,7 +212,7 @@ export default function PedidoDetalleScreen() {
         const producto = detalle.producto || detalle.Producto || {};
         // Si no existe imagen en backend, usa placeholder para evitar imagen rota.
         const imagen = producto.imagen
-          ? `http://10.0.2.2:5000/${producto.imagen}`
+          ? catalogoService.buildImageUrl(producto.imagen)
           : 'https://via.placeholder.com/90';
 
         return (

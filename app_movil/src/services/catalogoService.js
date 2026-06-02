@@ -5,6 +5,10 @@
  */
 
 import apiClient from '../api/apiClient';
+import { API_BASE_URL } from '../utils/constants';
+
+// Deriva el origen a partir de API_BASE_URL (quita el sufijo /api si existe)
+const origin = (typeof API_BASE_URL === 'string' ? API_BASE_URL : 'http://10.0.2.2:5000').replace(/\/api\/?$/, '').replace(/\/$/, '');
 
 const catalogoService = {
     //consulta la lista de categorias disponibles para filtros de navegacion
@@ -40,8 +44,11 @@ const catalogoService = {
             return path;
         }
 
-        const origin = 'http://10.0.2.2:5000';
-        return `${origin}/${path.replace(/^\//, '')}`;
+        // Normaliza la ruta: si el backend retorna solo el nombre de archivo
+        // (por ejemplo 'imagen.jpg') añadimos 'uploads/' antes.
+        let cleaned = path.replace(/^\//, '');
+        if (!cleaned.startsWith('uploads/')) cleaned = `uploads/${cleaned}`;
+        return `${origin}/${cleaned}`;
     },
 };
 

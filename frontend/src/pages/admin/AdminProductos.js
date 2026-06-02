@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../Admin.css';
-import { apiRequest, fetchImageAsFile, getAssetUrl } from '../../api/client.js';
+import { apiRequest, getAssetUrl } from '../../api/client.js';
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState([]);
@@ -26,7 +26,7 @@ export default function AdminProductos() {
     stock: '',
     categoriaId: '',
     subcategoriaId: '',
-    imagen: '',
+    imagenUrl: '',
   });
 
   const resetForm = () => {
@@ -124,35 +124,55 @@ export default function AdminProductos() {
     try {
       setError('');
       setSuccess('');
-
-      const formData = new FormData();
-      formData.append('nombre', newProduct.nombre);
-      formData.append('descripcion', newProduct.descripcion || '');
-      formData.append('precio', newProduct.precio);
-      formData.append('stock', newProduct.stock);
       const isEditing = Boolean(editingProductId);
       const categoriaChanged = String(newProduct.categoriaId) !== String(editingOriginal?.categoriaId ?? '');
       const subcategoriaChanged = String(newProduct.subcategoriaId) !== String(editingOriginal?.subcategoriaId ?? '');
-      const imagenFile = newProduct.imagenUrl ? await fetchImageAsFile(newProduct.imagenUrl, newProduct.nombre || 'producto') : null;
+      const payload = {
+        nombre: newProduct.nombre,
+        descripcion: newProduct.descripcion || '',
+        precio: Number(newProduct.precio),
+        stock: Number(newProduct.stock),
+        imagenUrl: newProduct.imagenUrl || '',
+      };
 
       if (!isEditing || categoriaChanged) {
-        formData.append('categoriaId', newProduct.categoriaId);
+        payload.categoriaId = Number(newProduct.categoriaId);
       }
       if (!isEditing || subcategoriaChanged) {
-        formData.append('subcategoriaId', newProduct.subcategoriaId);
-      }
-      if (imagenFile) {
-        formData.append('imagen', imagenFile);
+        payload.subcategoriaId = Number(newProduct.subcategoriaId);
       }
 
-      await apiRequest(isEditing ? `/admin/productos/${editingProductId}` : '/admin/productos', {
+      const response = await apiRequest(isEditing ? `/admin/productos/${editingProductId}` : '/admin/productos', {
         method: isEditing ? 'PUT' : 'POST',
-        body: formData,
+        body: JSON.stringify(payload),
       });
       setSuccess(isEditing ? 'Producto actualizado correctamente' : 'Producto creado correctamente');
+
+      const productoGuardado = response?.data?.producto || null;
+      const imagenMostrada = newProduct.imagenUrl || productoGuardado?.imagen || '';
+      const productoNormalizado = productoGuardado
+        ? {
+            ...productoGuardado,
+            imagen: imagenMostrada,
+          }
+        : null;
+
+      if (productoNormalizado) {
+        setProductos((actuales) => {
+          if (isEditing) {
+            return actuales.map((producto) =>
+              String(producto.id) === String(editingProductId)
+                ? { ...producto, ...productoNormalizado, imagen: imagenMostrada }
+                : producto,
+            );
+          }
+
+          return [{ ...productoNormalizado, imagen: imagenMostrada }, ...actuales];
+        });
+      }
+
       resetForm();
       setIsFormOpen(false);
-      await loadProductos();
     } catch (err) {
       setError(err.message || 'No se pudo guardar el producto');
     }
@@ -173,7 +193,7 @@ export default function AdminProductos() {
       stock: String(producto.stock ?? ''),
       categoriaId: String(producto.categoriaId ?? ''),
       subcategoriaId: String(producto.subcategoriaId ?? ''),
-        imagenUrl: '',
+      imagenUrl: producto.imagen ? getAssetUrl(producto.imagen) : '',
     });
     if (producto.categoriaId) {
       loadSubcategorias(producto.categoriaId);
@@ -336,6 +356,15 @@ export default function AdminProductos() {
                 onChange={(e) => setNewProduct({ ...newProduct, imagenUrl: e.target.value })}
                 placeholder="https://..."
               />
+              {newProduct.imagenUrl && (
+                <div className="card-image-frame" style={{ marginTop: '12px' }}>
+                  <img
+                    src={getAssetUrl(newProduct.imagenUrl)}
+                    alt={newProduct.nombre || 'Vista previa del producto'}
+                    className="table-img"
+                  />
+                </div>
+              )}
             </div>
             <button type="submit" className="btn btn-primary">
               {editingProductId ? 'Actualizar Producto' : 'Guardar Producto'}

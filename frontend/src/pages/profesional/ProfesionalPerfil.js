@@ -37,7 +37,7 @@ export default function ProfesionalPerfil() {
             especialidad: (profesional.especialidades || []).map((e) => e.nombre).join(', '),
           };
           setPerfil(mapped);
-          setFormData(mapped);
+          setFormData(mapped); 
         }
       } catch (err) {
         setError(err.message || 'No se pudo cargar el perfil');

@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 //modal mostrar detalles de contenido en ventanas emergentes
 
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, ScrollView, StyleSheet, TextInput, View} from "react-native";
+import catalogoService from '../../src/services/catalogoService';
 
 //Lee los parametros de la url para obtener el id del pedido
 import { router } from "expo-router";//navegacion y parametros de ruta
@@ -160,7 +161,7 @@ export default function AdminProductosScreen() {
             >
               {/* Miniatura del producto. Si no tiene imagen usa un placeholder externo. */}
               <Image
-                source={{ uri: item.imagen ? `http://10.0.2.2:5000/${item.imagen}` : 'https://via.placeholder.com/70' }}
+                source={{ uri: item.imagen ? catalogoService.buildImageUrl(item.imagen) : 'https://via.placeholder.com/70' }}
                 style={styles.image}
               />
               <View style={styles.cardBody}>

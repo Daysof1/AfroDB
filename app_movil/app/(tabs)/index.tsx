@@ -26,6 +26,8 @@ import { ActivityIndicator, Alert, Dimensions, FlatList, Modal, Image, ImageBack
 import { Ionicons } from "@expo/vector-icons";
 //catalogoService servicio que hace las llamadas a http (API) del backend para productos y categorias
 import catalogoService  from "../../src/services/catalogoService"
+import citaService from '../../src/services/citaService';
+import { useAuth } from '../../src/context/AuthContext';
 //themedText : texto que aplica colores del tema del dispositivo de manera automatica claro u oscuro
 import { ThemedText } from '../../components/themed-text';
 //themedView : color de fondo automatico segun el tema del dispositivo
@@ -91,6 +93,14 @@ export default function HomeScreen() {
     const [categorias, SetCategorias] = useState<any[]>([]);
     //servicios publicos visibles sin iniciar sesion
     const [servicios, setServicios] = useState<any[]>([]);
+    // Estado para agendar citas
+    const [agendarModalVisible, setAgendarModalVisible] = useState(false);
+    const [selectedServicio, setSelectedServicio] = useState<any | null>(null);
+    const [fechaCita, setFechaCita] = useState(''); // formato YYYY-MM-DD
+    const [horaCita, setHoraCita] = useState(''); // formato HH:MM
+    const [scheduling, setScheduling] = useState(false);
+
+    const { isAuthenticated } = useAuth() as { isAuthenticated: boolean };
 
     //Esatdo de IU
     //loading true mientras cargan los datos por primera vez .
@@ -251,6 +261,41 @@ export default function HomeScreen() {
             <ThemedText style={styles.featureDesc}>{f.desc}</ThemedText>
           </View>
         ))}
+      </View>
+      {/* ── SERVICIOS DESTACADOS ───────────────────────────────────────── */}
+      <View style={styles.servicesSection}>
+        <ThemedText style={styles.sectionTitle}>Servicios</ThemedText>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.servicesRow}>
+          {servicios.map((s: any) => (
+            <View key={s.id} style={styles.serviceCard}>
+              <Image source={{ uri: catalogoService.buildImageUrl(s.imagen) }} style={styles.serviceImage} resizeMode="cover" />
+              <View style={styles.serviceBody}>
+                <ThemedText style={styles.serviceTitle}>{s.nombre}</ThemedText>
+                <ThemedText style={styles.serviceDesc} numberOfLines={2}>{s.descripcion}</ThemedText>
+                <View style={styles.serviceMetaRow}>
+                  <View style={styles.serviceMetaPill}>
+                    <ThemedText style={styles.serviceMetaText}>{`$${Number(s.precio||0).toLocaleString('es-CO')}`}</ThemedText>
+                  </View>
+                </View>
+                <Pressable
+                  style={[styles.primaryBtn, { marginTop: 8 }]}
+                  onPress={() => {
+                    if (!isAuthenticated) {
+                      Alert.alert('Inicia sesión', 'Debes iniciar sesión para agendar citas', [
+                        { text: 'Cancelar', style: 'cancel' },
+                        { text: 'Iniciar sesión', onPress: () => {/* navegar a login si es necesario */} }
+                      ]);
+                      return;
+                    }
+                    setSelectedServicio(s);
+                    setAgendarModalVisible(true);
+                  }}>
+                  <ThemedText style={styles.primaryBtnText}>Agendar</ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
       </View>
 
       {/* ── BUSCADOR ────────────────────────────────────────────────────── */}
@@ -507,6 +552,57 @@ export default function HomeScreen() {
                 </View>
               </>
             ) : null}
+          </ThemedView>
+        </View>
+      </Modal>
+
+      
+      {/* ── MODAL: AGENDAR SERVICIO ────────────────────────────────────── */}
+      <Modal
+        visible={agendarModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setAgendarModalVisible(false)}>
+        <View style={styles.modalBackdrop}>
+          <ThemedView style={[styles.modalCard, { padding: 16 }]}> 
+            <ThemedText type="title">Agendar Servicio</ThemedText>
+            <ThemedText style={{ marginTop: 8 }}>{selectedServicio?.nombre}</ThemedText>
+            <TextInput
+              placeholder="Fecha (YYYY-MM-DD)"
+              value={fechaCita}
+              onChangeText={setFechaCita}
+              style={[styles.searchInput, { marginTop: 12 }]}
+            />
+            <TextInput
+              placeholder="Hora (HH:MM)"
+              value={horaCita}
+              onChangeText={setHoraCita}
+              style={[styles.searchInput, { marginTop: 8 }]}
+            />
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              <Pressable style={[styles.outlineBtn, { flex: 1 }]} onPress={() => setAgendarModalVisible(false)}>
+                <ThemedText style={styles.outlineBtnText}>Cancelar</ThemedText>
+              </Pressable>
+              <Pressable
+                style={[styles.primaryBtn, { flex: 1 }]}
+                onPress={async () => {
+                  if (!selectedServicio) return;
+                  setScheduling(true);
+                  try {
+                    const payload = { fecha: fechaCita, hora: horaCita, servicios: [selectedServicio.id] };
+                    const cita = await citaService.crearCita(payload);
+                    setScheduling(false);
+                    setAgendarModalVisible(false);
+                    setFechaCita(''); setHoraCita(''); setSelectedServicio(null);
+                    Alert.alert('Cita', 'Cita agendada correctamente');
+                  } catch (err: unknown) {
+                    setScheduling(false);
+                    Alert.alert('Error', (err as Error).message || 'No se pudo agendar la cita');
+                  }
+                }}>
+                <ThemedText style={styles.primaryBtnText}>{scheduling ? 'Agendando...' : 'Confirmar'}</ThemedText>
+              </Pressable>
+            </View>
           </ThemedView>
         </View>
       </Modal>
