@@ -486,6 +486,11 @@ export default function TabTwoScreen() {
         <Text style={styles.btnTextWhite}>Mis Pedidos</Text>
       </Pressable>
 
+      {/* ── BOTÓN: MIS CITAS (visible para todos los roles) ───────────── */}
+      <Pressable style={[styles.btn, { backgroundColor: '#c8a27a' }]} onPress={() => routerPush('/mis-citas')}>
+        <Ionicons name="calendar-outline" size={17} color="#fff" />
+        <Text style={styles.btnTextWhite}>Mis Citas</Text>
+      </Pressable>
       {/* ── BOTÓN: CERRAR SESIÓN ────────────────────────────────────────── */}
       <Pressable style={[styles.btn, { backgroundColor: '#ef4444' }]} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={17} color="#fff" />

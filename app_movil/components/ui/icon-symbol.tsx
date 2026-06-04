@@ -17,6 +17,7 @@ const MAPPING = {
   'house.fill': 'home',
   'cart.fill': 'shopping-cart',
   'person.fill': 'person',
+  'calendar': 'calendar-today',
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',

@@ -14,18 +14,15 @@
  * 
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Image } from "react-native";
 
 import { router, useRouter } from "expo-router";
-import { useFocusEffect } from '@react-navigation/native';
-//Ionicons liberia de iconos cevtoriales para react native 
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../src/context/AuthContext";
 import { useAgendar } from "../../src/context/AgendarContext";
 import catalogoService from '../../src/services/catalogoService';
 import { ThemedText } from '../../components/themed-text';
-import { ThemedView } from '../../components/themed-view';
 
 
 // HELPERS de navegacion 
@@ -45,7 +42,7 @@ const fmt = (n: number) => `$${Number(n).toLocaleString('es-CO')}`;
 export default function AgendarScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth() as { isAuthenticated: boolean };
-  const { crearCita } = useAgendar();
+  const { servicioSeleccionado, setServicioSeleccionado, crearCita } = useAgendar() as any;
 
   const [servicios, setServicios] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -53,26 +50,38 @@ export default function AgendarScreen() {
   const [hora, setHora] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [expandirServicios, setExpandirServicios] = useState(false);
 
+  // Cargar servicios disponibles
   useEffect(() => {
     let mounted = true;
-    const load = async () => {
+    const loadServicios = async () => {
       try {
         const data = await catalogoService.getServicios({ pagina: 1, limite: 200 });
-        if (!mounted) return;
-        setServicios(Array.isArray(data) ? data : []);
+        if (mounted) {
+          setServicios(Array.isArray(data) ? data : []);
+        }
       } catch (err) {
         console.log('Error cargando servicios', err);
       } finally {
         if (mounted) setLoading(false);
       }
     };
-    load();
+    loadServicios();
     return () => { mounted = false; };
   }, []);
 
+  // Cuando se selecciona un servicio, agregarlo a selectedIds
+  useEffect(() => {
+    if (servicioSeleccionado?.id && selectedIds.length === 0) {
+      setSelectedIds([String(servicioSeleccionado.id)]);
+    }
+  }, [servicioSeleccionado?.id]);
+
   const toggleServicio = (id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+    setSelectedIds((prev) => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
   };
 
   const handleSubmit = async () => {
@@ -81,22 +90,29 @@ export default function AgendarScreen() {
       router.replace('/explore');
       return;
     }
+
+    if (selectedIds.length === 0) {
+      Alert.alert('Sin servicios', 'Selecciona al menos un servicio');
+      return;
+    }
+
     if (!fecha || !hora) {
       Alert.alert('Falta información', 'Indica fecha y hora para la cita');
       return;
     }
-    if (selectedIds.length === 0) {
-      Alert.alert('Selecciona servicios', 'Selecciona al menos un servicio');
-      return;
-    }
 
-    const payload: any = { fecha, hora, servicios: selectedIds };
+    const payload: any = { 
+      fecha, 
+      hora, 
+      servicios: selectedIds 
+    };
 
     setSubmitting(true);
     try {
       await crearCita(payload);
-      Alert.alert('Cita creada', 'Tu cita fue agendada correctamente');
-      // limpiar formulario
+      Alert.alert('Tu cita fue agendada correctamente');
+      // limpiar formulario y contexto
+      setServicioSeleccionado(null);
       setSelectedIds([]);
       setFecha('');
       setHora('');
@@ -109,186 +125,536 @@ export default function AgendarScreen() {
     }
   };
 
+  const handleCancelar = () => {
+    setServicioSeleccionado(null);
+    setSelectedIds([]);
+    setFecha('');
+    setHora('');
+    router.back();
+  };
+
   const renderServicio = ({ item }: { item: any }) => {
     const selected = selectedIds.includes(String(item.id));
+    const isPreseleccionado = servicioSeleccionado?.id === item.id;
+    
     return (
-      <Pressable onPress={() => toggleServicio(String(item.id))} style={[styles.serviceRow, selected && styles.serviceRowSelected]}>
-        <ThemedText style={styles.serviceName}>{item.nombre}</ThemedText>
-        <Text style={styles.servicePrice}>${Number(item.precio || 0).toLocaleString('es-CO')}</Text>
+      <Pressable 
+        onPress={() => toggleServicio(String(item.id))}
+        style={[styles.servicioItem, selected && styles.servicioItemSelected]}
+      >
+        <View style={[styles.checkbox, selected && styles.checkboxChecked]}>
+          {selected && <Ionicons name="checkmark" size={16} color="#fff" />}
+        </View>
+        <View style={styles.servicioInfo}>
+          <ThemedText style={styles.servicioNombre}>{item.nombre}</ThemedText>
+          <ThemedText style={styles.servicioDesc} numberOfLines={2}>
+            {item.descripcion?.substring(0, 60) || 'Sin descripción'}
+          </ThemedText>
+        </View>
+        <View style={styles.servicioRightContent}>
+          <ThemedText style={styles.servicioPrecio}>
+            ${Number(item.precio || 0).toLocaleString('es-CO')}
+          </ThemedText>
+          {isPreseleccionado && (
+            <View style={styles.badgePreseleccionado}>
+              <Ionicons name="checkmark-done" size={12} color="#a57c63" />
+              <ThemedText style={styles.badgePreseleccionadoText}>Principal</ThemedText>
+            </View>
+          )}
+        </View>
       </Pressable>
     );
   };
 
-  if (loading) {
+  if (!servicioSeleccionado?.id) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#a57c63" />
-        <Text style={styles.loadingText}>Cargando servicios...</Text>
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="calendar-clear-outline" size={64} color="#d1d5db" />
+          <ThemedText style={styles.emptyText}>
+            Selecciona un servicio para agendar una cita
+          </ThemedText>
+          {/* Botón para ir al servicios (reemplaza la pantalla actual) */}
+              <Pressable style={styles.catalogBtn} onPress={() => router.push('/screens/servicios')}>
+              <Ionicons name="storefront-outline" size={16} color="#fff" />
+                <Text style={styles.catalogBtnText}>Ir a los servicios</Text>
+              </Pressable>
+        </View>
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <ThemedText style={styles.headerTitle}>Agendar Cita</ThemedText>
+      {/* ENCABEZADO */}
+      <View style={styles.pageHeader}>
+        <View style={styles.headerContent}>
+          <Ionicons name="calendar-clear-outline" size={32} color="#a57c63" />
+          <ThemedText style={styles.pageTitle}>Agendar Cita</ThemedText>
+        </View>
       </View>
 
-      <ThemedView style={styles.card}>
-        <ThemedText style={styles.label}>Selecciona los servicios</ThemedText>
-        <FlatList data={servicios} keyExtractor={(s: any) => String(s.id)} renderItem={renderServicio} style={{ maxHeight: 320 }} />
+      {/* TARJETA DEL SERVICIO SELECCIONADO */}
+      <View style={styles.servicioCard}>
+        {servicioSeleccionado.imagen && (
+          <Image
+            source={{ uri: catalogoService.buildImageUrl(servicioSeleccionado.imagen) }}
+            style={styles.servicioImage}
+            resizeMode="cover"
+          />
+        )}
+        <View style={styles.servicioBody}>
+          <ThemedText style={styles.servicioBadge} numberOfLines={1}>
+            {servicioSeleccionado.Categoria?.nombre || servicioSeleccionado.categoria?.nombre || 'Categoría'}
+          </ThemedText>
+          <ThemedText style={styles.servicioNombre}>{servicioSeleccionado.nombre}</ThemedText>
+          <ThemedText style={styles.servicioDesc} numberOfLines={3}>
+            {servicioSeleccionado.descripcion || 'Sin descripción disponible'}
+          </ThemedText>
+          
+          <View style={styles.servicioDetails}>
+            <View style={styles.detailItem}>
+              <Ionicons name="pricetag-outline" size={16} color="#a57c63" />
+              <ThemedText style={styles.detailText}>
+                ${Number(servicioSeleccionado.precio || 0).toLocaleString('es-CO')}
+              </ThemedText>
+            </View>
+            {servicioSeleccionado.duracion && (
+              <View style={styles.detailItem}>
+                <Ionicons name="time-outline" size={16} color="#a57c63" />
+                <ThemedText style={styles.detailText}>
+                  {servicioSeleccionado.duracion} min
+                </ThemedText>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
 
-        <ThemedText style={styles.label}>Fecha (YYYY-MM-DD)</ThemedText>
-        <TextInput value={fecha} onChangeText={setFecha} placeholder="2026-06-30" style={styles.input} placeholderTextColor="#9ca3af" />
-
-        <ThemedText style={styles.label}>Hora (HH:MM)</ThemedText>
-        <TextInput value={hora} onChangeText={setHora} placeholder="14:30" style={styles.input} placeholderTextColor="#9ca3af" />
-
-        <Pressable style={styles.primaryBtn} onPress={handleSubmit} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.primaryBtnText}>Agendar</ThemedText>}
+      {/* SECCIÓN AGREGAR MÁS SERVICIOS */}
+      {!loading && servicios.length > 1 && (
+        <Pressable 
+          style={styles.expandBtn}
+          onPress={() => setExpandirServicios(!expandirServicios)}
+        >
+          <Ionicons 
+            name={expandirServicios ? "chevron-up" : "chevron-down"} 
+            size={20} 
+            color="#a57c63" 
+          />
+          <ThemedText style={styles.expandBtnText}>
+            {expandirServicios ? 'Ocultar' : 'Agregar'} más servicios ({servicios.length})
+          </ThemedText>
+          <ThemedText style={styles.selectedCount}>
+            {selectedIds.length}
+          </ThemedText>
         </Pressable>
-      </ThemedView>
+      )}
+
+      {/* LISTA DE SERVICIOS EXPANDIBLE */}
+      {expandirServicios && !loading && (
+        <View style={styles.serviciosListContainer}>
+          <ThemedText style={styles.serviciosListTitle}>
+            Selecciona {selectedIds.length > 0 ? 'más ' : ''}servicios
+          </ThemedText>
+          <View style={styles.serviciosList}>
+            {servicios
+              .filter(s => s.id !== servicioSeleccionado.id)
+              .map((servicio) => (
+                <View key={servicio.id}>
+                  {renderServicio({ item: servicio })}
+                </View>
+              ))}
+          </View>
+        </View>
+      )}
+
+      {/* FORMULARIO */}
+      <View style={styles.formContainer}>
+        <ThemedText style={styles.formTitle}>Datos de la Cita</ThemedText>
+
+        {/* SECCIÓN FECHA */}
+        <View style={styles.formSection}>
+          <ThemedText style={styles.formLabel}>
+            <Ionicons name="calendar" size={14} color="#a57c63" /> Fecha (YYYY-MM-DD)
+          </ThemedText>
+          <TextInput
+            value={fecha}
+            onChangeText={setFecha}
+            placeholder="2026-06-30"
+            style={styles.input}
+            placeholderTextColor="#9ca3af"
+          />
+        </View>
+
+        {/* SECCIÓN HORA */}
+        <View style={styles.formSection}>
+          <ThemedText style={styles.formLabel}>
+            <Ionicons name="time" size={14} color="#a57c63" /> Hora (HH:MM)
+          </ThemedText>
+          <TextInput
+            value={hora}
+            onChangeText={setHora}
+            placeholder="14:30"
+            style={styles.input}
+            placeholderTextColor="#9ca3af"
+          />
+        </View>
+
+        {/* BOTONES */}
+        <Pressable 
+          style={[styles.primaryBtn, submitting && { opacity: 0.6 }]}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
+          {submitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="calendar-clear-outline" size={18} color="#fff" />
+              <ThemedText style={styles.primaryBtnText}>Agendar Cita</ThemedText>
+            </>
+          )}
+        </Pressable>
+
+        <Pressable style={styles.secondaryBtn} onPress={handleCancelar}>
+          <Ionicons name="arrow-back-outline" size={16} color="#a57c63" />
+          <ThemedText style={styles.secondaryBtnText}>Cancelar</ThemedText>
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ESTILOS
-// StyleSheet.create() registra los estilos de forma optimizada en React Native.
-// Todos los valores numéricos son dp (density-independent pixels).
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // Contenedor raíz del ScrollView — ocupa toda la pantalla.
-  container: { flex: 1 },
-  // Contenido interno del scroll: padding general, espacio entre hijos (gap) y padding inferior.
-  content: { padding: 16, gap: 14, paddingBottom: 32 },
-  // Centrado para la pantalla de carga (spinner).
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  // Texto debajo del spinner de carga.
-  loadingText: { color: '#666', fontSize: 15 },
-
-  // Encabezado: fila horizontal con ícono + título.
-  header: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 },
-  // Título principal "Mi Carrito".
-  headerTitle: { fontSize: 26, fontWeight: '800', color: '#1a1a2e' },
-
-  // Banner informativo azul (para usuarios no autenticados).
-  infoBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',    // Alinea arriba para textos largos.
-    gap: 8,
-    backgroundColor: '#dbeafe', // Azul claro.
-    borderRadius: 10,
-    padding: 12,
-    borderLeftWidth: 4,          // Borde izquierdo más grueso como acento.
-    borderLeftColor: '#3b82f6',  // Azul más oscuro para el acento.
+  // Contenedor principal
+  container: {
+    flex: 1,
+    backgroundColor: '#f9f6f2',
   },
-  // Texto del banner: flex:1 para ocupar el ancho restante después del ícono.
-  infoBannerText: { flex: 1, color: '#1e40af', fontSize: 13, lineHeight: 19 },
+  content: {
+    padding: 16,
+    paddingBottom: 32,
+  },
 
-  // Contenedor del estado vacío: centrado verticalmente con espacio.
-  emptyContainer: { alignItems: 'center', paddingVertical: 48, gap: 12 },
-  // Título grande cuando el carrito está vacío.
-  emptyTitle: { fontSize: 22, fontWeight: '700', color: '#333' },
-  // Subtítulo descriptivo cuando el carrito está vacío.
-  empty: { color: '#888', textAlign: 'center', fontSize: 14, lineHeight: 22 },
-  // Botón "Ir al Catálogo" cuando el carrito está vacío.
+  // Encabezado
+  pageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: '#a57c63',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  pageTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1a1a2e',
+  },
+
+  // Pantalla de carga
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  loadingText: {
+    color: '#666',
+    fontSize: 15,
+  },
+
+  // Contenedor del formulario
+  formContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    gap: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+
+  // Sección del formulario
+  formSection: {
+    gap: 10,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#222',
+    marginBottom: 8,
+  },
+
+  // Grid de servicios
+  serviciosGrid: {
+    gap: 10,
+  },
+  servicioItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderWidth: 1.5,
+    borderColor: '#e8e8e8',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  servicioItemSelected: {
+    backgroundColor: 'rgba(165, 124, 99, 0.08)',
+    borderColor: '#a57c63',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#a57c63',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  checkboxChecked: {
+    backgroundColor: '#a57c63',
+    borderColor: '#a57c63',
+  },
+  servicioInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  servicioNombre: {
+    fontWeight: '700',
+    fontSize: 13,
+    color: '#222',
+  },
+  servicioDesc: {
+    fontSize: 12,
+    color: '#777',
+    lineHeight: 16,
+  },
+  servicioPrecio: {
+    fontWeight: '700',
+    fontSize: 13,
+    color: '#a57c63',
+  },
+
+  // Contador de selección
+  selectionCount: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+
+  // Labels del formulario
+  formLabel: {
+    fontWeight: '700',
+    fontSize: 14,
+    color: '#222',
+  },
+
+  // Inputs
+  input: {
+    borderWidth: 1,
+    borderColor: '#e4d8cb',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: '#111',
+    backgroundColor: '#fafafa',
+  },
+
+  // Botón principal
+  primaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#a57c63',
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  primaryBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+
+  // Botón secundario
+  secondaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: '#a57c63',
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  secondaryBtnText: {
+    color: '#a57c63',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  // Pantalla vacía
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    padding: 24,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+
+  // Tarjeta del servicio seleccionado
+  servicioCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  servicioImage: {
+    width: '100%',
+    height: 200,
+    backgroundColor: '#f0f0f0',
+  },
+  servicioBody: {
+    padding: 16,
+    gap: 12,
+  },
+  servicioBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#a57c63',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  servicioDetails: {
+    flexDirection: 'row',
+    gap: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    marginTop: 8,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#222',
+  },
+
+  // Título del formulario
+  formTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#222',
+    marginBottom: 4,
+  },
+
+  // Botón expandir servicios
+  expandBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    backgroundColor: 'rgba(165, 124, 99, 0.08)',
+    borderWidth: 1.5,
+    borderColor: '#a57c63',
+    borderRadius: 10,
+    padding: 14,
+    marginVertical: 12,
+  },
+  expandBtnText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#a57c63',
+  },
+  selectedCount: {
+    backgroundColor: '#a57c63',
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    minWidth: 28,
+    textAlign: 'center',
+  },
+
+  // Contenedor lista de servicios
+  serviciosListContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  serviciosListTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#222',
+    marginBottom: 8,
+  },
+  serviciosList: {
+    gap: 10,
+  },
+  servicioRightContent: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  badgePreseleccionado: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(165, 124, 99, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  badgePreseleccionadoText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#a57c63',
+  },
   catalogBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     borderRadius: 10, backgroundColor: '#a57c63',
     paddingHorizontal: 22, paddingVertical: 13, marginTop: 4,
   },
   catalogBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-
-  // Tarjeta blanca con borde que envuelve la lista de productos.
-  sectionCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e8e8e8',
-    overflow: 'hidden', // Los bordes redondeados afectan a los hijos también.
-  },
-  // Cabecera de la tarjeta: fondo gris muy claro con borde inferior.
-  sectionHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 14,
-    borderBottomWidth: 1, borderBottomColor: '#f0f0f0',
-    backgroundColor: '#fafafa',
-  },
-  // Fila interna: título + badge.
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontWeight: '700', fontSize: 14, color: '#222' },
-  // Badge (pastilla índigo) con el número de ítems.
-  badge: { backgroundColor: '#a57c63', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  // Botón "Vaciar carrito" con borde rojo y texto rojo.
-  vaciarBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    borderWidth: 1, borderColor: '#b93a32', borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 5,
-  },
-  vaciarText: { color: '#b93a32', fontSize: 12, fontWeight: '600' },
-  // Línea separadora gris entre ítems del carrito.
-  itemDivider: { height: 1, backgroundColor: '#f0f0f0', marginHorizontal: 14 },
-
-  // Fila de un ítem: imagen a la izquierda + datos a la derecha.
-  itemRow: { flexDirection: 'row', padding: 14, gap: 12 },
-  // Imagen cuadrada del producto con bordes redondeados.
-  image: { width: 72, height: 72, borderRadius: 10 },
-  // Columna derecha de datos del ítem (flex:1 para ocupar el espacio restante).
-  itemBody: { flex: 1, gap: 3 },
-  // Nombre del producto en negrita.
-  itemName: { fontWeight: '700', fontSize: 14, color: '#222', lineHeight: 19 },
-  // Precio unitario en gris.
-  itemPrice: { color: '#777', fontSize: 13 },
-  // Fila de controles: "-" cantidad "+" subtotal papelera.
-  qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
-  // Botón cuadrado pequeño para aumentar o disminuir cantidad.
-  qtyBtn: {
-    width: 28, height: 28, borderRadius: 7,
-    borderWidth: 1, borderColor: '#ddd', backgroundColor: '#fafafa',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  // Número de cantidad centrado con ancho mínimo para evitar saltos visuales.
-  qtyText: { minWidth: 22, textAlign: 'center', fontWeight: '700', fontSize: 14, color: '#222' },
-  // Subtotal del ítem (precio × cantidad) en color índigo.
-  subtotalItem: { flex: 1, fontWeight: '700', color: '#a57c63', fontSize: 14 },
-  // Área táctil del ícono de papelera con padding para facilitar el toque.
-  trashBtn: { padding: 4 },
-
-  // Tarjeta blanca del resumen con borde y padding interno.
-  summaryCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e8e8e8',
-    padding: 16,
-    gap: 10,
-  },
-  summaryTitle: { fontWeight: '700', fontSize: 16, color: '#222', marginBottom: 2 },
-  // Fila de dos columnas: etiqueta a la izquierda, valor a la derecha.
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  summaryLabel: { color: '#555', fontSize: 14 },
-  summaryValue: { color: '#333', fontSize: 14, fontWeight: '500' },
-  summaryMuted: { color: '#aaa', fontSize: 14 }, // Texto gris para "A calcular".
-  // Línea divisoria horizontal antes del total.
-  separator: { height: 1, backgroundColor: '#e8e8e8', marginVertical: 2 },
-  totalLabel: { fontSize: 16, fontWeight: '700', color: '#222' },
-  // Total final: número grande en índigo.
-  totalValue: { fontSize: 24, fontWeight: '800', color: '#a57c63' },
-
-  // Botón principal de checkout: fondo índigo, ícono + texto centrados.
-  checkoutBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    borderRadius: 10, backgroundColor: '#a57c63',
-    paddingVertical: 14, marginTop: 4,
-  },
-  checkoutText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  // Botón secundario "Seguir Comprando": borde gris, sin relleno.
-  continueBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    borderRadius: 10, borderWidth: 1, borderColor: '#ccc',
-    paddingVertical: 12,
-  },
-  continueBtnText: { color: '#555', fontWeight: '600', fontSize: 14 },
 });

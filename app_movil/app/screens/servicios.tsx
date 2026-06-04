@@ -8,10 +8,7 @@ import { Alert, FlatList, Modal, Image, ImageBackground, Pressable, RefreshContr
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import catalogoService from "../../src/services/catalogoService";
-import citaService from '../../src/services/citaService';
-import { useAuth } from '../../src/context/AuthContext';
-import { useAgendar } from '../../src/context/AgendarContext';
-import { ThemedText } from '../../components/themed-text';
+import { useAuth } from '../../src/context/AuthContext';import { useAgendar } from "../../src/context/AgendarContext";import { ThemedText } from '../../components/themed-text';
 import { ThemedView } from '../../components/themed-view';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -24,6 +21,7 @@ const AFRODB_IMAGE = catalogoService.buildImageUrl('uploads/fondo.png');
 export default function ServiciosScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth() as { isAuthenticated: boolean };
+  const { setServicioSeleccionado } = useAgendar() as { setServicioSeleccionado: (s: any) => void };
 
   const [servicios, setServicios] = useState<any[]>([]);
    const [categorias, setCategorias] = useState<any[]>([]);
@@ -32,11 +30,6 @@ export default function ServiciosScreen() {
   const [errorMessage, setErrorMessage] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState<any>('all');
-  const [agendarModalVisible, setAgendarModalVisible] = useState(false);
-  const [selectedServicio, setSelectedServicio] = useState<any | null>(null);
-  const [fechaCita, setFechaCita] = useState('');
-  const [horaCita, setHoraCita] = useState('');
-  const [scheduling, setScheduling] = useState(false);
   const [servicioDetalle, setServicioDetalle] = useState<any>(null);
   const [paginaActual, setPaginaActual] = useState(1);
 
@@ -93,37 +86,9 @@ export default function ServiciosScreen() {
       [serviciosFiltrados, paginaActual, SERVICIOS_POR_PAGINA]
     );
 
-    const { crearCita } = useAgendar();
-
-    const handleAgendarCita = async (servicio: any) => {
-      if (!fechaCita || !horaCita) {
-        Alert.alert('Falta información', 'Por favor indique fecha y hora para la cita');
-        return;
-      }
-
-      const payload: any = {
-        fecha: fechaCita,
-        hora: horaCita,
-        servicios: [servicio.id],
-      };
-
-      // si el servicio tiene un profesional asociado, añadirlo
-      if (servicio.profesionalId) payload.profesionalId = servicio.profesionalId;
-      else if (servicio.profesional && servicio.profesional.id) payload.profesionalId = servicio.profesional.id;
-
-      setScheduling(true);
-      try {
-        await crearCita(payload);
-        Alert.alert('Cita agendada', 'Tu cita ha sido agendada correctamente');
-        setAgendarModalVisible(false);
-        setFechaCita('');
-        setHoraCita('');
-      } catch (error: unknown) {
-        const msg = (error as { message?: string })?.message;
-        Alert.alert('Error', msg || 'No se pudo agendar la cita');
-      } finally {
-        setScheduling(false);
-      }
+    const handleAgendarCita = (servicio: any) => {
+      setServicioSeleccionado(servicio);
+      router.push('/agendar');
     };
   
     const ListHeader = () => (
@@ -305,22 +270,6 @@ const ListFooter = () =>
                 <ThemedText style={styles.modalPrecio}>
                   ${Number(servicioDetalle.precio || 0).toLocaleString('es-CO')}
                 </ThemedText>
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-                  <TextInput
-                    placeholder="Fecha (YYYY-MM-DD)"
-                    value={fechaCita}
-                    onChangeText={setFechaCita}
-                    style={[styles.searchInput, { flex: 1 }]}
-                    placeholderTextColor="#9ca3af"
-                  />
-                  <TextInput
-                    placeholder="Hora (HH:MM)"
-                    value={horaCita}
-                    onChangeText={setHoraCita}
-                    style={[styles.searchInput, { width: 110 }]}
-                    placeholderTextColor="#9ca3af"
-                  />
-                </View>
                 <View style={styles.modalStock}>
                   <Ionicons name="cube-outline" size={14} color="#6b7280" />
                   <ThemedText style={styles.modalStockText}>
@@ -335,18 +284,14 @@ const ListFooter = () =>
                   </Pressable>
                   <Pressable
                     style={[styles.primaryBtn, { flex: 2, paddingVertical: 12 }]}
-                    onPress={async () => {
-                      await handleAgendarCita(servicioDetalle);
+                    onPress={() => {
+                      handleAgendarCita(servicioDetalle);
                       setServicioDetalle(null);
                     }}>
-                    {scheduling ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <>
-                        <Ionicons name="calendar-clear-outline" size={16} color="#fff" />
-                        <ThemedText style={styles.primaryBtnText}>Agendar cita</ThemedText>
-                      </>
-                    )}
+                    <>
+                      <Ionicons name="calendar-clear-outline" size={16} color="#fff" />
+                      <ThemedText style={styles.primaryBtnText}>Agendar cita</ThemedText>
+                    </>
                   </Pressable>
                 </View>
               </>

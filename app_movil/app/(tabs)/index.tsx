@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { Image, ImageBackground, Pressable, RefreshControl, ScrollView, StyleSheet, View, Dimensions } from "react-native";
+import { ImageBackground, Pressable, RefreshControl, ScrollView, StyleSheet, View, Dimensions } from "react-native";
 import catalogoService from "../../src/services/catalogoService";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -78,7 +78,7 @@ export default function HomeScreen() {
         {/* Tarjeta de Productos */}
         <Pressable
           style={styles.categoryCard}
-          onPress={() => router.push('/(tabs)/productos')}>
+          onPress={() => router.push('/screens/productos')}>
           <View style={[styles.categoryCardIcon, { backgroundColor: '#ffff' }]}>
             <Ionicons name="bag-handle" size={40} color="#553e30" />
           </View>
@@ -91,7 +91,7 @@ export default function HomeScreen() {
         {/* Tarjeta de Servicios */}
         <Pressable
           style={styles.categoryCard}
-          onPress={() => router.push('/(tabs)/servicios')}>
+          onPress={() => router.push('/screens/servicios')}>
           <View style={[styles.categoryCardIcon, { backgroundColor: '#ffff' }]}>
             <Ionicons name="cut" size={40} color="#553e30" />
           </View>

@@ -8,6 +8,13 @@ const citaService = {
     const response = await apiClient.post('/cliente/citas', payload);
     return mapPayload(response).cita || null;
   },
+
+  obtenerMisCitas: async () => {
+    // Obtiene todas las citas del cliente autenticado
+    const response = await apiClient.get('/cliente/citas');
+    const data = mapPayload(response);
+    return Array.isArray(data.citas) ? data.citas : [];
+  },
 };
 
 export default citaService;

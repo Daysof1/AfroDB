@@ -16,6 +16,7 @@ import 'react-native-reanimated';             // Requerido por Reanimated para f
 import { useColorScheme } from '../hooks/use-color-scheme'; // Hook que detecta si el dispositivo está en modo oscuro.
 import { AuthProvider } from '../src/context/AuthContext';   // Proveedor de sesión de usuario (login/logout).
 import { CarritoProvider } from '../src/context/CarritoContext'; // Proveedor del estado global del carrito.
+import { AgendarProvider } from '../src/context/AgendarContext'; // Proveedor del estado global de citas.
 
 // ── CONFIGURACIÓN DE EXPO ROUTER ──────────────────────────────────────────────
 // unstable_settings.anchor define la pantalla inicial al abrir la app.
@@ -34,8 +35,10 @@ export default function RootLayout() {
     <AuthProvider>
       {/* CarritoProvider: pone a disposición el carrito de compras en toda la app. */}
       <CarritoProvider>
-        {/* ThemeProvider: aplica el tema visual según la preferencia del sistema. */}
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        {/* AgendarProvider: pone a disposición el estado global de citas agendadas. */}
+        <AgendarProvider>
+          {/* ThemeProvider: aplica el tema visual según la preferencia del sistema. */}
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
 
           {/* Stack: navegador de pila. Cada pantalla se apila sobre la anterior. */}
           <Stack>
@@ -58,6 +61,7 @@ export default function RootLayout() {
             {/* ── Pantallas del flujo de compra del cliente ── */}
             <Stack.Screen name="checkout" options={{ title: 'Checkout' }} />
             <Stack.Screen name="mis-pedidos" options={{ title: 'Mis pedidos' }} />
+            <Stack.Screen name="mis-citas" options={{ title: 'Mis citas' }} />
             {/* Ruta dinámica para el detalle de un pedido del cliente. */}
             <Stack.Screen name="pedidos/[id]" options={{ title: 'Detalle pedido' }} />
 
@@ -68,6 +72,7 @@ export default function RootLayout() {
           {/* StatusBar: ajusta automáticamente el color de los íconos (claro/oscuro) según el tema. */}
           <StatusBar style="auto" />
         </ThemeProvider>
+        </AgendarProvider>
       </CarritoProvider>
     </AuthProvider>
   );

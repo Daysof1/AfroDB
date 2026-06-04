@@ -159,7 +159,7 @@ export default function CarritoScreen() {
           <Text style={styles.empty}>Agrega productos para comenzar tu compra</Text>
           {/* Botón para ir al catálogo (reemplaza la pantalla actual) */}
           <Pressable style={styles.catalogBtn} onPress={() => routerReplace('/')}>
-            <Ionicons name="storefront-outline" size={16} color="#fff" />
+            <Ionicons name="calendar-outline" size={16} color="#fff" />
             <Text style={styles.catalogBtnText}>Ir al Catálogo</Text>
           </Pressable>
         </View>

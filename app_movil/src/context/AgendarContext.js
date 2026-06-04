@@ -17,6 +17,7 @@ export function AgendarProvider({ children }) {
     const [citas, setCitas] = useState([]); // Lista de citas del usuario
     const [loading, setLoading] = useState(true); // true mientras carga las citas
     const [refreshing, setRefreshing] = useState(false); // true durante pull-to-refresh
+    const [servicioSeleccionado, setServicioSeleccionado] = useState(null); // Servicio seleccionado desde servicios.tsx
 
     /**
      * hydrate
@@ -109,8 +110,10 @@ export function AgendarProvider({ children }) {
             crearCita,
             cancelarCita,
             refreshCitas,
+            servicioSeleccionado,
+            setServicioSeleccionado,
         }),
-        [citas, loading, refreshing, crearCita, cancelarCita, refreshCitas]
+        [citas, loading, refreshing, crearCita, cancelarCita, refreshCitas, servicioSeleccionado]
     );
 
     return (

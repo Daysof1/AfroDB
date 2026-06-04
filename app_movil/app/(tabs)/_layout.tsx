@@ -67,7 +67,20 @@ export default function TabLayout() {
             {/** pestaña 3 cuenta
              * name=explore -> apunta al archivo /explore.tsx
              */}
+
+
             <Tabs.Screen
+                name="agendar"
+                options={{
+                    //Texto que aparece debajo del icono de la barra 
+                    title: 'Agendar',
+                    //tapBar que recibe el color activo o inactivo y devuelve el icono
+                    //house.fill = icono de carrito rellena ( reprensenta el icono del carrito de compras)
+                    tabBarIcon: ({ color }) => <IconSymbol size={26} name="calendar" color={color} />,
+                }}
+                />
+
+                <Tabs.Screen
                 name="explore"
                 options={{
                     //Texto que aparece debajo del icono de la barra 
@@ -77,7 +90,6 @@ export default function TabLayout() {
                     tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
                 }}
                 />
-
         </Tabs>
     )
 }
