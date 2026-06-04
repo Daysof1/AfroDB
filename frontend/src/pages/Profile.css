@@ -70,6 +70,60 @@
   border: 3px solid rgba(255, 255, 255, 0.3);
   position: relative;
   z-index: 1;
+  overflow: hidden;
+}
+
+.profile-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-avatar-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.file-upload-label {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.file-upload-label:hover {
+  background: #f1f5f9;
+}
+
+.file-upload-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  left: -9999px;
+  overflow: hidden;
+}
+
+.profile-upload-note {
+  font-size: 0.9rem;
+  color: #475569;
+  max-width: 220px;
+  text-align: center;
+  word-break: break-word;
 }
 
 .profile-content {

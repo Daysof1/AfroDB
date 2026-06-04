@@ -15,6 +15,7 @@ const { Op } = require('sequelize');
 // Importa la función generateToken desde config/jwt.js.
 // Se usa para crear un token JWT después de un registro o login exitoso.
 const { generateToken } = require('../config/jwt');
+const { deleteFile } = require('../config/multer');
 
 // Importa crypto para generar tokens seguros de recuperación de contraseña.
 const crypto = require('crypto');
@@ -283,6 +284,7 @@ const getMe = async (req, res) => {
  * Ruta: PUT /api/auth/me
  * Headers: { Authorization: 'Bearer TOKEN' }
  * Body: { nombre, apellido, telefono, direccion }
+ * También acepta multipart/form-data con el campo de archivo 'foto'.
  */
 const updateMe = async (req, res) => {
   try {
@@ -308,6 +310,28 @@ const updateMe = async (req, res) => {
     if (telefono !== undefined) usuario.telefono = telefono;
     if (direccion !== undefined) usuario.direccion = direccion;
     if (tipo_documento !== undefined) usuario.tipo_documento = tipo_documento;
+
+    // Si el cliente subió una nueva foto de perfil, verifica permisos.
+    if (req.file) {
+      // Solo los profesionales pueden subir imagen de perfil
+      if (String(usuario.rol) !== 'profesional') {
+        // Elimina el archivo subido por seguridad y evita dejar archivos huérfanos
+        try {
+          deleteFile(req.file.filename);
+        } catch (err) {
+          console.error('Error eliminando archivo no autorizado:', err);
+        }
+        return res.status(403).json({
+          success: false,
+          message: 'Solo los usuarios con rol profesional pueden subir imagen de perfil'
+        });
+      }
+
+      if (usuario.imagen) {
+        deleteFile(usuario.imagen);
+      }
+      usuario.imagen = req.file.filename;
+    }
     
     // .save() persiste los cambios en la base de datos.
     // Sequelize genera un UPDATE SQL solo con los campos que cambiaron.
