@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiRequest, getToken } from '../api/client.js';
+import { apiRequest, getToken, getAssetUrl } from '../api/client.js';
 import './Profile.css'; // CSS específico para el perfil
 
 export default function Profile() {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [editData, setEditData] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(true);
+  const fileInputRef = useRef(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -22,10 +25,12 @@ export default function Profile() {
 
     const fetchProfile = async () => {
       try {
-        const response = await apiRequest('/auth/me', 'GET');
+        const response = await apiRequest('/auth/me', { method: 'GET' });
         if (response.success) {
-          setUserData(response.data.usuario);
-          setEditData(response.data.usuario);
+          const usuario = response.data.usuario;
+          setUserData(usuario);
+          setEditData(usuario);
+          setPhotoPreview(usuario.imagen ? getAssetUrl(`/uploads/${usuario.imagen}`) : null);
         } else {
           setError(response.message || 'Error al obtener datos del perfil');
         }
@@ -48,24 +53,45 @@ export default function Profile() {
     });
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (photoPreview && photoPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(photoPreview);
+    }
+
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
   const handleSaveEdit = async () => {
     setError('');
     setMessage('');
 
     try {
       setIsSaving(true);
+      const formData = new FormData();
+      formData.append('nombre', editData.nombre || '');
+      formData.append('apellido', editData.apellido || '');
+      formData.append('telefono', editData.telefono || '');
+      formData.append('direccion', editData.direccion || '');
+      formData.append('tipo_documento', editData.tipo_documento || '');
+      if (photoFile) {
+        formData.append('foto', photoFile);
+      }
+
       const response = await apiRequest('/auth/me', {
         method: 'PUT',
-        body: JSON.stringify({
-          nombre: editData.nombre,
-          apellido: editData.apellido,
-          telefono: editData.telefono,
-          direccion: editData.direccion
-        }),
+        body: formData,
       });
 
       if (response.success) {
-        setUserData(editData);
+        const updatedUser = response.data.usuario;
+        setUserData(updatedUser);
+        setEditData(updatedUser);
+        setPhotoFile(null);
+        setPhotoPreview(updatedUser.imagen ? getAssetUrl(`/uploads/${updatedUser.imagen}`) : null);
         setMessage('Perfil actualizado exitosamente.');
         setIsEditing(false);
         setTimeout(() => setMessage(''), 3000);
@@ -84,6 +110,8 @@ export default function Profile() {
     setEditData(userData);
     setIsEditing(false);
     setError('');
+    setPhotoFile(null);
+    setPhotoPreview(userData?.imagen ? getAssetUrl(`/uploads/${userData.imagen}`) : null);
   };
 
   if (loading) {
@@ -121,8 +149,28 @@ export default function Profile() {
         <div className="profile-header">
           <h2>👤 Mi Perfil</h2>
           <div className="profile-avatar">
-            {userData.nombre?.charAt(0)?.toUpperCase() || '👤'}
+            {photoPreview ? (
+              <img src={photoPreview} alt="Foto de perfil" className="profile-avatar-image" />
+            ) : (
+              <span>{userData.nombre?.charAt(0)?.toUpperCase() || '👤'}</span>
+            )}
           </div>
+          {isEditing && userData?.rol === 'profesional' && (
+            <div className="profile-avatar-upload">
+              <label htmlFor="profile-photo-upload" className="file-upload-label">
+                📷 Subir foto
+              </label>
+              <input
+                id="profile-photo-upload"
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="file-upload-input"
+                onChange={handlePhotoChange}
+              />
+              {photoFile && <div className="profile-upload-note">{photoFile.name}</div>}
+            </div>
+          )}
         </div>
 
         <div className="profile-content">
@@ -135,6 +183,7 @@ export default function Profile() {
                 <h3>Información Personal</h3>
                 {!isEditing && (
                   <button 
+                    type="button"
                     className="btn-edit-icon"
                     onClick={() => setIsEditing(true)}
                     title="Editar perfil"
@@ -272,6 +321,7 @@ export default function Profile() {
             {isEditing ? (
               <>
                 <button
+                  type="button"
                   onClick={handleSaveEdit}
                   className="btn-profile btn-primary"
                   disabled={isSaving}
@@ -279,6 +329,7 @@ export default function Profile() {
                   {isSaving ? '💾 Guardando...' : '💾 Guardar Cambios'}
                 </button>
                 <button
+                  type="button"
                   onClick={handleCancel}
                   className="btn-profile btn-secondary"
                   disabled={isSaving}

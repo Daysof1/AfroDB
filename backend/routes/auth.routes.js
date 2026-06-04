@@ -53,6 +53,7 @@ const {
 // Si el token es válido, decodifica los datos y los guarda en req.usuario
 // Si no hay token o es inválido, retorna error 401 (No autorizado)
 const { verificarAuth } = require('../middleware/auth');
+const { upload } = require('../config/multer');
 
 // ==========================================
 // RUTAS PÚBLICAS (No requieren autenticación)
@@ -114,17 +115,18 @@ router.get('/me', verificarAuth, getMe);
 
 // PUT /api/auth/me → Actualiza el perfil del usuario autenticado
 // verificarAuth valida el token → updateMe actualiza solo los campos permitidos
-// Body esperado (JSON, todos opcionales):
+// Body esperado: multipart/form-data o JSON, todos opcionales
 //   {
-//     "nombre": "Juan Carlos",         → Nuevo nombre
-//     "apellido": "Pérez López",       → Nuevo apellido
-//     "telefono": "3001234567",        → Nuevo teléfono
-//     "direccion": "Carrera 10 #20-30" → Nueva dirección
+//     "nombre": "Juan Carlos",
+//     "apellido": "Pérez López",
+//     "telefono": "3001234567",
+//     "direccion": "Carrera 10 #20-30"
 //   }
+// Opcionalmente puede enviar el archivo de imagen con el campo 'foto'
 // NOTA: NO permite cambiar email, password ni rol desde esta ruta (seguridad)
 // Respuesta exitosa (200 OK):
 //   { success: true, message: "Perfil actualizado exitosamente", data: { usuario: {...} } }
-router.put('/me', verificarAuth, updateMe);
+router.put('/me', verificarAuth, upload.single('foto'), updateMe);
 
 // PUT /api/auth/change-password → Cambia la contraseña del usuario autenticado
 // verificarAuth valida el token → changePassword verifica la contraseña actual y establece la nueva

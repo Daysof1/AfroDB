@@ -169,6 +169,18 @@ const Usuario = sequelize.define('Usuario', {
     allowNull: true                   // Opcional
   },
 
+  // Columna 'imagen' → Nombre del archivo de la foto de perfil
+  imagen: {
+    type: DataTypes.STRING(255),       // Nombre del archivo guardado en uploads/
+    allowNull: true,                   // Opcional
+    validate: {
+      len: {
+        args: [0, 255],
+        msg: 'El nombre de la imagen debe tener como máximo 255 caracteres'
+      }
+    }
+  },
+
   // Columna 'activo' → Estado del usuario (activo/inactivo)
   // Si es false, el usuario NO puede iniciar sesión (verificado en middleware/auth.js)
   activo: {
