@@ -14,16 +14,18 @@
  * 
  */
 
-import { useCallback } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { router } from "expo-router";
+import { router, useRouter } from "expo-router";
 import { useFocusEffect } from '@react-navigation/native';
 //Ionicons liberia de iconos cevtoriales para react native 
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../src/context/AuthContext";
-import { useAgendar } from "../../src/context/AgendarContext"
+import { useAgendar } from "../../src/context/AgendarContext";
 import catalogoService from '../../src/services/catalogoService';
+import { ThemedText } from '../../components/themed-text';
+import { ThemedView } from '../../components/themed-view';
 
 
 // HELPERS de navegacion 
@@ -41,237 +43,111 @@ const fmt = (n: number) => `$${Number(n).toLocaleString('es-CO')}`;
 
 // componente principal agendar Screen 
 export default function AgendarScreen() {
-    //Obtiene el contexto de auth solo si el usuario esa autenticado
-    const { isAuthenticated } = useAuth() as { isAuthenticated: boolean };
-    type carritoCtx = {
-    //items lista de productos en el carrito
-    items: { id: string, nombre?: string, precio?: number, cantidad: number, imagen?: string }[];
-    // total suma total en pesos colombianos de todos los items 
-    total: number;
-    //Total items numero total de items del carrito
-    totalItems: number;
-    //loading true mientras el contexto carga los datos iniciales
-    loading: boolean;
-    //cambiar cantidad actualiza la cantidad de un producto 
-    cambiarCantidad: (id: string, cantidad: number) => Promise<void>;
-    //eliminar item elimina un producto del carrito
-    eliminarItem: (id: string) => Promise<void>;
-    //vaciar carrito elimina todos los productos del carrito
-    vaciarCarrito: () => Promise<void>;
-};
-    //Ontiene del contexto del carrito los datos y funciones necesarias 
+  const router = useRouter();
+  const { isAuthenticated } = useAuth() as { isAuthenticated: boolean };
+  const { crearCita } = useAgendar();
 
+  const [servicios, setServicios] = useState<any[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [fecha, setFecha] = useState('');
+  const [hora, setHora] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      refreshCarrito();
-    }, [refreshCarrito])
-  );
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const data = await catalogoService.getServicios({ pagina: 1, limite: 200 });
+        if (!mounted) return;
+        setServicios(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.log('Error cargando servicios', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
 
-    // Pantalla de carga 
-    // si el carrito aun esta cargando por ejemplo reupera los datos guardados 
-    //se muestra un spiner centardo en lugar del conntenido normal
+  const toggleServicio = (id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+  };
 
-    if (loading) {
-        return (
-            <View style={styles.centered}>
-                {/* spiner circilar de color indigo*/}
-                <ActivityIndicator size="large" color="#a57c63"/>
-                <Text style={styles.loadingText}>Cargando carrito...</Text>
-            </View>
-        );
+  const handleSubmit = async () => {
+    if (!isAuthenticated) {
+      Alert.alert('Inicia sesión', 'Debes iniciar sesión para agendar una cita');
+      router.replace('/explore');
+      return;
+    }
+    if (!fecha || !hora) {
+      Alert.alert('Falta información', 'Indica fecha y hora para la cita');
+      return;
+    }
+    if (selectedIds.length === 0) {
+      Alert.alert('Selecciona servicios', 'Selecciona al menos un servicio');
+      return;
     }
 
-    //Funcion handleIrACheckout o sea pagar
-    // si el usuario no esta autenticado muestra el dialogo de inicio de sesion
-    // si esta autenticado navega directamente a la pantalla de pagos 
-    const handleIrACheckout = () => {
-        if (!isAuthenticated) {
-            Alert.alert(
-                'Inicia sesion',
-                'Debest iniciar sesion para proceder al pago',
-                [
-                    //boto n cancelar cierra dalogo sin hacer nada
-                    { text: 'Cancelar', style:'cancel' },
-                    //boton iniciar sesion lleva a pestaña cuenta explore.tsx
-                    { text: 'Iniciar Sesion', onPress: () => routerReplace('/explore') },
-                ]
-            );
-            return; //sale de la funcion 
-        }
-        // usuario autenticado navega a la pantalla de pagos
-        routerPush('/checkout');
-    };
+    const payload: any = { fecha, hora, servicios: selectedIds };
 
-    //Funcion handleVaciarCarrito o sea pagar
-    // Muestra el dialogo de confirmacion de vaciar carrito
-    const handleVaciarCarrito = () => {
-            Alert.alert(
-                'Vaciar carrito',
-                '¿Estás seguro de que quieres vaciar el carrito?',
-                [
-                    //boto n cancelar cierra dalogo sin hacer nada
-                    { text: 'Cancelar', style:'cancel' },
-                    //boton iniciar sesion lleva a pestaña cuenta explore.tsx
-                    { text: 'Vaciar', style: 'destructive', onPress: () => vaciarCarrito() },
-                ]
-            );
-        };
+    setSubmitting(true);
+    try {
+      await crearCita(payload);
+      Alert.alert('Cita creada', 'Tu cita fue agendada correctamente');
+      // limpiar formulario
+      setSelectedIds([]);
+      setFecha('');
+      setHora('');
+      router.replace('/');
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message;
+      Alert.alert('Error', msg || 'No se pudo agendar la cita');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-        /**
-         * Renderizado principal del carrito
-         * style -> ocupa todo el alto disponible depende el celular ios android
-         * contentContaierStyle -> aplica padding y gad al contenido interno
-         */
-        return(
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+  const renderServicio = ({ item }: { item: any }) => {
+    const selected = selectedIds.includes(String(item.id));
+    return (
+      <Pressable onPress={() => toggleServicio(String(item.id))} style={[styles.serviceRow, selected && styles.serviceRowSelected]}>
+        <ThemedText style={styles.serviceName}>{item.nombre}</ThemedText>
+        <Text style={styles.servicePrice}>${Number(item.precio || 0).toLocaleString('es-CO')}</Text>
+      </Pressable>
+    );
+  };
 
-            {/** Encabezados
-             * fila horizontal: icono del carrito + titulo "Mi carrito" */}
-             <View style={styles.header}>
-        <Ionicons name="cart" size={28} color="#a57c63" />
-        <Text style={styles.headerTitle}>Mi Carrito</Text>
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#a57c63" />
+        <Text style={styles.loadingText}>Cargando servicios...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.header}>
+        <ThemedText style={styles.headerTitle}>Agendar Cita</ThemedText>
       </View>
 
-      {/* ── BANNER INFORMATIVO (solo para usuarios NO autenticados) ─────── */}
-      {/* Se muestra un aviso azul explicando que pueden comprar sin iniciar sesión */}
-      {!isAuthenticated && (
-        <View style={styles.infoBanner}>
-          <Ionicons name="information-circle" size={18} color="#1d4ed8" />
-          <Text style={styles.infoBannerText}>
-            Puedes agregar productos sin iniciar sesión. Al momento de pagar deberás iniciar sesión.
-          </Text>
-        </View>
-      )}
+      <ThemedView style={styles.card}>
+        <ThemedText style={styles.label}>Selecciona los servicios</ThemedText>
+        <FlatList data={servicios} keyExtractor={(s: any) => String(s.id)} renderItem={renderServicio} style={{ maxHeight: 320 }} />
 
-      {/* ── RENDERIZADO CONDICIONAL: VACÍO vs CON PRODUCTOS ─────────────── */}
-      {items.length === 0 ? (
-        // ── CARRITO VACÍO ─────────────────────────────────────────────────
-        // Se muestra cuando no hay ningún producto agregado.
-        <View style={styles.emptyContainer}>
-          {/* Ícono grande de carrito vacío en gris */}
-          <Ionicons name="cart-outline" size={90} color="#ccc" />
-          <Text style={styles.emptyTitle}>Tu carrito está vacío</Text>
-          <Text style={styles.empty}>Agrega productos para comenzar tu compra</Text>
-          {/* Botón para ir al catálogo (reemplaza la pantalla actual) */}
-          <Pressable style={styles.catalogBtn} onPress={() => routerReplace('/')}>
-            <Ionicons name="storefront-outline" size={16} color="#fff" />
-            <Text style={styles.catalogBtnText}>Ir al Catálogo</Text>
-          </Pressable>
-        </View>
-      ) : (
-        // ── CARRITO CON PRODUCTOS ─────────────────────────────────────────
-        // Fragment (<>) para agrupar sin agregar un View extra al árbol.
-        <>
-          {/* ── TARJETA DE PRODUCTOS ────────────────────────────────────── */}
-          <View style={styles.sectionCard}>
+        <ThemedText style={styles.label}>Fecha (YYYY-MM-DD)</ThemedText>
+        <TextInput value={fecha} onChangeText={setFecha} placeholder="2026-06-30" style={styles.input} placeholderTextColor="#9ca3af" />
 
-            {/* Cabecera de la tarjeta: título + badge con cantidad + botón vaciar */}
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitle}>Productos en tu carrito</Text>
-                {/* Badge índigo con el número de ítems distintos */}
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{items.length}</Text>
-                </View>
-              </View>
-              {/* Botón "Vaciar carrito" con borde rojo → llama handleVaciarCarrito */}
-              <Pressable style={styles.vaciarBtn} onPress={handleVaciarCarrito}>
-                <Ionicons name="trash-outline" size={14} color="#b93a32" />
-                <Text style={styles.vaciarText}>Vaciar carrito</Text>
-              </Pressable>
-            </View>
+        <ThemedText style={styles.label}>Hora (HH:MM)</ThemedText>
+        <TextInput value={hora} onChangeText={setHora} placeholder="14:30" style={styles.input} placeholderTextColor="#9ca3af" />
 
-            {/* ── LISTA DE ÍTEMS ──────────────────────────────────────────── */}
-            {/* .map() recorre cada ítem del carrito y genera una fila por producto */}
-            {items.map((item, index) => (
-              // key={item.id}: identificador único para que React optimice el renderizado.
-              <View key={item.id}>
-                {/* Línea separadora entre ítems (no se muestra antes del primero) */}
-                {index > 0 && <View style={styles.itemDivider} />}
-
-                {/* Fila de un ítem: imagen + datos + controles */}
-                <View style={styles.itemRow}>
-                  {/* Imagen del producto. Si no tiene imagen, usa un placeholder genérico.
-                      La URL apunta al servidor backend local (10.0.2.2 = localhost en emulador Android) */}
-                  <Image
-                    source={{ uri: item.imagen ? catalogoService.buildImageUrl(item.imagen) : 'https://via.placeholder.com/70' }}
-                    style={styles.image}
-                  />
-
-                  {/* Columna derecha: nombre, precio unitario y controles de cantidad */}
-                  <View style={styles.itemBody}>
-                    {/* numberOfLines={2}: trunca el nombre si es muy largo */}
-                    <Text style={styles.itemName} numberOfLines={2}>{item.nombre}</Text>
-                    {/* Precio unitario formateado */}
-                    <Text style={styles.itemPrice}>{fmt(item.precio || 0)} c/u</Text>
-
-                    {/* Fila de controles de cantidad */}
-                    <View style={styles.qtyRow}>
-                      {/* Botón "-": reduce 1 unidad, mínimo 1 (Math.max evita llegar a 0) */}
-                      <Pressable style={styles.qtyBtn} onPress={() => cambiarCantidad(item.id, Math.max(1, item.cantidad - 1))}>
-                        <Ionicons name="remove" size={14} color="#555" />
-                      </Pressable>
-                      {/* Cantidad actual del ítem */}
-                      <Text style={styles.qtyText}>{item.cantidad}</Text>
-                      {/* Botón "+": aumenta 1 unidad */}
-                      <Pressable style={styles.qtyBtn} onPress={() => cambiarCantidad(item.id, item.cantidad + 1)}>
-                        <Ionicons name="add" size={14} color="#555" />
-                      </Pressable>
-                      {/* Subtotal del ítem: precio × cantidad formateado */}
-                      <Text style={styles.subtotalItem}>{fmt((item.precio || 0) * item.cantidad)}</Text>
-                      {/* Botón de papelera: elimina el ítem del carrito */}
-                      <Pressable onPress={() => eliminarItem(item.id)} style={styles.trashBtn}>
-                        <Ionicons name="trash-outline" size={18} color="#b93a32" />
-                      </Pressable>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-
-          {/* ── TARJETA DE RESUMEN DEL PEDIDO ───────────────────────────── */}
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>Resumen del Pedido</Text>
-
-            {/* Fila: Subtotal (igual al total porque no hay descuentos) */}
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal:</Text>
-              <Text style={styles.summaryValue}>{fmt(total)}</Text>
-            </View>
-            {/* Fila: Envío (se calcula en el checkout, aquí solo se indica) */}
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Envío:</Text>
-              <Text style={styles.summaryMuted}>A calcular</Text>
-            </View>
-
-            {/* Línea divisoria antes del total final */}
-            <View style={styles.separator} />
-
-            {/* Fila: Total final destacado en grande color índigo */}
-            <View style={styles.summaryRow}>
-              <Text style={styles.totalLabel}>Total:</Text>
-              <Text style={styles.totalValue}>{fmt(total)}</Text>
-            </View>
-
-            {/* Botón principal de checkout → llama handleIrACheckout */}
-            {/* El texto cambia según si el usuario está autenticado o no */}
-            <Pressable style={styles.checkoutBtn} onPress={handleIrACheckout}>
-              <Ionicons name="card-outline" size={18} color="#fff" />
-              <Text style={styles.checkoutText}>
-                {isAuthenticated ? 'Proceder al Pago' : 'Iniciar Sesión para Pagar'}
-              </Text>
-            </Pressable>
-
-            {/* Botón secundario "Seguir Comprando" → vuelve al catálogo (index.tsx) */}
-            <Pressable style={styles.continueBtn} onPress={() => routerReplace('/')}>
-              <Ionicons name="arrow-back-outline" size={16} color="#555" />
-              <Text style={styles.continueBtnText}>Seguir Comprando</Text>
-            </Pressable>
-          </View>
-        </>
-      )}
+        <Pressable style={styles.primaryBtn} onPress={handleSubmit} disabled={submitting}>
+          {submitting ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.primaryBtnText}>Agendar</ThemedText>}
+        </Pressable>
+      </ThemedView>
     </ScrollView>
   );
 }

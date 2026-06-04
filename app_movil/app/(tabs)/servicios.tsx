@@ -10,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import catalogoService from "../../src/services/catalogoService";
 import citaService from '../../src/services/citaService';
 import { useAuth } from '../../src/context/AuthContext';
+import { useAgendar } from '../../src/context/AgendarContext';
 import { ThemedText } from '../../components/themed-text';
 import { ThemedView } from '../../components/themed-view';
 
@@ -92,19 +93,38 @@ export default function ServiciosScreen() {
       [serviciosFiltrados, paginaActual, SERVICIOS_POR_PAGINA]
     );
 
+    const { crearCita } = useAgendar();
+
     const handleAgendarCita = async (servicio: any) => {
-    try {
-      await citaService.agendarCita({
-        servicioId: servicio.id,
+      if (!fechaCita || !horaCita) {
+        Alert.alert('Falta información', 'Por favor indique fecha y hora para la cita');
+        return;
+      }
+
+      const payload: any = {
         fecha: fechaCita,
-        hora: horaCita
-      });
-      Alert.alert('Cita agendada', 'Tu cita ha sido agendada correctamente');
-    } catch (error: unknown) {
-      const msg = (error as { message?: string })?.message;
-      Alert.alert('Error', msg || 'No se pudo agregar al carrito');
-    }
-  };
+        hora: horaCita,
+        servicios: [servicio.id],
+      };
+
+      // si el servicio tiene un profesional asociado, añadirlo
+      if (servicio.profesionalId) payload.profesionalId = servicio.profesionalId;
+      else if (servicio.profesional && servicio.profesional.id) payload.profesionalId = servicio.profesional.id;
+
+      setScheduling(true);
+      try {
+        await crearCita(payload);
+        Alert.alert('Cita agendada', 'Tu cita ha sido agendada correctamente');
+        setAgendarModalVisible(false);
+        setFechaCita('');
+        setHoraCita('');
+      } catch (error: unknown) {
+        const msg = (error as { message?: string })?.message;
+        Alert.alert('Error', msg || 'No se pudo agendar la cita');
+      } finally {
+        setScheduling(false);
+      }
+    };
   
     const ListHeader = () => (
     <>
@@ -285,6 +305,22 @@ const ListFooter = () =>
                 <ThemedText style={styles.modalPrecio}>
                   ${Number(servicioDetalle.precio || 0).toLocaleString('es-CO')}
                 </ThemedText>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                  <TextInput
+                    placeholder="Fecha (YYYY-MM-DD)"
+                    value={fechaCita}
+                    onChangeText={setFechaCita}
+                    style={[styles.searchInput, { flex: 1 }]}
+                    placeholderTextColor="#9ca3af"
+                  />
+                  <TextInput
+                    placeholder="Hora (HH:MM)"
+                    value={horaCita}
+                    onChangeText={setHoraCita}
+                    style={[styles.searchInput, { width: 110 }]}
+                    placeholderTextColor="#9ca3af"
+                  />
+                </View>
                 <View style={styles.modalStock}>
                   <Ionicons name="cube-outline" size={14} color="#6b7280" />
                   <ThemedText style={styles.modalStockText}>
@@ -303,8 +339,14 @@ const ListFooter = () =>
                       await handleAgendarCita(servicioDetalle);
                       setServicioDetalle(null);
                     }}>
-                    <Ionicons name="calendar-clear-outline" size={16} color="#fff" />
-                    <ThemedText style={styles.primaryBtnText}>Agendar cita</ThemedText>
+                    {scheduling ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="calendar-clear-outline" size={16} color="#fff" />
+                        <ThemedText style={styles.primaryBtnText}>Agendar cita</ThemedText>
+                      </>
+                    )}
                   </Pressable>
                 </View>
               </>
