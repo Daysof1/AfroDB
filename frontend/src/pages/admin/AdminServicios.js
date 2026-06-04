@@ -131,23 +131,19 @@ export default function AdminServicios() {
       setError('');
       setSuccess('');
       const isEditing = Boolean(editingServicioId);
-      const formData = new FormData();
-      formData.append('nombre', newServicio.nombre);
-      formData.append('descripcion', newServicio.descripcion || '');
-      formData.append('precio', String(Number(newServicio.precio)));
-      formData.append('duracion', String(Number(newServicio.duracion)));
-      formData.append('categoriaId', String(Number(newServicio.categoriaId)));
-      formData.append('subcategoriaId', String(Number(newServicio.subcategoriaId)));
-      const imagenFile = newServicio.imagenUrl
-        ? await fetchImageAsFile(newServicio.imagenUrl, newServicio.nombre || 'servicio')
-        : null;
-      if (imagenFile) {
-        formData.append('imagen', imagenFile);
-      }
+      // No file input in UI: send JSON payload so express.json can parse req.body
+      const payload = {
+        nombre: newServicio.nombre,
+        descripcion: newServicio.descripcion || '',
+        precio: newServicio.precio,
+        duracion: newServicio.duracion,
+        categoriaId: newServicio.categoriaId,
+        subcategoriaId: newServicio.subcategoriaId,
+      };
 
       await apiRequest(isEditing ? `/admin/servicios/${editingServicioId}` : '/admin/servicios', {
         method: isEditing ? 'PUT' : 'POST',
-        body: formData,
+        body: JSON.stringify(payload),
       });
 
       setSuccess(isEditing ? 'Servicio actualizado correctamente' : 'Servicio creado correctamente');

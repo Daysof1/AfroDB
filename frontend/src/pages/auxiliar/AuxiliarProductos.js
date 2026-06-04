@@ -10,7 +10,7 @@ export default function AuxiliarProductos() {
   const [success, setSuccess] = useState('');
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
-  const limite = 10;
+  const limite = 100;
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
   const [editingOriginal, setEditingOriginal] = useState(null);
