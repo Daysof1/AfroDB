@@ -86,7 +86,7 @@ export default function AdminProductoForm() {
     //precio y stock se guardan como string para faciitar la entrada de textoInput
     const [precio, setPrecio] = useState(producto?.precio?.toString() ?? '');
     const [stock, setStock] = useState(producto?.stock?.toString() ?? '');
-    const [imagen, setImagen] = useState(producto?.imagen ?? '');
+    const [imagenUrl, setImagenUrl] = useState(producto?.imagen ?? '');
     const [categoriaId, setCategoriaId] = useState(producto?.categoriaId?.toString() ?? '');
     const [subcategoriaId, setSubcategoriaId] = useState(producto?.subcategoriaId?.toString() ?? '');
     const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -140,7 +140,7 @@ export default function AdminProductoForm() {
                 descripcion,
                 precio: parseFloat(precio),
                 stock: parseInt(stock, 10),
-                imagen,
+                imagenUrl,
               categoriaId: parseInt(categoriaId, 10),
               subcategoriaId: parseInt(subcategoriaId, 10),
             };
@@ -236,8 +236,8 @@ export default function AdminProductoForm() {
       <Text style={styles.label}>URL Imagen</Text>
       <TextInput
         style={styles.input}
-        value={imagen}
-        onChangeText={setImagen}
+        value={imagenUrl}
+        onChangeText={setImagenUrl}
         // Sin keyboardType especial: admite cualquier texto (URL o ruta).
       />
 

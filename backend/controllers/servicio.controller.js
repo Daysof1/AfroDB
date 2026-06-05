@@ -12,7 +12,7 @@
 const Servicio = require('../models/Servicio');
 const Categoria = require('../models/Categoria');
 const Subcategoria = require('../models/Subcategoria');
-const { deleteFile } = require('../config/multer');
+const { deleteFile, downloadImage } = require('../config/multer');
 
 const esNombreImagenValido = (imagen) => /\.(jpg|jpeg|png|gif)$/i.test(String(imagen || ''));
 
@@ -143,7 +143,19 @@ const crearServicio = async (req, res) => {
     const parsedDuracion = parseInt(duracion, 10);
     const parsedCategoriaId = parseInt(categoriaId, 10);
     const parsedSubcategoriaId = parseInt(subcategoriaId, 10);
-    const imagen = req.file ? req.file.filename : null;
+    let imagen = null;
+    let downloadedImagen = null;
+    if (req.file) {
+      imagen = req.file.filename;
+    } else if (req.body?.imagenUrl) {
+      try {
+        downloadedImagen = await downloadImage(req.body.imagenUrl, nombre);
+        imagen = downloadedImagen;
+      } catch (err) {
+        console.warn('No se pudo descargar la imagen remota:', err.message || err);
+        imagen = null;
+      }
+    }
 
     // VALIDACIONES
     if (!nombre || !precio || !duracion || !categoriaId || !subcategoriaId) {
@@ -242,6 +254,9 @@ const crearServicio = async (req, res) => {
     if (req.file) {
       deleteFile(req.file.filename);
     }
+    if (downloadedImagen) {
+      try { deleteFile(downloadedImagen); } catch (e) {}
+    }
     res.status(500).json({
       success: false,
       message: 'Error al crear servicio',
@@ -267,6 +282,7 @@ const actualizarServicio = async (req, res) => {
     const parsedActivo = activo !== undefined ? activo === 'true' || activo === true : undefined;
 
     const servicio = await Servicio.findByPk(id);
+    let downloadedNewImageService = null;
 
     if (!servicio) {
       return res.status(404).json({
@@ -355,6 +371,16 @@ const actualizarServicio = async (req, res) => {
         deleteFile(servicio.imagen);
       }
       servicio.imagen = req.file.filename;
+    } else if (req.body?.imagenUrl) {
+      // Si llega imagenUrl en la actualización y no se subió archivo, descargarla y reemplazar
+      try {
+        if (servicio.imagen) deleteFile(servicio.imagen);
+        const filename = await downloadImage(req.body.imagenUrl, servicio.nombre || 'imagen');
+        downloadedNewImageService = filename;
+        servicio.imagen = filename;
+      } catch (err) {
+        console.warn('No se pudo descargar imagen remota en actualizarServicio:', err.message || err);
+      }
     } else if (servicio.imagen && !esNombreImagenValido(servicio.imagen)) {
       servicio.imagen = null;
     }
@@ -392,6 +418,9 @@ const actualizarServicio = async (req, res) => {
     }
     if (req.file) {
       deleteFile(req.file.filename);
+    }
+    if (typeof downloadedNewImageService === 'string' && downloadedNewImageService) {
+      try { deleteFile(downloadedNewImageService); } catch (e) {}
     }
     res.status(500).json({
       success: false,

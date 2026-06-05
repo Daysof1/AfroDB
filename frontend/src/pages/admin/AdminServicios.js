@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../Admin.css';
-import { apiRequest, fetchImageAsFile, getAssetUrl } from '../../api/client.js';
+import { apiRequest, getAssetUrl } from '../../api/client.js';
 
 export default function AdminServicios() {
   const [servicios, setServicios] = useState([]);
@@ -131,7 +131,7 @@ export default function AdminServicios() {
       setError('');
       setSuccess('');
       const isEditing = Boolean(editingServicioId);
-      // No file input in UI: send JSON payload so express.json can parse req.body
+      // Si se proporcionó una URL de imagen, convertirla a File y enviar multipart/form-data
       const payload = {
         nombre: newServicio.nombre,
         descripcion: newServicio.descripcion || '',
@@ -139,6 +139,7 @@ export default function AdminServicios() {
         duracion: newServicio.duracion,
         categoriaId: newServicio.categoriaId,
         subcategoriaId: newServicio.subcategoriaId,
+        imagenUrl: newServicio.imagenUrl || '',
       };
 
       await apiRequest(isEditing ? `/admin/servicios/${editingServicioId}` : '/admin/servicios', {

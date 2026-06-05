@@ -75,8 +75,8 @@ const Servicio = sequelize.define('Servicio', {
       allowNull: true,                   // Opcional: un servicio puede no tener imagen
       validate: {
         is: {                            // Valida con expresión regular (regex)
-          args: /\.(jpg|jpeg|png|gif)$/i,
-          msg: 'La imagen debe ser un archivo JPG, PNG o GIF'
+          args: /\.(jpg|jpeg|png|gif|webp)$/i,
+          msg: 'La imagen debe ser un archivo JPG, PNG, GIF o WebP'
         }
       }
     },

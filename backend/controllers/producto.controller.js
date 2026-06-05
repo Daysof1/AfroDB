@@ -24,6 +24,7 @@ const path = require('path');
 // 'fs.promises' es el módulo nativo de Node.js para manejar archivos de forma asíncrona.
 // Se usa para eliminar imágenes del disco (unlink).
 const fs = require('fs').promises;
+const { downloadImage, deleteFile } = require('../config/multer');
 
 /**
  * Obtener todos los productos (admin)
@@ -248,7 +249,19 @@ const crearProducto = async (req, res) => {
     
     // Si se subió una imagen, Multer la guarda en uploads/ y pone los datos en req.file.
     // req.file.filename es el nombre generado por Multer (ej: "producto_1719344567890_abc12.jpg")
-    const imagen = req.file ? req.file.filename : null;
+    let imagen = null;
+    let downloadedImagen = null;
+    if (req.file) {
+      imagen = req.file.filename;
+    } else if (req.body?.imagenUrl) {
+      try {
+        downloadedImagen = await downloadImage(req.body.imagenUrl, nombre);
+        imagen = downloadedImagen;
+      } catch (err) {
+        console.warn('No se pudo descargar la imagen remota:', err.message || err);
+        imagen = null;
+      }
+    }
     
     // Crea el registro en la tabla Producto (INSERT INTO Producto ...)
     const nuevoProducto = await Producto.create({
@@ -293,6 +306,13 @@ const crearProducto = async (req, res) => {
         console.error('Error al eliminar imagen:', err);
       }
     }
+    if (downloadedImagen) {
+      try {
+        deleteFile(downloadedImagen);
+      } catch (err) {
+        console.error('Error al eliminar imagen descargada tras fallo:', err.message || err);
+      }
+    }
     
     // Captura errores de validación del modelo Sequelize
     if (error.name === 'SequelizeValidationError') {
@@ -309,7 +329,9 @@ const crearProducto = async (req, res) => {
       error: error.message
     });
   }
-};
+}; 
+
+
 
 /**
  * Actualizar producto existente (admin)
@@ -382,7 +404,8 @@ const actualizarProducto = async (req, res) => {
       });
     }
     
-    // Si se subió una nueva imagen, reemplaza la anterior
+    // Si se subió una nueva imagen o se envió una URL, reemplaza la anterior
+    let downloadedNewImage = null;
     if (req.file) {
       // Si el producto ya tenía una imagen, la elimina del disco
       if (producto.imagen) {
@@ -395,6 +418,15 @@ const actualizarProducto = async (req, res) => {
       }
       // Asigna el nombre de la nueva imagen
       producto.imagen = req.file.filename;
+    } else if (req.body?.imagenUrl) {
+      try {
+        if (producto.imagen) deleteFile(producto.imagen);
+        const filename = await downloadImage(req.body.imagenUrl, producto.nombre || 'imagen');
+        downloadedNewImage = filename;
+        producto.imagen = filename;
+      } catch (err) {
+        console.warn('No se pudo descargar imagen remota en actualizarProducto:', err.message || err);
+      }
     }
     
     // Actualiza SOLO los campos que se enviaron (si no se envían, no cambian)
@@ -437,6 +469,9 @@ const actualizarProducto = async (req, res) => {
       } catch (err) {
         console.error('Error al eliminar imagen:', err);
       }
+    }
+    if (typeof downloadedNewImage === 'string' && downloadedNewImage) {
+      try { deleteFile(downloadedNewImage); } catch (e) {}
     }
     
     if (error.name === 'SequelizeValidationError') {

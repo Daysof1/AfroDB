@@ -96,8 +96,8 @@ const Producto = sequelize.define('Producto', {
     allowNull: true,                   // Opcional: un producto puede no tener imagen
     validate: {
       is: {                            // Valida con expresión regular (regex)
-        args: /\.(jpg|jpeg|png|gif)$/i,  // Solo extensiones de imagen permitidas
-        msg: 'La imagen debe ser un archivo JPG, PNG o GIF'
+        args: /\.(jpg|jpeg|png|gif|webp)$/i,  // Solo extensiones de imagen permitidas
+        msg: 'La imagen debe ser un archivo JPG, PNG, GIF o WebP'
       }
     }
   },

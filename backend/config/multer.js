@@ -86,7 +86,7 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   // Array con los tipos MIME permitidos (solo formatos de imagen)
   // MIME type es un estándar que identifica el tipo de contenido de un archivo
-  const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+  const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
   
   // Verifica si el tipo MIME del archivo subido está en la lista de permitidos
   // includes() retorna true si el elemento está en el array
@@ -97,7 +97,7 @@ const fileFilter = (req, file, cb) => {
   } else {
     // Si el tipo NO es permitido, rechaza el archivo con un mensaje de error
     // El error será capturado por Express y enviado como respuesta al cliente
-    cb(new Error('Solo se permiten imágenes (JPG, JPEG, PNG, GIF)'), false);
+    cb(new Error('Solo se permiten imágenes (JPG, JPEG, PNG, GIF, WebP)'), false);
   }
 };
 
@@ -158,5 +158,60 @@ const deleteFile = (filename) => {
 //          router.post('/productos', upload.single('imagen'), controller.crear);
 module.exports = {
   upload,        // Middleware de multer: se usa en las rutas para recibir archivos
-  deleteFile     // Función auxiliar: se usa en controllers para eliminar imágenes viejas
+  deleteFile,    // Función auxiliar: se usa en controllers para eliminar imágenes viejas
+  /**
+   * Descargar una imagen desde una URL y guardarla en la carpeta de uploads.
+   * Devuelve el nombre de archivo guardado.
+   * @param {string} urlStr
+   * @param {string} [nameHint]
+   */
+  async downloadImage(urlStr, nameHint = 'imagen') {
+    try {
+      const { URL } = require('url');
+      const parsed = new URL(urlStr);
+      const protocol = parsed.protocol === 'http:' ? require('http') : require('https');
+      const path = require('path');
+      const crypto = require('crypto');
+
+      return await new Promise((resolve, reject) => {
+        const req = protocol.get(urlStr, (res) => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`HTTP ${res.statusCode}`));
+            res.resume();
+            return;
+          }
+
+          const contentType = res.headers['content-type'] || '';
+          if (!contentType.startsWith('image/')) {
+            reject(new Error('URL no apunta a una imagen'));
+            res.resume();
+            return;
+          }
+
+          let ext = '';
+          const mime = contentType.split('/')[1];
+          if (mime) {
+            ext = mime.split(';')[0];
+          }
+
+          const safeBase = String(nameHint).replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || 'imagen';
+          const filename = `${Date.now()}-${safeBase}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
+          const filePath = path.join(uploadPath, filename);
+          const fileStream = fs.createWriteStream(filePath);
+          res.pipe(fileStream);
+          fileStream.on('finish', () => {
+            fileStream.close(() => resolve(filename));
+          });
+          fileStream.on('error', (err) => {
+            try { fs.unlinkSync(filePath); } catch (e) {}
+            reject(err);
+          });
+        });
+
+        req.on('error', (err) => reject(err));
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
 };

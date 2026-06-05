@@ -122,7 +122,6 @@ export default function AuxiliarServicios() {
       setError('');
       setSuccess('');
       const isEditing = Boolean(editingServicioId);
-      // No file input in UI: send JSON payload so express.json can parse req.body
       const payload = {
         nombre: newServicio.nombre,
         descripcion: newServicio.descripcion || '',
@@ -130,6 +129,7 @@ export default function AuxiliarServicios() {
         duracion: newServicio.duracion,
         categoriaId: newServicio.categoriaId,
         subcategoriaId: newServicio.subcategoriaId,
+        imagenUrl: newServicio.imagenUrl || '',
       };
 
       await apiRequest(isEditing ? `/admin/servicios/${editingServicioId}` : '/admin/servicios', {
