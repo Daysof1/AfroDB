@@ -185,30 +185,6 @@ export default function AdminUsuariosScreen() {
                 >
                   <ThemedText style={styles.actionBtnText}>{item.activo ? 'Desactivar' : 'Activar'}</ThemedText>
                 </Pressable>
-
-                {/* Botón Eliminar: siempre rojo. Muestra confirmación antes de ejecutar. */}
-                <Pressable
-                  style={[styles.actionBtn, { backgroundColor: '#b93a32' }]}
-                  onPress={() => {
-                    Alert.alert('Eliminar usuario', 'Estas seguro de eliminar este usuario?', [
-                      { text: 'Cancelar', style: 'cancel' },
-                      {
-                        text: 'Eliminar',
-                        style: 'destructive',
-                        onPress: async () => {
-                          try {
-                            await deleteUsuario(item.id || item.id); // DELETE al backend.
-                            fetchUsuarios(pagina, busqueda);           // Recarga la lista.
-                          } catch {
-                            Alert.alert('Error', 'No se pudo eliminar');
-                          }
-                        },
-                      },
-                    ]);
-                  }}
-                >
-                  <ThemedText style={styles.actionBtnText}>Eliminar</ThemedText>
-                </Pressable>
               </View>
             )}
           </View>
