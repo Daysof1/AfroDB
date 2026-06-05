@@ -1,10 +1,10 @@
 /**
  * Este archivo gestion de produtos panel de administacion
- * lista de todos los productos del sistema con iamgen descripcion y stado
+ * lista de todos los Servicios del sistema con iamgen descripcion y stado
  * permite buscar en tiemp resl y nsvegs entre psginsd 10 por pagina
  * product-form con los datos de editar
- * al precionar el producto navega a sus caracteristicas y edicion
- * solo administradores isAdmin pueden actiivar desactivar y eliminar productos
+ * al precionar el Servicio navega a sus caracteristicas y edicion
+ * solo administradores isAdmin pueden actiivar desactivar y eliminar Servicios
  * el auxiliar solo puede ver y navegar
  */
 
@@ -23,19 +23,19 @@ import { router } from "expo-router";//navegacion y parametros de ruta
 import { ThemedText } from '../../components/themed-text';
 
 import  apiClient  from '../../src/api/apiClient';
-import { activarProducto, desactivarProducto, deleteProduct } from '../../src/services/adminService';
+import { activarServicio, desactivarServicio, deleteProduct } from '../../src/services/adminService';
 import { useAuth } from "../../src/context/AuthContext";
 /**
- * tipo de producto
- * estrucura del producto recibido tal como viene del backend
+ * tipo de Servicio
+ * estrucura del Servicio recibido tal como viene del backend
  */
 
-type Producto = {
+type Servicio = {
     id?: string;
     nombre?: string;
     descripcion?: string;
     precio?: number;
-    stock?: number;
+    duracion?: string;
     imagen?: string;
     activo?: boolean;
 };
@@ -49,11 +49,11 @@ type AuthUser = { rol?: string };
 const push = (path: string) => 
 (router as unknown as { push: (p: string) => void }).push(path);
 
-//cast de router para navegar con pathname + parms (para pasar el objeto a producto)
+//cast de router para navegar con pathname + parms (para pasar el objeto a Servicio)
 const pushParams = (pathname: string, params: Record<string, string>) => 
 (router as unknown as { push : (p: {pathname: string; params: Record<string, string> }) => void }).push({ pathname, params });
 
-export default function AdminProductosScreen() {
+export default function AdminServiciosScreen() {
     /**
      * contexto de autennticacionn
      */
@@ -61,7 +61,7 @@ export default function AdminProductosScreen() {
     /**
      * Estado local
      */
-    const [productos, setProductos] = useState<Producto[]>([]);// prodtctos en la pagina actual
+    const [servicios, setServicios] = useState<Servicio[]>([]);// servicios en la pagina actual
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [ busqueda, setBusqueda] = useState('');
@@ -69,11 +69,11 @@ export default function AdminProductosScreen() {
     const [totalPaginas, setTotalPaginas] = useState(1);
 
     /**
-     * Funcion fetchProductos
-     * consulta get / admin/productos con filtro de busqueda y paginacion
+     * Funcion fetchServicios
+     * consulta get / admin/Servicios con filtro de busqueda y paginacion
      */
 
-    const fetchProductos = async (page = 1, search = '') => {
+    const fetchServicios = async (page = 1, search = '') => {
         setLoading(true);
         setErrorMessage('');
         try {
@@ -81,27 +81,27 @@ export default function AdminProductosScreen() {
             if (search.trim()) params.push(`buscar=${encodeURIComponent(search.trim())}`);
             params.push(`pagina=${page}`);
             params.push(`limite=10`);
-            const url = `/admin/productos?${params.join('&')}`;
+            const url = `/admin/servicios?${params.join('&')}`;
             const res = await apiClient.get(url);
-            const productosData: Producto[] = res.data?.data?.productos || [];
-            setProductos(productosData);
+            const serviciosData: Servicio[] = res.data?.data?.Servicios || [];
+            setServicios(serviciosData);
             setPagina(page);
             setTotalPaginas(res.data?.data?.paginacion?.totalPaginas || 1);
         } catch (error: unknown) {
-            setErrorMessage((error as { message?: string })?.message || 'Error al cargar productos');
+            setErrorMessage((error as { message?: string })?.message || 'Error al cargar servicios');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchProductos(1, '');
+        fetchServicios(1, '');
     }, []);
 
     // avanza y retrocede paginas
     const handlePagina = (next: number) => {
         const nuevaPagina = Math.max(1, Math.min(totalPaginas, pagina + next));
-        fetchProductos(nuevaPagina, busqueda);
+        fetchServicios(nuevaPagina, busqueda);
     };
 
     const isAdmin = user?.rol === 'administrador';
@@ -112,67 +112,67 @@ export default function AdminProductosScreen() {
     <View style={styles.container}>
 
       {/* Título de la pantalla */}
-      <ThemedText type="title">Productos</ThemedText>
+      <ThemedText type="title">Servicios</ThemedText>
 
       {/* ── BARRA DE BÚSQUEDA ──────────────────────────────────────────── */}
       <View style={styles.searchRow}>
         <TextInput
-          placeholder="Buscar producto..."
+          placeholder="Buscar servicio..."
           value={busqueda}
           onChangeText={(text) => {
             setBusqueda(text);
-            fetchProductos(1, text); // Búsqueda en tiempo real: resetea a página 1.
+            fetchServicios(1, text); // Búsqueda en tiempo real: resetea a página 1.
           }}
           style={styles.input}
         />
-        <Pressable style={styles.searchBtn} onPress={() => fetchProductos(1, busqueda)}>
+        <Pressable style={styles.searchBtn} onPress={() => fetchServicios(1, busqueda)}>
           <ThemedText style={styles.searchBtnText}>Buscar</ThemedText>
         </Pressable>
       </View>
 
-      {/* Botón para crear un nuevo producto: navega al formulario vacío */}
-      <Pressable style={styles.createBtn} onPress={() => push('/admin/producto-form')}>
-        <ThemedText style={styles.createBtnText}>+ Crear producto</ThemedText>
+      {/* Botón para crear un nuevo Servicio: navega al formulario vacío */}
+      <Pressable style={styles.createBtn} onPress={() => push('/admin/servicio-form')}>
+        <ThemedText style={styles.createBtnText}>+ Crear Servicio</ThemedText>
       </Pressable>
 
       {/* Spinner de carga */}
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" />
-          <ThemedText>Cargando productos...</ThemedText>
+          <ThemedText>Cargando servicios...</ThemedText>
         </View>
       ) : null}
 
       {/* Mensaje de error */}
       {errorMessage ? <ThemedText style={styles.error}>{errorMessage}</ThemedText> : null}
 
-      {/* ── LISTA DE PRODUCTOS ──────────────────────────────────────────── */}
+      {/* ── LISTA DE ServicioS ──────────────────────────────────────────── */}
       <FlatList
-        data={productos}
+        data={servicios}
         keyExtractor={(item) => String(item.id || item.id)}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            {/* Área izquierda: imagen + datos del producto (presionable para editar) */}
+            {/* Área izquierda: imagen + datos del Servicio (presionable para editar) */}
             <Pressable
               style={{ flex: 1, flexDirection: 'row', gap: 10 }}
-              // Navega al formulario de edición pasando el objeto producto serializado como JSON.
+              // Navega al formulario de edición pasando el objeto Servicio serializado como JSON.
               // JSON.stringify convierte el objeto a string para pasarlo como parámetro de ruta.
-              onPress={() => pushParams('/admin/producto-form', { producto: JSON.stringify(item) })}
+              onPress={() => pushParams('/admin/servicio-form', { servicio: JSON.stringify(item) })}
             >
-              {/* Miniatura del producto. Si no tiene imagen usa un placeholder externo. */}
+              {/* Miniatura del Servicio. Si no tiene imagen usa un placeholder externo. */}
               <Image
                 source={{ uri: item.imagen ? catalogoService.buildImageUrl(item.imagen) : 'https://via.placeholder.com/70' }}
                 style={styles.image}
               />
               <View style={styles.cardBody}>
-                {/* Nombre del producto */}
+                {/* Nombre del Servicio */}
                 <ThemedText type="defaultSemiBold">{item.nombre}</ThemedText>
                 {/* Descripción: máximo 2 líneas para no romper el layout */}
                 <ThemedText numberOfLines={2}>{item.descripcion || 'Sin descripcion'}</ThemedText>
                 {/* Precio formateado en COP */}
                 <ThemedText style={styles.price}>${Number(item.precio || 0).toLocaleString('es-CO')}</ThemedText>
                 {/* Estado activo/inactivo y stock disponible */}
-                <ThemedText style={styles.meta}>{item.activo ? 'Activo' : 'Inactivo'} | Stock: {item.stock}</ThemedText>
+                <ThemedText style={styles.meta}>{item.activo ? 'Activo' : 'Inactivo'}</ThemedText>
               </View>
             </Pressable>
 
@@ -186,11 +186,11 @@ export default function AdminProductosScreen() {
                   onPress={async () => {
                     try {
                       if (item.activo) {
-                        await desactivarProducto(item.id || item.id); // Oculta del catálogo público.
+                        await desactivarServicio(item.id || item.id); // Oculta del catálogo público.
                       } else {
-                        await activarProducto(item.id || item.id);    // Hace visible en el catálogo.
+                        await activarServicio(item.id || item.id);    // Hace visible en el catálogo.
                       }
-                      fetchProductos(pagina, busqueda); // Recarga para reflejar el cambio.
+                      fetchServicios(pagina, busqueda); // Recarga para reflejar el cambio.
                     } catch {
                       Alert.alert('Error', 'No se pudo cambiar el estado');
                     }
@@ -198,12 +198,13 @@ export default function AdminProductosScreen() {
                 >
                   <ThemedText style={styles.actionBtnText}>{item.activo ? 'Desactivar' : 'Activar'}</ThemedText>
                 </Pressable>
+
               </View>
             )}
           </View>
         )}
         // Estado vacío: solo se muestra si no hay carga ni error activos.
-        ListEmptyComponent={!loading && !errorMessage ? <ThemedText>No hay productos.</ThemedText> : null}
+        ListEmptyComponent={!loading && !errorMessage ? <ThemedText>No hay servicios.</ThemedText> : null}
         style={styles.list}
       />
 
@@ -232,19 +233,19 @@ const styles = StyleSheet.create({
   input: { flex: 1, borderWidth: 1, borderColor: '#d5d5d5', borderRadius: 10, paddingHorizontal: 12, backgroundColor: '#fff' },
   searchBtn: { backgroundColor: '#0a7ea4', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
   searchBtnText: { color: '#fff', fontWeight: '700' },
-  // Botón verde para crear nuevo producto.
+  // Botón verde para crear nuevo Servicio.
   createBtn: { backgroundColor: '#218f4c', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginBottom: 8 },
   createBtnText: { color: '#fff', fontWeight: '700' },
   // La lista ocupa todo el espacio disponible entre los controles superiores e inferiores.
   list: { flex: 1 },
-  // Tarjeta de producto: fila horizontal con imagen, datos y botones de acción.
+  // Tarjeta de Servicio: fila horizontal con imagen, datos y botones de acción.
   card: { flexDirection: 'row', gap: 10, borderWidth: 1, borderColor: '#e8e8e8', borderRadius: 12, padding: 10, backgroundColor: '#fff', marginBottom: 8, alignItems: 'center' },
   // Columna de botones a la derecha de la tarjeta.
   actionsRow: { flexDirection: 'column', gap: 6, marginLeft: 8 },
   // Botón de acción pequeño: el color de fondo se aplica inline.
   actionBtn: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, marginBottom: 2 },
   actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  // Imagen cuadrada redondeada del producto.
+  // Imagen cuadrada redondeada del Servicio.
   image: { width: 70, height: 70, borderRadius: 10 },
   // Área de texto: ocupa el espacio restante entre la imagen y los botones.
   cardBody: { flex: 1, gap: 2 },

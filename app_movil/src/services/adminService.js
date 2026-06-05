@@ -37,3 +37,37 @@ export async function desactivarProducto(id) {
     const res = await api.patch(`/admin/productos/${id}/toggle`);
     return res.data;
 }
+
+//servicios
+
+//crea un servicio en el backend usando el payload del formulario del admin
+export async function createService(data) {
+    const res = await api.post('/admin/servicios', data);
+    return res.data;
+}
+
+//Actualiza un producto en el backend usando el payload del formulario del admin
+export async function updateService(id, data) {
+    const res = await api.put(`/admin/servicios/${id}`, data);
+    return res.data;
+}
+
+//Elimina un producto del backend
+export async function deleteService(id) {
+    const res = await api.delete(`/admin/servicios/${id}`);
+    return res.data;
+}
+
+//Marca un producto como activo
+export async function activarServicio(id) {
+    // El backend expone un endpoint toggle que invierte el estado 'activo'
+    const res = await api.patch(`/admin/servicios/${id}/toggle`);
+    return res.data;
+}
+
+//Marca un producto como innactivo
+export async function desactivarServicio(id) {
+    // Usa el mismo endpoint toggle; el servidor invierte el valor actual
+    const res = await api.patch(`/admin/servicios/${id}/toggle`);
+    return res.data;
+}

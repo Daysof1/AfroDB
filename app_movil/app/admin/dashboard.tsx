@@ -61,7 +61,7 @@ export default function AdminDashboardScreen() {
 
     const [stats, setStats] = useState({
         categorias: 0,
-        subcategorias: 0,
+        servicios: 0,
         productos: 0,
         usuarios: 0,//numero de usuarios regitrados solo el admin
         pedidos: 0,
@@ -77,9 +77,9 @@ export default function AdminDashboardScreen() {
             try {
                 // se hacen 4 peticiones en paralelo con promise.all para reducir el tiempo de carga 
                 // cada una rae datos de una seccion diferente al panel
-                const [cats, subs, prods, orders] = await Promise.all([
+                const [cats, ser, prods, orders] = await Promise.all([
                     apiClient.get('/admin/categorias'),
-                    apiClient.get('/admin/subcategorias'),
+                    apiClient.get('/admin/servicios'),
                     apiClient.get('/admin/productos?limite=1'),//porque solo se necesita el total
                     apiClient.get('/admin/pedidos/estadisticas'),
                 ]);
@@ -92,7 +92,7 @@ export default function AdminDashboardScreen() {
 
                 //extare los datos de cada respuesta con opcional cahnging y fallback
                 const catsData = cats?.data?.data?.categorias || [];
-                const subData = subs?.data?.data?.subcategorias || [];
+                const serData = ser?.data?.data?.servicios || [];
                 const ordStats = orders?.data?.data || {};
                 const pedidosPorEstado = Array.isArray(ordStats.pedidosPorEstado) ? ordStats.pedidosPorEstado : [];
                 const pedidosPendientes = pedidosPorEstado.find((item: { estado?: string; cantidad?: number }) => item.estado === 'pendiente');
@@ -100,7 +100,7 @@ export default function AdminDashboardScreen() {
                 //acualizar el estado con todos los contadores calculados
                 setStats({
                     categorias: Array.isArray(catsData) ? catsData.length : 0,
-                    subcategorias: Array.isArray(subData) ? subData.length : 0,
+                    servicios: Array.isArray(serData) ? serData.length : 0,
                     productos: prods.data?.data?.paginacion?.total || 0,
                   usuarios: userStats?.data?.data?.total || 0,
                   pedidos: ordStats.totalPedidos || 0,
@@ -141,7 +141,7 @@ export default function AdminDashboardScreen() {
   // La tarjeta de 'Usuarios' solo se muestra a administradores (show: isAdmin).
   const cards: StatCard[] = [
     { title: 'Categorías',    value: stats.categorias,    icon: 'folder-outline',      gradient: ['#667eea', '#764ba2'], route: '/admin/categorias', show: true },
-    { title: 'Subcategorías', value: stats.subcategorias, icon: 'folder-open-outline', gradient: ['#06b6d4', '#0891b2'], route: '/admin/productos', show: true },
+    { title: 'Servicios', value: stats.servicios, icon: 'folder-open-outline', gradient: ['#06b6d4', '#0891b2'], route: '/admin/servicios', show: true },
     { title: 'Productos',     value: stats.productos,     icon: 'cube-outline',        gradient: ['#10b981', '#059669'], route: '/admin/productos', show: true },
     { title: 'Usuarios',      value: stats.usuarios,      icon: 'people-outline',      gradient: ['#f59e0b', '#d97706'], route: '/admin/usuarios',  show: isAdmin }, // Solo admin.
     { title: 'Pedidos',       value: stats.pedidos,       icon: 'cart-outline',        gradient: ['#6b7280', '#4b5563'], route: '/admin/pedidos',   show: true },
