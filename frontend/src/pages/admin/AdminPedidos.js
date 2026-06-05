@@ -77,7 +77,6 @@ export default function AdminPedidos() {
                   <label>Cambiar Estado</label>
                   <select value={estado} onChange={(e) => setEstado(e.target.value)}>
                     <option value="pendiente">Pendiente</option>
-                    <option value="pagado">Pagado</option>
                     <option value="enviado">Enviado</option>
                     <option value="entregado">Entregado</option>
                     <option value="cancelado">Cancelado</option>
