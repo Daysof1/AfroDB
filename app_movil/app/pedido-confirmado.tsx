@@ -151,11 +151,11 @@ const styles = StyleSheet.create({
   },
   // Total con separación superior y negrita para destacarlo.
   total: { marginTop: 10, fontWeight: '700' },
-  error: { color: '#b93a32' },
+  error: { color: '#ac3b33' },
   // Botón primario azul (acción principal: ver pedidos).
   primaryButton: {
     borderRadius: 10,
-    backgroundColor: '#a57c63',
+    backgroundColor: '#8d6c58',
     paddingVertical: 14,
     alignItems: 'center',
   },
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#d5d5d5',
+    borderColor: '#caafaf',
     paddingVertical: 14,
     alignItems: 'center',
   },

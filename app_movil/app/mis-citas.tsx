@@ -250,14 +250,12 @@ export default function MisCitasScreen() {
 
 // ── ESTILOS ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#f9f6f2' },
   content: { padding: 16, gap: 12, paddingBottom: 32 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
-  centeredTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
-  subtitle: { color: '#666', textAlign: 'center' },
-  error: { color: '#b93a32', marginBottom: 8 },
-  
-  // Encabezado
+  centeredTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center', color: '#3e2f25' },
+  subtitle: { color: '#7b6758', textAlign: 'center' },
+  error: { color: '#a56363', marginBottom: 8 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -265,38 +263,37 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 2,
-    borderBottomColor: '#a57c63',
+    borderBottomColor: '#e6d3b3',
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  title: { fontSize: 24, fontWeight: '800', color: '#1a1a2e' },
+  title: { fontSize: 24, fontWeight: '800', color: '#3e2f25' },
   newCitaBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#a57c63',
+    backgroundColor: '#c8a27a',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
   },
   newCitaBtnText: { color: '#fff', fontWeight: '600', fontSize: 12 },
-
-  // Estado vacío
   emptyState: {
     borderRadius: 12,
     padding: 24,
     gap: 12,
     alignItems: 'center',
     marginTop: 32,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e6d3b3',
   },
-
-  // Tarjeta de cita
   card: {
     borderWidth: 1,
-    borderColor: '#e8e8e8',
+    borderColor: '#e6d3b3',
     borderRadius: 12,
     overflow: 'hidden',
     backgroundColor: '#fff',
@@ -313,8 +310,8 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    backgroundColor: '#fafafa',
+    borderBottomColor: '#f0ece0',
+    backgroundColor: '#faf0e8',
   },
   serviciosContainer: { flex: 1 },
   badge: {
@@ -322,10 +319,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
+    borderColor: '#c8a27a',
   },
   badgeText: { fontSize: 11, fontWeight: '600' },
-
-  // Cuerpo de la tarjeta
   cardBody: { padding: 14, gap: 12 },
   infoRow: {
     flexDirection: 'row',
@@ -333,17 +329,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   infoContent: { flex: 1, gap: 2 },
-  infoLabel: { fontSize: 11, color: '#999', textTransform: 'uppercase', fontWeight: '600' },
-  infoValue: { fontSize: 14, color: '#222', fontWeight: '500' },
-  totalValue: { color: '#a57c63', fontWeight: '700', fontSize: 15 },
-
-  // Botones
+  infoLabel: { fontSize: 11, color: '#7b6758', textTransform: 'uppercase', fontWeight: '600' },
+  infoValue: { fontSize: 14, color: '#3e2f25', fontWeight: '500' },
+  totalValue: { color: '#a56363', fontWeight: '700', fontSize: 15 },
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#a57c63',
+    backgroundColor: '#c8a27a',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 10,

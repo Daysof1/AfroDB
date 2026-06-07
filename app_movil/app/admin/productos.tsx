@@ -152,45 +152,37 @@ export default function AdminProductosScreen() {
         keyExtractor={(item) => String(item.id || item.id)}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            {/* Área izquierda: imagen + datos del producto (presionable para editar) */}
             <Pressable
-              style={{ flex: 1, flexDirection: 'row', gap: 10 }}
-              // Navega al formulario de edición pasando el objeto producto serializado como JSON.
-              // JSON.stringify convierte el objeto a string para pasarlo como parámetro de ruta.
+              style={styles.cardHeader}
               onPress={() => pushParams('/admin/producto-form', { producto: JSON.stringify(item) })}
             >
-              {/* Miniatura del producto. Si no tiene imagen usa un placeholder externo. */}
               <Image
-                source={{ uri: item.imagen ? catalogoService.buildImageUrl(item.imagen) : 'https://via.placeholder.com/70' }}
+                source={{ uri: item.imagen ? catalogoService.buildImageUrl(item.imagen) : 'https://via.placeholder.com/80' }}
                 style={styles.image}
               />
               <View style={styles.cardBody}>
-                {/* Nombre del producto */}
                 <ThemedText type="defaultSemiBold">{item.nombre}</ThemedText>
-                {/* Descripción: máximo 2 líneas para no romper el layout */}
-                <ThemedText numberOfLines={2}>{item.descripcion || 'Sin descripcion'}</ThemedText>
-                {/* Precio formateado en COP */}
-                <ThemedText style={styles.price}>${Number(item.precio || 0).toLocaleString('es-CO')}</ThemedText>
-                {/* Estado activo/inactivo y stock disponible */}
-                <ThemedText style={styles.meta}>{item.activo ? 'Activo' : 'Inactivo'} | Stock: {item.stock}</ThemedText>
+                <ThemedText numberOfLines={2} style={styles.description}>{item.descripcion || 'Sin descripción'}</ThemedText>
+                <View style={styles.priceRow}>
+                  <ThemedText style={styles.price}>${Number(item.precio || 0).toLocaleString('es-CO')}</ThemedText>
+                  <ThemedText style={styles.meta}>{item.activo ? 'Activo' : 'Inactivo'}</ThemedText>
+                </View>
+                <ThemedText style={styles.meta}>Stock: {item.stock}</ThemedText>
               </View>
             </Pressable>
 
-            {/* ── BOTONES DE ACCIÓN (solo admin) ──────────────────────── */}
             {isAdmin && (
               <View style={styles.actionsRow}>
-                {/* Botón Activar/Desactivar: color dinámico según estado actual */}
                 <Pressable
-                  // Rojo si está activo (para desactivar), verde si está inactivo (para activar).
-                  style={[styles.actionBtn, { backgroundColor: item.activo ? '#b93a32' : '#218f4c' }]}
+                  style={[styles.actionBtn, { backgroundColor: item.activo ? '#a56363' : '#c8a27a' }]}
                   onPress={async () => {
                     try {
                       if (item.activo) {
-                        await desactivarProducto(item.id || item.id); // Oculta del catálogo público.
+                        await desactivarProducto(item.id || item.id);
                       } else {
-                        await activarProducto(item.id || item.id);    // Hace visible en el catálogo.
+                        await activarProducto(item.id || item.id);
                       }
-                      fetchProductos(pagina, busqueda); // Recarga para reflejar el cambio.
+                      fetchProductos(pagina, busqueda);
                     } catch {
                       Alert.alert('Error', 'No se pudo cambiar el estado');
                     }
@@ -223,38 +215,30 @@ export default function AdminProductosScreen() {
 
 // ── ESTILOS ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // Contenedor raíz: ocupa toda la pantalla, padding + gap entre elementos.
-  container: { flex: 1, padding: 16, gap: 10 },
+  container: { flex: 1, padding: 16, gap: 10, backgroundColor: '#f9f6f2' },
   centered: { alignItems: 'center', gap: 10, marginVertical: 20 },
-  error: { color: '#b93a32' },
-  // Fila de búsqueda: input expandible + botón fijo a la derecha.
+  error: { color: '#a56363' },
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  input: { flex: 1, borderWidth: 1, borderColor: '#d5d5d5', borderRadius: 10, paddingHorizontal: 12, backgroundColor: '#fff' },
-  searchBtn: { backgroundColor: '#0a7ea4', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
+  input: { flex: 1, borderWidth: 1, borderColor: '#d6c7ae', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff' },
+  searchBtn: { backgroundColor: '#c8a27a', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center' },
   searchBtnText: { color: '#fff', fontWeight: '700' },
-  // Botón verde para crear nuevo producto.
-  createBtn: { backgroundColor: '#218f4c', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginBottom: 8 },
+  createBtn: { backgroundColor: '#a56363', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 8 },
   createBtnText: { color: '#fff', fontWeight: '700' },
-  // La lista ocupa todo el espacio disponible entre los controles superiores e inferiores.
   list: { flex: 1 },
-  // Tarjeta de producto: fila horizontal con imagen, datos y botones de acción.
-  card: { flexDirection: 'row', gap: 10, borderWidth: 1, borderColor: '#e8e8e8', borderRadius: 12, padding: 10, backgroundColor: '#fff', marginBottom: 8, alignItems: 'center' },
-  // Columna de botones a la derecha de la tarjeta.
-  actionsRow: { flexDirection: 'column', gap: 6, marginLeft: 8 },
-  // Botón de acción pequeño: el color de fondo se aplica inline.
-  actionBtn: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, marginBottom: 2 },
+  card: { borderRadius: 18, padding: 16, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e6d3b3', marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  cardHeader: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14 },
+  actionBtn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, marginBottom: 2 },
   actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  // Imagen cuadrada redondeada del producto.
-  image: { width: 70, height: 70, borderRadius: 10 },
-  // Área de texto: ocupa el espacio restante entre la imagen y los botones.
-  cardBody: { flex: 1, gap: 2 },
-  price: { fontWeight: '700', marginTop: 2 },
-  // Estado y stock en gris secundario.
-  meta: { color: '#666', fontSize: 12 },
-  // Paginación centrada con botones grises.
+  image: { width: 84, height: 84, borderRadius: 14, backgroundColor: '#f3e6d8' },
+  cardBody: { flex: 1, gap: 6 },
+  description: { color: '#5f4a39', fontSize: 13, lineHeight: 18 },
+  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 6 },
+  price: { fontWeight: '800', fontSize: 16, color: '#3e2f25' },
+  meta: { color: '#7b6758', fontSize: 13 },
   paginationRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 10 },
-  pageBtn: { padding: 8, borderRadius: 8, backgroundColor: '#e8e8e8' },
-  pageBtnText: { fontWeight: '700' },
+  pageBtn: { padding: 10, borderRadius: 10, backgroundColor: '#e6d3b3' },
+  pageBtnText: { fontWeight: '700', color: '#3e2f25' },
   pageLabel: { fontWeight: '700' },
 });
 

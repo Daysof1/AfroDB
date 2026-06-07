@@ -176,47 +176,45 @@ export default function MisPedidosScreen() {
 
 // ── ESTILOS ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#f9f6f2' },
   content: { padding: 16, gap: 10 },
-  // Centra el contenido de las pantallas de guardia y carga.
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16 },
-  subtitle: { color: '#666', textAlign: 'center' },
-  error: { color: '#b93a32' },
-  // Contenedor del estado vacío con fondo temático.
-  emptyState: { borderRadius: 12, padding: 16, gap: 10 },
-  // Tarjeta individual de pedido: borde, fondo blanco, padding.
+  subtitle: { color: '#7b6758', textAlign: 'center' },
+  error: { color: '#a56363' },
+  emptyState: { borderRadius: 16, padding: 20, gap: 12, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
   card: {
     borderWidth: 1,
-    borderColor: '#e8e8e8',
-    borderRadius: 12,
-    padding: 12,
+    borderColor: '#e6d3b3',
+    borderRadius: 16,
+    padding: 16,
     backgroundColor: '#fff',
-    gap: 6,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  // Fila con dos elementos a los extremos (número de pedido + badge).
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
-  // Texto secundario: gris y tamaño reducido.
-  meta: { color: '#666', fontSize: 12 },
-  // Badge del estado: estilo pill azul claro, con capitalize para el texto.
+  meta: { color: '#7b6758', fontSize: 12 },
   badge: {
     borderWidth: 1,
-    borderColor: '#d3e8f7',
-    backgroundColor: '#eef7ff',
-    color: '#245c7a',
+    borderColor: '#c8a27a',
+    backgroundColor: '#f3e6d8',
+    color: '#3e2f25',
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
     overflow: 'hidden',
     textTransform: 'capitalize',
   },
-  // Botón primario azul.
   primaryButton: {
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#a57c63',
+    backgroundColor: '#c8a27a',
   },
   primaryButtonText: { color: '#fff', fontWeight: '700' },
 });

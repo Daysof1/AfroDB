@@ -13,13 +13,14 @@ import { useState, useEffect } from "react";
 //flatlist lista optimizada con virtualizacion para mostrar grandes cantidades de datos
 //modal mostrar detalles de contenido en ventanas emergentes
 
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View, useColorScheme } from "react-native";
 
 //Lee los parametros de la url para obtener el id del pedido
 import { router, useLocalSearchParams } from "expo-router";
 //themedText : texto que aplica colores del tema del dispositivo de manera automatica claro u oscuro
 import { ThemedText } from '../../components/themed-text';
 import { ThemedView } from '../../components/themed-view';
+import { Colors } from '../../constants/theme';
 //ciente http axios con JWT
 import pedidoService from '../../src/services/pedidoService';
 import catalogoService from '../../src/services/catalogoService';
@@ -105,6 +106,8 @@ export default function PedidoDetalleScreen() {
     const [loading, setLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState('');
     const [isCancelling, setIsCancelling] = useState(false);
+    const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+    const tint = Colors[colorScheme].tint;
 
     // efecto de carga de pedido
     //se ejecuta cuando el id cambia en la ruta
@@ -243,23 +246,23 @@ export default function PedidoDetalleScreen() {
         {/* Solo se permite cancelar cuando el estado es pendiente */}
         {isPendiente ? (
           <Pressable
-            style={[styles.cancelButton, isCancelling && styles.cancelButtonDisabled]}
+            style={[styles.cancelButton, isCancelling && styles.cancelButtonDisabled, { backgroundColor: tint }]}
             onPress={handleCancelarPedido}
             disabled={isCancelling}>
-            <ThemedText style={styles.cancelButtonText}>
+            <ThemedText style={[styles.cancelButtonText, { color: '#fff' }]}>
               {isCancelling ? 'Cancelando...' : 'Cancelar pedido'}
             </ThemedText>
           </Pressable>
         ) : null}
 
         {/* Navega al historial de pedidos */}
-        <Pressable style={styles.secondaryButton} onPress={() => router.replace('/mis-pedidos')}>
-          <ThemedText>Mis pedidos</ThemedText>
+        <Pressable style={[styles.secondaryButton, { borderColor: tint }]} onPress={() => router.replace('/mis-pedidos')}>
+          <ThemedText style={{ color: tint }}>Mis pedidos</ThemedText>
         </Pressable>
 
         {/* Navega al catálogo/home para continuar comprando */}
-        <Pressable style={styles.primaryButton} onPress={() => router.replace('/')}>
-          <ThemedText style={styles.primaryButtonText}>Seguir comprando</ThemedText>
+        <Pressable style={[styles.primaryButton, { backgroundColor: tint }]} onPress={() => router.replace('/')}>
+          <ThemedText style={[styles.primaryButtonText, { color: '#fff' }]}>Seguir comprando</ThemedText>
         </Pressable>
       </View>
     </ScrollView>
@@ -310,7 +313,7 @@ const styles = StyleSheet.create({
   },
   total: { fontSize: 20, fontWeight: '700' },
 
-  error: { color: '#b93a32' },
+  error: { color: '#922222' },
   actionsRow: { flexDirection: 'column', gap: 8 },
 
   // Botón de cancelar pedido.
@@ -319,7 +322,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#b93a32',
+    backgroundColor: '#4112cd',
   },
   cancelButtonDisabled: { opacity: 0.55 },
   cancelButtonText: { color: '#fff', fontWeight: '700' },
@@ -343,7 +346,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0a7ea4',
+    backgroundColor: '#5f30a7',
   },
   primaryButtonText: { color: '#fff', fontWeight: '700' },
   capitalize: { textTransform: 'capitalize' },

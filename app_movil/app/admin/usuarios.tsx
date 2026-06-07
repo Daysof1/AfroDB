@@ -151,33 +151,32 @@ export default function AdminUsuariosScreen() {
       {/* ── LISTA DE USUARIOS ───────────────────────────────────────────── */}
       <FlatList
         data={usuarios}
-        keyExtractor={(item) => String(item.id || item.id)} // Clave única por usuario.
+        keyExtractor={(item) => String(item.id || item.id)}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            {/* Área de datos del usuario */}
-            <View style={styles.cardBody}>
-              {/* Nombre completo */}
-              <ThemedText type="defaultSemiBold">{item.nombre} {item.apellido}</ThemedText>
-              {/* Correo electrónico */}
-              <ThemedText>{item.email}</ThemedText>
-              {/* Rol y estado activo/inactivo separados por " | " */}
-              <ThemedText style={styles.meta}>{item.rol} | {item.activo ? 'Activo' : 'Inactivo'}</ThemedText>
+            <View style={styles.cardHeader}>
+              <View style={styles.userInfo}>
+                <ThemedText type="defaultSemiBold">{item.nombre} {item.apellido}</ThemedText>
+                <ThemedText style={styles.userEmail}>{item.email}</ThemedText>
+              </View>
+              <View style={styles.userBadge}>
+                <ThemedText style={styles.userBadgeText}>{item.rol || 'Usuario'}</ThemedText>
+              </View>
             </View>
+            <ThemedText style={styles.meta}>{item.activo ? 'Activo' : 'Inactivo'}</ThemedText>
 
-            {/* ── BOTONES DE ACCIÓN (solo admin) ──────────────────────── */}
             {isAdmin && (
               <View style={styles.actionsRow}>
-                {/* Botón Activar/Desactivar: rojo si está activo, verde si inactivo */}
                 <Pressable
-                  style={[styles.actionBtn, { backgroundColor: item.activo ? '#b93a32' : '#218f4c' }]}
+                  style={[styles.actionBtn, { backgroundColor: item.activo ? '#a56363' : '#c8a27a' }]}
                   onPress={async () => {
                     try {
                       if (item.activo) {
-                        await desactivarUsuario(item.id || item.id); // Bloquea la cuenta.
+                        await desactivarUsuario(item.id || item.id);
                       } else {
-                        await activarUsuario(item.id || item.id);    // Desbloquea la cuenta.
+                        await activarUsuario(item.id || item.id);
                       }
-                      fetchUsuarios(pagina, busqueda); // Recarga para reflejar el cambio.
+                      fetchUsuarios(pagina, busqueda);
                     } catch {
                       Alert.alert('Error', 'No se pudo cambiar el estado');
                     }
@@ -211,31 +210,30 @@ export default function AdminUsuariosScreen() {
 // ── ESTILOS ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   // Contenedor raíz: pantalla completa con padding y gap entre elementos.
-  container: { flex: 1, padding: 16, gap: 10 },
+  container: { flex: 1, padding: 16, gap: 10, backgroundColor: '#f9f6f2' },
   centered: { alignItems: 'center', gap: 10, marginVertical: 20 },
-  error: { color: '#b93a32' },
+  error: { color: '#a56363' },
   // Fila de búsqueda: input expandible + botón fijo.
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  input: { flex: 1, borderWidth: 1, borderColor: '#d5d5d5', borderRadius: 10, paddingHorizontal: 12, backgroundColor: '#fff' },
-  searchBtn: { backgroundColor: '#0a7ea4', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
+  input: { flex: 1, borderWidth: 1, borderColor: '#d6c7ae', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff' },
+  searchBtn: { backgroundColor: '#c8a27a', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center' },
   searchBtnText: { color: '#fff', fontWeight: '700' },
-  // Lista ocupa todo el espacio vertical entre los controles.
   list: { flex: 1 },
-  // Tarjeta de usuario: fila con datos a la izquierda y botones a la derecha.
-  card: { flexDirection: 'row', gap: 10, borderWidth: 1, borderColor: '#e8e8e8', borderRadius: 12, padding: 10, backgroundColor: '#fff', marginBottom: 8, alignItems: 'center' },
-  // Columna de botones a la derecha de la tarjeta.
-  actionsRow: { flexDirection: 'column', gap: 6, marginLeft: 8 },
-  // Botón pequeño: color de fondo se aplica inline (rojo/verde según estado).
-  actionBtn: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, marginBottom: 2 },
+  card: { borderRadius: 18, padding: 18, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e6d3b3', marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 },
+  userInfo: { flex: 1, gap: 4 },
+  userEmail: { color: '#7b6758', fontSize: 13 },
+  userBadge: { backgroundColor: '#f3e6d8', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  userBadgeText: { color: '#3e2f25', fontWeight: '700', fontSize: 12 },
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
+  actionBtn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, marginBottom: 2 },
   actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  // Área de datos: ocupa el espacio restante de la tarjeta.
-  cardBody: { flex: 1 },
-  // Rol y estado en gris secundario.
-  meta: { color: '#888', fontSize: 13 },
+  cardBody: { gap: 6 },
+  meta: { color: '#6b7280', fontSize: 13 },
   // Paginación centrada.
   paginationRow: { flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
-  // Botones de página: azul petróleo con texto blanco.
-  pageBtn: { backgroundColor: '#0a7ea4', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  pageBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  // Botones de página reseteados al tema.
+  pageBtn: { backgroundColor: '#e6d3b3', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  pageBtnText: { color: '#3e2f25', fontWeight: '700', fontSize: 15 },
   pageLabel: { fontWeight: 'bold' },
 });

@@ -203,29 +203,29 @@ export default function AdminPedidoScreen() {
 // ── ESTILOS ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   // Contenedor principal: ocupa toda la pantalla con padding interno.
-  container: { flex: 1, padding: 16, gap: 10 },
+  container: { flex: 1, padding: 16, gap: 10, backgroundColor: '#f9f6f2' },
   // Centrado para spinner de carga.
   centered: { alignItems: 'center', gap: 10, marginVertical: 20 },
   // Color rojo para mensajes de error.
-  error: { color: '#b93a32' },
+  error: { color: '#a56363' },
   // Fila de búsqueda: input flexible + botón a la derecha.
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   // Campo de texto: ocupa el espacio disponible (flex:1), borde gris, fondo blanco.
-  input: { flex: 1, borderWidth: 1, borderColor: '#d5d5d5', borderRadius: 10, paddingHorizontal: 12, backgroundColor: '#fff' },
-  // Botón de búsqueda: azul petróleo.
-  searchBtn: { backgroundColor: '#0a7ea4', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
+  input: { flex: 1, borderWidth: 1, borderColor: '#e6d3b3', borderRadius: 10, paddingHorizontal: 12, backgroundColor: '#fff', color: '#3e2f25' },
+  // Botón de búsqueda: color principal de la web.
+  searchBtn: { backgroundColor: '#a56363', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
   searchBtnText: { color: '#fff', fontWeight: '700' },
   // La lista ocupa todo el espacio vertical disponible entre la búsqueda y la paginación.
   list: { flex: 1 },
-  // Tarjeta de pedido: borde gris sutil, bordes redondeados, fondo blanco.
-  card: { borderWidth: 1, borderColor: '#e8e8e8', borderRadius: 12, padding: 10, backgroundColor: '#fff', marginBottom: 8 },
+  // Tarjeta de pedido: borde suave y fondo blanco con sombra tenue.
+  card: { borderWidth: 1, borderColor: '#e6d3b3', borderRadius: 12, padding: 10, backgroundColor: '#fff', marginBottom: 10 },
   cardBody: { flex: 1 },
-  // Estilo secundario para el total (gris y más pequeño).
-  meta: { color: '#888', fontSize: 13 },
+  // Estilo secundario para el total (tono cálido).
+  meta: { color: '#7b6758', fontSize: 13 },
   // Fila de paginación centrada horizontalmente.
   paginationRow: { flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
-  // Botón de página: azul petróleo con texto blanco.
-  pageBtn: { backgroundColor: '#0a7ea4', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  // Botón de página: color principal de la web.
+  pageBtn: { backgroundColor: '#a56363', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   pageBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  pageLabel: { fontWeight: 'bold' },
+  pageLabel: { fontWeight: 'bold', color: '#3e2f25' },
 });

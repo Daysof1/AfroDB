@@ -21,7 +21,7 @@ const authService = {
         }
 
         if (payload?.usuario){
-            await storageSetItem(STORAGE_KEYS.user, payload.usuario);
+            await storageSetItem(STORAGE_KEYS.user, JSON.stringify(payload.usuario));
         }
 
         return response.data;
@@ -43,7 +43,16 @@ const authService = {
     getSession: async () => {
         const token = await storageGetItem(STORAGE_KEYS.token);
         const userRaw = await storageGetItem(STORAGE_KEYS.user);
-        const user = userRaw ? JSON.parse(userRaw) : null;
+        let user = null;
+
+        if (userRaw) {
+            try {
+                user = JSON.parse(userRaw);
+            } catch {
+                user = null;
+            }
+        }
+
         return { token, user };
     },
 

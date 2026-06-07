@@ -8,8 +8,9 @@
  * muestra informacion del sistema (estado de la api y rol de usuario)
  */
 //importaciones
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from '@react-navigation/native';
 
 //navegacion de expo router
 import { router } from "expo-router";
@@ -55,100 +56,147 @@ export default function AdminDashboardScreen() {
 
     /**
      * Estado local
-     * objeto con toos los conttroladores que se muestran en grip de tarjetas
-     * valores iniciales en 0 miestra se cargan 
+     * objeto con todos los contadores que se muestran en el grid de tarjetas
+     * valores iniciales en 0 mientras se cargan
      */
 
     const [stats, setStats] = useState({
         categorias: 0,
         servicios: 0,
         productos: 0,
-        usuarios: 0,//numero de usuarios regitrados solo el admin
+        usuarios: 0, // numero de usuarios registrados solo el admin
         pedidos: 0,
-        pendientes: 0,
+        citas: 0,
         ventas: 0,
     });
-
     const [loading, setLoading] = useState(false);
-    //efectos de carga de estadisticas
-    useEffect(() => {
-        const load = async () => {
-            setLoading(true);
-            try {
-                // se hacen 4 peticiones en paralelo con promise.all para reducir el tiempo de carga 
-                // cada una rae datos de una seccion diferente al panel
-                const [cats, ser, prods, orders] = await Promise.all([
-                    apiClient.get('/admin/categorias'),
-                    apiClient.get('/admin/servicios'),
-                    apiClient.get('/admin/productos?limite=1'),//porque solo se necesita el total
-                    apiClient.get('/admin/pedidos/estadisticas'),
-                ]);
 
-                //los stats de usuarios solo se piden si el usuario es administrador
-                //los auxiliares no tienen acceso a ese endpoint
-                const userStats = isAdmin 
-                ? await apiClient.get('/admin/usuarios/stats') 
-                : null;
+    const loadStats = useCallback(async () => {
+        if (!isAuthenticated || (!isAdmin && !isAux)) {
+            setLoading(false);
+            return;
+        }
 
-                //extare los datos de cada respuesta con opcional cahnging y fallback
-                const catsData = cats?.data?.data?.categorias || [];
-                const serData = ser?.data?.data?.servicios || [];
-                const ordStats = orders?.data?.data || {};
-                const pedidosPorEstado = Array.isArray(ordStats.pedidosPorEstado) ? ordStats.pedidosPorEstado : [];
-                const pedidosPendientes = pedidosPorEstado.find((item: { estado?: string; cantidad?: number }) => item.estado === 'pendiente');
+        setLoading(true);
+        try {
+            const results = await Promise.allSettled([
+                apiClient.get('/admin/categorias/estadisticas'),
+                apiClient.get('/admin/servicios?limite=1'),
+                apiClient.get('/admin/productos?limite=1'),
+                apiClient.get('/admin/pedidos/estadisticas'),
+                apiClient.get('/admin/citas/estadisticas'),
+            ]);
 
-                //acualizar el estado con todos los contadores calculados
-                setStats({
-                    categorias: Array.isArray(catsData) ? catsData.length : 0,
-                    servicios: Array.isArray(serData) ? serData.length : 0,
-                    productos: prods.data?.data?.paginacion?.total || 0,
-                  usuarios: userStats?.data?.data?.total || 0,
-                  pedidos: ordStats.totalPedidos || 0,
-                  pendientes: pedidosPendientes?.cantidad || 0,
-                  ventas: ordStats.ventasTotales || 0,
-                });
+            const [catsRes, serRes, prodsRes, ordersRes, citasRes] = results;
 
-            } catch (_) {
-                // si alguna peticion falla simplemente se ignora el error
-                //los stats quedan en 0 no se muestra mensaje de eror al usuario 
-                // igore 
-            } finally {
-                setLoading(false);
+            let userStats = null;
+            if (isAdmin) {
+                try {
+                    userStats = await apiClient.get('/admin/usuarios/estadisticas');
+                } catch (error) {
+                    console.error('Error al obtener estadísticas de usuarios:', error);
+                }
             }
-        };
 
-        /**
-         * solo cargan las estadisticas si el usuario esta autenticado y tiene roladmin o auxiliar
-         */
-        if (isAuthenticated && (isAdmin || isAux)) load();
-    }, [ isAuthenticated, isAdmin, isAux]); // se ejecuta segun el rol que incio sesion
+            const categorias = catsRes.status === 'fulfilled'
+                ? catsRes.value.data?.data?.total ?? 0
+                : 0;
 
-    //si el isiario no esta autenticado o no tiene rol admin/auxiliar muestra bloqueo
+            const servicios = serRes.status === 'fulfilled'
+                ? serRes.value.data?.data?.paginacion?.total ?? serRes.value.data?.data?.servicios?.length ?? 0
+                : 0;
+
+            const productos = prodsRes.status === 'fulfilled'
+                ? prodsRes.value.data?.data?.paginacion?.total ?? prodsRes.value.data?.data?.productos?.length ?? 0
+                : 0;
+
+            const ordStats = ordersRes.status === 'fulfilled'
+                ? ordersRes.value.data?.data || {}
+                : {};
+
+            const normalizePayload = (response: any): any => response?.data?.data ?? response?.data ?? {};
+
+            const citaPayload = citasRes.status === 'fulfilled'
+                ? normalizePayload(citasRes.value)
+                : {};
+
+            const canReadCount = (payload: any): number => {
+                if (!payload) return 0;
+                if (typeof payload.totalCitas === 'number') return payload.totalCitas;
+                if (typeof payload.total === 'number') return payload.total;
+                if (Array.isArray(payload.citas)) return payload.citas.length;
+                return 0;
+            };
+
+            let totalCitas = canReadCount(citaPayload);
+
+            if (citasRes.status !== 'fulfilled' || (
+                totalCitas === 0 &&
+                citaPayload.totalCitas === undefined &&
+                citaPayload.total === undefined &&
+                !Array.isArray(citaPayload.citas)
+            )) {
+                try {
+                    const backupCitas = await apiClient.get('/admin/citas');
+                    const backupPayload = normalizePayload(backupCitas);
+                    if (Array.isArray(backupPayload.citas)) {
+                        totalCitas = backupPayload.citas.length;
+                    }
+                } catch (error) {
+                    console.error('Error al obtener backup de citas:', error);
+                }
+            }
+
+            setStats({
+                categorias,
+                servicios,
+                productos,
+                usuarios: userStats?.data?.data?.total || 0,
+                pedidos: ordStats.totalPedidos || 0,
+                citas: totalCitas,
+                ventas: Number(ordStats.ventasTotales) || 0,
+            });
+        } catch (_) {
+            // Si alguna petición falla por error inesperado, mantenemos los valores en 0.
+        } finally {
+            setLoading(false);
+        }
+    }, [isAuthenticated, isAdmin, isAux]);
+
+    useEffect(() => {
+        loadStats();
+    }, [loadStats]);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadStats();
+        }, [loadStats])
+    );
+
     if (!isAuthenticated || (!isAdmin && !isAux)) {
-        return(
-        <View style={styles.centered}>
-            <Ionicons name="lock-closed" size={60} color="#ccc" />
-            <Text style={styles.restrictedTitle}>Acceso restringido</Text>
-            <Text style={styles.restrictedSub}>Solo Administradores y auxiliares</Text>
-        </View>
-        )
+        return (
+            <View style={styles.centered}>
+                <Ionicons name="lock-closed" size={60} color="#ccc" />
+                <Text style={styles.restrictedTitle}>Acceso restringido</Text>
+                <Text style={styles.restrictedSub}>Solo Administradores y auxiliares</Text>
+            </View>
+        );
     }
 
-    
-  // ── DEFINICIÓN DE TARJETAS ────────────────────────────────────────────────
-  // Array de objetos StatCard que definen cada tarjeta del grid.
-  // El campo 'show' controla si la tarjeta se renderiza o no.
-  // La tarjeta de 'Usuarios' solo se muestra a administradores (show: isAdmin).
-  const cards: StatCard[] = [
-    { title: 'Categorías',    value: stats.categorias,    icon: 'folder-outline',      gradient: ['#667eea', '#764ba2'], route: '/admin/categorias', show: true },
-    { title: 'Servicios', value: stats.servicios, icon: 'folder-open-outline', gradient: ['#06b6d4', '#0891b2'], route: '/admin/servicios', show: true },
-    { title: 'Productos',     value: stats.productos,     icon: 'cube-outline',        gradient: ['#10b981', '#059669'], route: '/admin/productos', show: true },
-    { title: 'Usuarios',      value: stats.usuarios,      icon: 'people-outline',      gradient: ['#f59e0b', '#d97706'], route: '/admin/usuarios',  show: isAdmin }, // Solo admin.
-    { title: 'Pedidos',       value: stats.pedidos,       icon: 'cart-outline',        gradient: ['#6b7280', '#4b5563'], route: '/admin/pedidos',   show: true },
-    { title: 'Pendientes',    value: stats.pendientes,    icon: 'time-outline',        gradient: ['#ef4444', '#dc2626'], route: '/admin/pedidos',   show: true },
-  ];
+    // ── DEFINICIÓN DE TARJETAS ────────────────────────────────────────────────
+    // Array de objetos StatCard que definen cada tarjeta del grid.
+    // El campo 'show' controla si la tarjeta se renderiza o no.
+    // La tarjeta de 'Usuarios' solo se muestra a administradores (show: isAdmin).
+    const cards: StatCard[] = [
+        { title: 'Categorías', value: stats.categorias, icon: 'folder-outline', gradient: ['#a56363', '#c8a27a'], route: '/admin/categorias', show: true },
+        { title: 'Servicios', value: stats.servicios, icon: 'folder-open-outline', gradient: ['#c8a27a', '#a56363'], route: '/admin/servicios', show: true },
+        { title: 'Productos', value: stats.productos, icon: 'cube-outline', gradient: ['#c8a27a', '#a56363'], route: '/admin/productos', show: true },
+        { title: 'Usuarios', value: stats.usuarios, icon: 'people-outline', gradient: ['#c8a27a', '#a56363'], route: '/admin/usuarios', show: isAdmin },
+        { title: 'Pedidos', value: stats.pedidos, icon: 'cart-outline', gradient: ['#3e2f25', '#c8a27a'], route: '/admin/pedidos', show: true },
+        { title: 'Citas', value: stats.citas, icon: 'calendar-outline', gradient: ['#c8a27a', '#a56363'], route: '/admin/citas', show: true },
+    ];
 
-  // ── HELPER: formateador de moneda ─────────────────────────────────────────
+    // ── HELPER: formateador de moneda ─────────────────────────────────────────
   // Convierte un número a formato de pesos colombianos. Ej: 45000 → "$45.000"
   const fmt = (n: number) => `$${Number(n).toLocaleString('es-CO')}`;
 
@@ -172,14 +220,14 @@ export default function AdminDashboardScreen() {
             <Ionicons name="speedometer-outline" size={32} color="#fff" />
           </View>
         </View>
-        <Text style={styles.headerDesc}>Sistema de gestión del e-commerce</Text>
+        <Text style={styles.headerDesc}>Sistema de gestión de AfroDB MOBILE</Text>
       </View>
 
       {/* ── GRID DE ESTADÍSTICAS ────────────────────────────────────────── */}
       {/* Mientras carga: spinner. Cuando termina: grid de tarjetas 2 columnas. */}
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#6366f1" />
+          <ActivityIndicator size="large" color="#a56363" />
           <Text style={styles.loadingText}>Cargando estadísticas...</Text>
         </View>
       ) : (
@@ -188,26 +236,21 @@ export default function AdminDashboardScreen() {
           {cards.filter(c => c.show).map((card) => (
             <Pressable
               key={card.title}
-              // El color de fondo es el primer color del gradiente de cada tarjeta.
-              style={[styles.card, { backgroundColor: card.gradient[0] }]}
-              onPress={() => push(card.route)} // Navega a la sección correspondiente.
+              style={[styles.card, { borderLeftColor: card.gradient[0] }]}
+              onPress={() => push(card.route)}
             >
               <View style={styles.cardTop}>
-                <View>
-                  {/* Etiqueta pequeña: nombre de la estadística */}
+                <View style={styles.cardTextWrap}>
                   <Text style={styles.cardLabel}>{card.title}</Text>
-                  {/* Número grande: valor de la estadística */}
                   <Text style={styles.cardValue}>{card.value}</Text>
                 </View>
-                {/* Ícono a la derecha dentro de un círculo semitransparente */}
                 <View style={styles.cardIconWrap}>
-                  <Ionicons name={card.icon} size={32} color="rgba(255,255,255,0.9)" />
+                  <Ionicons name={card.icon} size={28} color="#3e2f25" />
                 </View>
               </View>
-              {/* Pie de la tarjeta: texto "Ver detalles" con flecha */}
               <View style={styles.cardFooter}>
                 <Text style={styles.cardFooterText}>Ver detalles</Text>
-                <Ionicons name="arrow-forward" size={14} color="rgba(255,255,255,0.9)" />
+                <Ionicons name="arrow-forward" size={14} color="#3e2f25" />
               </View>
             </Pressable>
           ))}
@@ -218,7 +261,7 @@ export default function AdminDashboardScreen() {
       {/* Solo se muestra cuando ya terminó de cargar (evita mostrar $0 mientras carga). */}
       {!loading && (
         <View style={styles.salesBanner}>
-          <Ionicons name="trending-up-outline" size={22} color="#6366f1" />
+          <Ionicons name="trending-up-outline" size={22} color="#c8a27a" />
           <View style={{ flex: 1 }}>
             <Text style={styles.salesLabel}>Ventas Totales</Text>
             {/* Total de ventas formateado en COP */}
@@ -237,24 +280,24 @@ export default function AdminDashboardScreen() {
         </View>
         <View style={styles.sectionBody}>
           {/* Botón: Agregar Producto → va a /admin/productos (color índigo) */}
-          <Pressable style={[styles.actionBtn, { borderColor: '#6366f1' }]} onPress={() => push('/admin/productos')}>
-            <Ionicons name="add-circle-outline" size={18} color="#6366f1" />
-            <Text style={[styles.actionText, { color: '#6366f1' }]}>Agregar Producto</Text>
+          <Pressable style={[styles.actionBtn, { borderColor: '#c8a27a' }]} onPress={() => push('/admin/productos')}>
+            <Ionicons name="add-circle-outline" size={18} color="#c8a27a" />
+            <Text style={[styles.actionText, { color: '#c8a27a' }]}>Agregar Producto</Text>
           </Pressable>
-          {/* Botón: Agregar Categoría → va a /admin/categorias (verde) */}
-          <Pressable style={[styles.actionBtn, { borderColor: '#10b981' }]} onPress={() => push('/admin/categorias')}>
-            <Ionicons name="add-circle-outline" size={18} color="#10b981" />
-            <Text style={[styles.actionText, { color: '#10b981' }]}>Agregar Categoría</Text>
+          {/* Botón: Agregar Categoría → va a /admin/categorias */}
+          <Pressable style={[styles.actionBtn, { borderColor: '#a56363' }]} onPress={() => push('/admin/categorias')}>
+            <Ionicons name="add-circle-outline" size={18} color="#a56363" />
+            <Text style={[styles.actionText, { color: '#a56363' }]}>Agregar Categoría</Text>
           </Pressable>
-          {/* Botón: Gestionar Pedidos → va a /admin/pedidos (azul cian) */}
-          <Pressable style={[styles.actionBtn, { borderColor: '#06b6d4' }]} onPress={() => push('/admin/pedidos')}>
-            <Ionicons name="list-outline" size={18} color="#06b6d4" />
-            <Text style={[styles.actionText, { color: '#06b6d4' }]}>Gestionar Pedidos</Text>
+          {/* Botón: Gestionar Pedidos → va a /admin/pedidos */}
+          <Pressable style={[styles.actionBtn, { borderColor: '#3e2f25' }]} onPress={() => push('/admin/pedidos')}>
+            <Ionicons name="list-outline" size={18} color="#3e2f25" />
+            <Text style={[styles.actionText, { color: '#3e2f25' }]}>Gestionar Pedidos</Text>
           </Pressable>
-          {/* Botón: Visitar Tienda → va a '/' (la tab principal del catálogo) (gris) */}
-          <Pressable style={[styles.actionBtn, { borderColor: '#6b7280' }]} onPress={() => push('/')}>
-            <Ionicons name="storefront-outline" size={18} color="#6b7280" />
-            <Text style={[styles.actionText, { color: '#6b7280' }]}>Visitar Tienda</Text>
+          {/* Botón: Visitar Tienda → va a '/' */}
+          <Pressable style={[styles.actionBtn, { borderColor: '#7b6758' }]} onPress={() => push('/')}>
+            <Ionicons name="storefront-outline" size={18} color="#7b6758" />
+            <Text style={[styles.actionText, { color: '#7b6758' }]}>Visitar Tienda</Text>
           </Pressable>
         </View>
       </View>
@@ -270,7 +313,7 @@ export default function AdminDashboardScreen() {
         </View>
         {/* URL de la API: 10.0.2.2 es localhost del emulador Android */}
         <View style={styles.infoRow}>
-          <Ionicons name="server-outline" size={16} color="#6366f1" />
+          <Ionicons name="server-outline" size={16} color="#7b6758" />
           <Text style={styles.infoText}>API: http://10.0.2.2:5000</Text>
         </View>
         {/* Rol del usuario actualmente autenticado */}
@@ -294,77 +337,79 @@ const styles = StyleSheet.create({
   // Centrado de pantalla completa para el estado de "acceso restringido".
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
   restrictedTitle: { fontSize: 22, fontWeight: '700', color: '#333' },
-  restrictedSub: { color: '#888', fontSize: 14 },
+  restrictedSub: { color: '#7b6758', fontSize: 14 },
 
   // ── HEADER ────────────────────────────────────────
-  // Tarjeta índigo (#6366f1) con bordes redondeados.
   header: {
     borderRadius: 16,
-    backgroundColor: '#6366f1',
+    backgroundColor: '#c8a27a',
     padding: 20,
-    gap: 8,               // Espacio entre la fila superior y la descripción.
+    gap: 8,
   },
-  // Fila superior: título+saludo a la izquierda, ícono a la derecha.
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 }, // Saludo semitransparente.
-  headerDesc: { fontSize: 13, color: 'rgba(255,255,255,0.75)' },              // Descripción más tenue.
-  // Círculo blanco semitransparente que envuelve el ícono del dashboard.
+  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.92)', marginTop: 2 },
+  headerDesc: { fontSize: 13, color: 'rgba(255,255,255,0.82)' },
   headerIcon: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     borderRadius: 12,
     padding: 10,
   },
 
   // ── CARGA ─────────────────────────────────────────
   loadingBox: { alignItems: 'center', gap: 10, paddingVertical: 24 },
-  loadingText: { color: '#666' },
+  loadingText: { color: '#7b6758' },
 
   // ── GRID DE TARJETAS ──────────────────────────────
-  // Contenedor flex con wrap: las tarjetas se distribuyen en 2 columnas.
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  // Tarjeta individual: ancho ~47% para que entren 2 por fila (con gap de 12).
   card: {
-    borderRadius: 14,
-    padding: 16,
-    width: '47%',         // ~mitad del ancho menos el gap.
-    gap: 10,              // Espacio entre cardTop y cardFooter.
+    borderRadius: 16,
+    padding: 18,
+    width: '48%',
+    gap: 12,
+    backgroundColor: '#fff',
+    borderLeftWidth: 6,
+    borderLeftColor: '#c8a27a',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  // Fila superior de la tarjeta: label+valor a la izquierda, ícono a la derecha.
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardLabel: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '500' }, // Nombre de la stat.
-  cardValue: { fontSize: 32, fontWeight: '800', color: '#fff', marginTop: 2 },     // Número grande.
-  // Círculo blanco semitransparente alrededor del ícono de cada tarjeta.
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  cardTextWrap: { flex: 1 },
+  cardLabel: { fontSize: 12, color: '#7b6758', fontWeight: '600', textTransform: 'uppercase' },
+  cardValue: { fontSize: 30, fontWeight: '800', color: '#3e2f25', marginTop: 6 },
   cardIconWrap: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 10,
-    padding: 8,
+    backgroundColor: '#f3e6d8',
+    borderRadius: 12,
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  // Pie de tarjeta: "Ver detalles" + flecha.
-  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  cardFooterText: { fontSize: 12, color: 'rgba(255,255,255,0.9)', fontWeight: '500' },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
+  cardFooterText: { fontSize: 12, color: '#7b6758', fontWeight: '700' },
 
   // ── BANNER DE VENTAS ──────────────────────────────
-  // Fila blanca con borde gris: ícono + label "Ventas Totales" + valor en COP.
   salesBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
     backgroundColor: '#fff',
     borderRadius: 12, padding: 16,
-    borderWidth: 1, borderColor: '#e8e8e8',
+    borderWidth: 1, borderColor: '#e6d3b3',
   },
-  salesLabel: { fontSize: 12, color: '#888' },                           // "Ventas Totales" en gris.
-  salesValue: { fontSize: 22, fontWeight: '800', color: '#6366f1' },     // Monto en índigo grande.
+  salesLabel: { fontSize: 12, color: '#7b6758' },
+  salesValue: { fontSize: 22, fontWeight: '800', color: '#c8a27a' },
 
   // ── SECCIÓN (Accesos Rápidos) ─────────────────────
   // Contenedor con borde y overflow hidden para que el header redondeado se vea bien.
   section: {
     borderRadius: 12, overflow: 'hidden',
-    borderWidth: 1, borderColor: '#e8e8e8',
+    borderWidth: 1, borderColor: '#e6d3b3',
   },
-  // Encabezado de sección: fondo índigo con ícono + título.
+  // Encabezado de sección: fondo oscuro con ícono + título.
   sectionHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#6366f1', padding: 14,
+    backgroundColor: '#3e2f25', padding: 14,
   },
   sectionTitle: { color: '#fff', fontWeight: '700', fontSize: 15 },
   sectionBody: { backgroundColor: '#fff', padding: 14, gap: 10 }, // Área blanca con los botones.
@@ -380,7 +425,7 @@ const styles = StyleSheet.create({
   // Card blanca con borde gris para el panel "Información del Sistema".
   infoCard: {
     backgroundColor: '#fff', borderRadius: 12,
-    borderWidth: 1, borderColor: '#e8e8e8',
+    borderWidth: 1, borderColor: '#e6d3b3',
     padding: 16, gap: 10,
   },
   infoTitle: { fontWeight: '700', fontSize: 15, color: '#222', marginBottom: 4 },

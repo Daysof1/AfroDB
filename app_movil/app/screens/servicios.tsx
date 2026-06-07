@@ -8,7 +8,9 @@ import { Alert, FlatList, Modal, Image, ImageBackground, Pressable, RefreshContr
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import catalogoService from "../../src/services/catalogoService";
-import { useAuth } from '../../src/context/AuthContext';import { useAgendar } from "../../src/context/AgendarContext";import { ThemedText } from '../../components/themed-text';
+import { useAuth } from '../../src/context/AuthContext';
+import { useAgendar } from "../../src/context/AgendarContext";
+import { ThemedText } from '../../components/themed-text';
 import { ThemedView } from '../../components/themed-view';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -24,7 +26,7 @@ export default function ServiciosScreen() {
   const { setServicioSeleccionado } = useAgendar() as { setServicioSeleccionado: (s: any) => void };
 
   const [servicios, setServicios] = useState<any[]>([]);
-   const [categorias, setCategorias] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -56,7 +58,7 @@ export default function ServiciosScreen() {
     loadServicios();
   }, []);
 
-   useEffect(() => {
+  useEffect(() => {
     setPaginaActual(1);
   }, [busqueda, categoriaActiva]);
 
@@ -108,7 +110,7 @@ export default function ServiciosScreen() {
             <View style={styles.searchContainer}>
             <Ionicons name="search" size={18} color="#9ca3af" />
             <TextInput
-                placeholder="Buscar productos..."
+                placeholder="Buscar servicios..."
                 value={busqueda}
                 onChangeText={setBusqueda}
                 style={styles.searchInput}

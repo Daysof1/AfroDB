@@ -252,17 +252,17 @@ const styles = StyleSheet.create({
   // Columna de botones de acción con separación entre ellos.
   actionsRow: { flexDirection: 'column', gap: 10, marginTop: 20 },
 
-  // Botón de acción principal: azul (#0a7ea4), bordes redondeados, texto centrado.
+  // Botón de acción principal: tono tierra cálido, bordes redondeados y texto centrado.
   actionBtn: {
-    backgroundColor: '#0a7ea4', // Azul petróleo.
+    backgroundColor: '#a57c63', // Marrón tierra.
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
     marginBottom: 8,
   },
 
-  // Sobreescribe el color del botón a rojo cuando la acción es peligrosa (cancelar).
-  btnDanger: { backgroundColor: '#b93a32' },
+  // Sobreescribe el color del botón a rojo tierra cuando la acción es peligrosa (cancelar).
+  btnDanger: { backgroundColor: '#a56363' },
 
   // Texto de los botones: blanco y negrita.
   actionBtnText: { color: '#fff', fontWeight: '700' },

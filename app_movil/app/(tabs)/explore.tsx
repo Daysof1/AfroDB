@@ -36,7 +36,7 @@ import { ThemedView } from '../../components/themed-view';
  */
 type AuthCtx = {
     //Usser datos el usuario autenticado, null si no inicio ssin
-    user: { nombre?: string, email?: string, rol?: string  } | null;
+    user: { nombre?: string, apellido?: string, email?: string, rol?: string  } | null;
     //isAuthenticated: true si hay sesion activa
     isAuthenticated: boolean;
     // isLoading: true iesra se verifica si hay sesion guardada al abrir la app
@@ -174,8 +174,8 @@ export default function TabTwoScreen() {
                 setDireccion('');
             } else {
                 //llama al login del contexto con el email y contraseña
-                await login (email, password);
-                setSuccessMessage('sesion iniciada crrectamente');
+                await login(email, password);
+                setSuccessMessage(`Sesión iniciada correctamente. Bienvenido ${user?.nombre || email}`);
             }
         } catch (error: unknown) {
             //si el backend devuelve error muestra su mensaje. sino muestra uno generico
@@ -363,6 +363,12 @@ export default function TabTwoScreen() {
   const rolLabel = (r?: string) =>
     r === 'administrador' ? 'Administrador' : r === 'auxiliar' ? 'Auxiliar' : r === 'profesional' ? 'Profesional' : 'Cliente';
 
+  const userFullName = () => {
+    if (!user) return 'Usuario';
+    const fullName = [user?.nombre, user?.apellido].filter(Boolean).join(' ');
+    return fullName || user?.email || 'Usuario';
+  };
+
   // rolIcon: devuelve el nombre del ícono Ionicons según el rol.
   //   keyof typeof Ionicons.glyphMap → tipo correcto para los nombres de íconos.
   const rolIcon = (r?: string): keyof typeof Ionicons.glyphMap =>
@@ -383,7 +389,7 @@ export default function TabTwoScreen() {
         {/* Columna de datos: nombre, email y badge del rol */}
         <View style={{ flex: 1 }}>
           {/* Nombre del usuario en blanco negrita */}
-          <Text style={styles.profileName}>{user?.nombre || 'Usuario'}</Text>
+          <Text style={styles.profileName}>{userFullName()}</Text>
           {/* Email del usuario en blanco semitransparente */}
           <Text style={styles.profileEmail}>{user?.email || '-'}</Text>
           {/* Badge (pastilla) con ícono + etiqueta del rol */}
