@@ -37,7 +37,17 @@ type Cita = {
     nombre?: string;
     apellido?: string;
   };
-  Servicios?: Array<{ nombre?: string }>;
+  Servicios?: Array<{
+    nombre?: string;
+    precio?: number;
+    duracion?: number;
+    cantidad?: number;
+    CitaServicio?: {
+      precio?: number;
+      duracion?: number;
+      cantidad?: number;
+    };
+  }>;
 };
 
 type AuthUser = { rol?: string; nombre?: string };
@@ -199,8 +209,24 @@ export default function AdminCitasScreen() {
                 <View style={styles.detailsBox}>
                   <ThemedText type="defaultSemiBold">Detalle completo</ThemedText>
                   {item.servicio ? <ThemedText>Servicio agendado: {item.servicio}</ThemedText> : null}
-                  {detalleCitas[cacheKey]?.Servicios ? (
-                    <ThemedText>Servicios: {(detalleCitas[cacheKey]?.Servicios || []).map((servicio) => servicio.nombre).filter(Boolean).join(', ')}</ThemedText>
+                  {Array.isArray(serviciosSource) && serviciosSource.length > 0 ? (
+                    <View style={styles.serviceList}>
+                      {(serviciosSource || []).map((servicio, index) => {
+                        const servicioNombre = servicio.nombre || `Servicio ${index + 1}`;
+                        const duracion = servicio.CitaServicio?.duracion ?? servicio.duracion;
+                        const precio = servicio.CitaServicio?.precio ?? servicio.precio ?? 0;
+                        const cantidad = servicio.CitaServicio?.cantidad ?? servicio.cantidad ?? 1;
+                        const subtotal = Number(precio) * Number(cantidad);
+
+                        return (
+                          <View key={`servicio-${index}`} style={styles.serviceItem}>
+                            <ThemedText style={styles.serviceLabel}>• {servicioNombre}</ThemedText>
+                            {duracion ? <ThemedText style={styles.serviceInfo}>Duración: {duracion} min</ThemedText> : null}
+                            <ThemedText style={styles.serviceInfo}>Total servicio: ${subtotal.toLocaleString('es-CO')}</ThemedText>
+                          </View>
+                        );
+                      })}
+                    </View>
                   ) : null}
                   {item.notas ? <ThemedText>Notas: {item.notas}</ThemedText> : null}
                   {typeof item.total === 'number' ? <ThemedText>Total: ${item.total.toLocaleString('es-CO')}</ThemedText> : null}
@@ -231,6 +257,10 @@ const styles = StyleSheet.create({
   error: { color: '#a56363', marginBottom: 12 },
   emptyContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'center' },
   detailsBox: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e6d3b3', gap: 4 },
+  serviceList: { marginTop: 8, gap: 6 },
+  serviceItem: { paddingVertical: 6, paddingHorizontal: 8, backgroundColor: '#fbf6f0', borderRadius: 8 },
+  serviceLabel: { fontWeight: '600' },
+  serviceInfo: { marginTop: 2, color: '#5b4b40', fontSize: 13 },
   hint: { marginTop: 10, color: '#7b6758', fontSize: 12 },
   cancelButton: { marginTop: 8, backgroundColor: '#f2dede', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center' },
   cancelText: { color: '#a94442', fontWeight: '600' }

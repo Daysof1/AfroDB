@@ -15,7 +15,7 @@ import { useEffect, useMemo, useState } from "react";
 //flatlist lista optimizada con virtualizacion para mostrar grandes cantidades de datos
 //modal mostrar detalles de contenido en ventanas emergentes
 
-import { Alert, Button, ScrollView, StyleSheet, Text, TextInput} from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput} from "react-native";
 
 //Lee los parametros de la url para obtener el id del pedido
 import { useLocalSearchParams, useRouter } from "expo-router";//navegacion y parametros de ruta
@@ -126,11 +126,31 @@ export default function AdminProductoForm() {
      * y regresa a a pantalla anterir si fue exitoso
      */
     const handleSubmit = async () => {
-        // validacion basica los 4 campos obligatorios no pueden estar vacios 
+        // validacion basica: todos los campos obligatorios.
       if (!nombre || !descripcion || !precio || !stock || !categoriaId || !subcategoriaId) {
         Alert.alert('Error', 'Todos los campos son obligatorios, incluyendo categoría y subcategoría');
             return;//detiene la ejecucion si hay la peticion http 
         }
+
+      const precioNum = parseFloat(precio);
+      const stockNum = parseInt(stock, 10);
+      const categoriaNum = parseInt(categoriaId, 10);
+      const subcategoriaNum = parseInt(subcategoriaId, 10);
+
+      if (Number.isNaN(precioNum) || precioNum <= 0) {
+        Alert.alert('Error', 'El precio debe ser un número mayor a 0');
+        return;
+      }
+
+      if (Number.isNaN(stockNum) || stockNum < 0) {
+        Alert.alert('Error', 'El stock debe ser un número entero mayor o igual a 0');
+        return;
+      }
+
+      if (Number.isNaN(categoriaNum) || Number.isNaN(subcategoriaNum)) {
+        Alert.alert('Error', 'Categoría y subcategoría deben ser IDs numéricos válidos');
+        return;
+      }
 
         setLoading(true);// Desabilita el boton durante la peticion 
         try {
@@ -138,11 +158,11 @@ export default function AdminProductoForm() {
             const data = {
                 nombre,
                 descripcion,
-                precio: parseFloat(precio),
-                stock: parseInt(stock, 10),
+                precio: precioNum,
+                stock: stockNum,
                 imagenUrl,
-              categoriaId: parseInt(categoriaId, 10),
-              subcategoriaId: parseInt(subcategoriaId, 10),
+              categoriaId: categoriaNum,
+              subcategoriaId: subcategoriaNum,
             };
 
             if (editing && producto) {
@@ -156,9 +176,10 @@ export default function AdminProductoForm() {
                 Alert.alert('Exito', 'Producto creado');
             }
             router.back();// regresa a admin/productos despues de guardar
-        } catch {
-            //si la peticion falla muesra el eror a usuario
-            Alert.alert('Error', 'No se pudo guardar el producto');
+        } catch (error: unknown) {
+            //si la peticion falla muestra el error real del servidor si está disponible
+            const message = (error as any)?.response?.data?.message || (error as any)?.message || 'No se pudo guardar el producto';
+            Alert.alert('Error', String(message));
         } finally {
             setLoading(false);//Habilita el boton nuevamente
         }
@@ -243,24 +264,28 @@ export default function AdminProductoForm() {
 
       {/* ── BOTÓN DE GUARDAR ────────────────────────────────────────────── */}
       {/* El título cambia según el modo: "Actualizar" si edita, "Crear" si es nuevo. */}
-      {/* disabled evita envíos múltiples mientras loading=true. */}
-      <Button
-        title={editing ? 'Actualizar' : 'Crear'}
+      <Pressable
+        style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleSubmit}
         disabled={loading}
-      />
+      >
+        <Text style={styles.buttonText}>{editing ? 'Actualizar' : 'Crear'}</Text>
+      </Pressable>
     </ScrollView>
   );
 }
 
 // ── ESTILOS ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // Contenedor del ScrollView: padding interior, fondo blanco.
+  // Contenedor del ScrollView: padding interior, fondo claro similar a la web.
   // flexGrow: 1 hace que ocupe toda la pantalla aunque el contenido sea corto.
-  container: { padding: 20, backgroundColor: '#fff', flexGrow: 1 },
+  container: { padding: 20, backgroundColor: '#f9f6f2', flexGrow: 1 },
   // Etiqueta de campo: negrita con margen superior para separar campos.
-  label: { fontWeight: 'bold', marginTop: 10 },
-  // Campo de texto: borde gris, esquinas ligeramente redondeadas, padding interior.
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 5, padding: 8, marginTop: 5, marginBottom: 10 },
+  label: { fontWeight: 'bold', marginTop: 10, color: '#3e2f25' },
+  // Campo de texto: borde gris suave, esquinas redondeadas, padding interior.
+  input: { borderWidth: 1, borderColor: '#d6c5b4', borderRadius: 5, padding: 8, marginTop: 5, marginBottom: 10, backgroundColor: '#fff' },
   helper: { fontSize: 12, color: '#666', marginBottom: 8 },
+  button: { marginTop: 20, backgroundColor: '#a56363', borderRadius: 10, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
+  buttonDisabled: { opacity: 0.7 },
+  buttonText: { color: '#fff', fontWeight: '700' },
 });

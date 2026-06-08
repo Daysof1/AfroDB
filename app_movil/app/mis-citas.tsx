@@ -8,7 +8,7 @@
 
 // ── IMPORTACIONES ────────────────────────────────────────────────────────────
 import { useEffect, useState, useCallback } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ import { ThemedText } from '../components/themed-text';
 import { ThemedView } from '../components/themed-view';
 import { useAuth } from '../src/context/AuthContext';
 import citaService from '../src/services/citaService';
+import { formatTimeWithPeriod } from '../src/utils/time';
 
 // ── TIPO: Cita ────────────────────────────────────────────────────────────────
 type Cita = {
@@ -73,6 +74,10 @@ export default function MisCitasScreen() {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [reprogrammingId, setReprogrammingId] = useState<string | number | null>(null);
+  const [reprogramFecha, setReprogramFecha] = useState('');
+  const [reprogramHora, setReprogramHora] = useState('');
+  const [actionLoadingId, setActionLoadingId] = useState<string | number | null>(null);
 
   const loadCitas = useCallback(async () => {
     if (!isAuthenticated) {
@@ -91,6 +96,72 @@ export default function MisCitasScreen() {
       setLoading(false);
     }
   }, [isAuthenticated]);
+
+  const resetReprogramForm = () => {
+    setReprogrammingId(null);
+    setReprogramFecha('');
+    setReprogramHora('');
+  };
+
+  const handleCancelarCita = (id: string | number) => {
+    Alert.alert('Confirmar cancelación', '¿Estás seguro de que deseas cancelar esta cita?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Sí, cancelar',
+        onPress: async () => {
+          setActionLoadingId(id);
+          try {
+            await citaService.cancelarCita(id);
+            setCitas((prev) => prev.map((cita) => (String(cita.id) === String(id) ? { ...cita, estado: 'cancelada' } : cita)));
+            resetReprogramForm();
+          } catch (error: unknown) {
+            Alert.alert('Error', (error as { message?: string })?.message || 'No se pudo cancelar la cita. Intenta nuevamente.');
+          } finally {
+            setActionLoadingId(null);
+          }
+        }
+      }
+    ]);
+  };
+
+  const startReprogramar = (cita: Cita) => {
+    setReprogrammingId(cita.id ?? null);
+    setReprogramFecha(cita.fecha ?? '');
+    setReprogramHora(cita.hora ?? '');
+  };
+
+  const cancelReprogramar = () => {
+    resetReprogramForm();
+  };
+
+  const handleReprogramarCita = async (id: string | number) => {
+    if (!reprogramFecha || !reprogramHora) {
+      Alert.alert('Falta información', 'Ingresa la nueva fecha y hora de la cita.');
+      return;
+    }
+
+    // Formatear hora con padding: "8:30" -> "08:30:00"
+    const [hh, mm] = reprogramHora.split(':');
+    const horaFormateada = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00`;
+
+    setActionLoadingId(id);
+    try {
+      const updated = await citaService.reprogramarCita(id, {
+        fecha: reprogramFecha,
+        hora: horaFormateada
+      });
+
+      if (updated) {
+        setCitas((prev) => prev.map((cita) => (String(cita.id) === String(id) ? { ...cita, ...updated } : cita)));
+        Alert.alert('Cita reprogramada', 'La cita fue actualizada correctamente.');
+        resetReprogramForm();
+      }
+    } catch (error: unknown) {
+      Alert.alert('Error', (error as { message?: string })?.message || 'No se pudo reprogramar la cita. Intenta nuevamente.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   useEffect(() => {
     loadCitas();
@@ -201,7 +272,7 @@ export default function MisCitasScreen() {
                   <Ionicons name="time-outline" size={16} color="#a57c63" />
                   <View style={styles.infoContent}>
                     <ThemedText style={styles.infoLabel}>Hora</ThemedText>
-                    <ThemedText style={styles.infoValue}>{cita.hora || '-'}</ThemedText>
+                    <ThemedText style={styles.infoValue}>{formatTimeWithPeriod(cita.hora)}</ThemedText>
                   </View>
                 </View>
 
@@ -237,6 +308,56 @@ export default function MisCitasScreen() {
                       <ThemedText style={styles.infoLabel}>Notas</ThemedText>
                       <ThemedText style={styles.infoValue}>{cita.notas}</ThemedText>
                     </View>
+                  </View>
+                )}
+
+                {reprogrammingId === cita.id ? (
+                  <View style={styles.reprogramBox}>
+                    <ThemedText style={styles.formLabel}>Nueva fecha</ThemedText>
+                    <TextInput
+                      value={reprogramFecha}
+                      onChangeText={setReprogramFecha}
+                      placeholder="2026-06-30"
+                      style={styles.input}
+                      placeholderTextColor="#9ca3af"
+                    />
+                    <ThemedText style={styles.formLabel}>Nueva hora</ThemedText>
+                    <TextInput
+                      value={reprogramHora}
+                      onChangeText={setReprogramHora}
+                      placeholder="14:30"
+                      style={styles.input}
+                      placeholderTextColor="#9ca3af"
+                    />
+                    <View style={styles.buttonRow}>
+                      <Pressable
+                        style={[styles.primaryButton, actionLoadingId === cita.id && { opacity: 0.6 }]}
+                        onPress={() => handleReprogramarCita(cita.id ?? '')}
+                        disabled={actionLoadingId === cita.id}
+                      >
+                        {actionLoadingId === cita.id ? (
+                          <ActivityIndicator color="#fff" />
+                        ) : (
+                          <ThemedText style={styles.primaryButtonText}>Guardar cambio</ThemedText>
+                        )}
+                      </Pressable>
+                      <Pressable style={styles.secondaryButton} onPress={cancelReprogramar}>
+                        <ThemedText style={styles.secondaryButtonText}>Cancelar</ThemedText>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.actionsRow}>
+                    {cita.estado?.toLowerCase() === 'pendiente' && (
+                      <Pressable style={styles.secondaryButton} onPress={() => handleCancelarCita(cita.id ?? '')}>
+                        <ThemedText style={styles.secondaryButtonText}>Cancelar cita</ThemedText>
+                      </Pressable>
+                    )}
+                    {cita.estado?.toLowerCase() !== 'completada' && (
+                      <Pressable style={styles.secondaryButton} onPress={() => startReprogramar(cita)}>
+                        <ThemedText style={styles.secondaryButtonText}>Reprogramar</ThemedText>
+                      </Pressable>
+                    )}
                   </View>
                 )}
               </View>
@@ -332,6 +453,23 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 11, color: '#7b6758', textTransform: 'uppercase', fontWeight: '600' },
   infoValue: { fontSize: 14, color: '#3e2f25', fontWeight: '500' },
   totalValue: { color: '#a56363', fontWeight: '700', fontSize: 15 },
+  reprogramBox: { marginTop: 16, padding: 12, backgroundColor: '#fbf6f0', borderRadius: 10, gap: 10 },
+  formLabel: { fontSize: 12, color: '#7b6758', fontWeight: '600', textTransform: 'uppercase' },
+  input: { marginTop: 6, padding: 12, backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#e6d3b3', color: '#3e2f25' },
+  buttonRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  actionsRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginTop: 16 },
+  secondaryButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#c8a27a',
+    backgroundColor: '#fff',
+  },
+  secondaryButtonText: { color: '#a57c63', fontWeight: '700' },
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -341,6 +479,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 10,
+    flex: 1,
   },
   primaryButtonText: { color: '#fff', fontWeight: '600' },
 });

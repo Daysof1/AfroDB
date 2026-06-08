@@ -15,6 +15,18 @@ const citaService = {
     const data = mapPayload(response);
     return Array.isArray(data.citas) ? data.citas : [];
   },
+
+  cancelarCita: async (id) => {
+    const response = await apiClient.put(`/cliente/citas/${id}/cancelar`);
+    const data = mapPayload(response);
+    return data.cita || null;
+  },
+
+  reprogramarCita: async (id, payload) => {
+    const response = await apiClient.put(`/cliente/citas/${id}/reprogramar`, payload);
+    const data = mapPayload(response);
+    return data.cita || null;
+  }
 };
 
 export default citaService;

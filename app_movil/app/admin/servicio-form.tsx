@@ -15,11 +15,11 @@ import { useEffect, useMemo, useState } from "react";
 //flatlist lista optimizada con virtualizacion para mostrar grandes cantidades de datos
 //modal mostrar detalles de contenido en ventanas emergentes
 
-import { Alert, Button, ScrollView, StyleSheet, Text, TextInput} from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput} from "react-native";
 
 //Lee los parametros de la url para obtener el id del pedido
 import { useLocalSearchParams, useRouter } from "expo-router";//navegacion y parametros de ruta
-import { createProduct, updateProduct } from '../../src/services/adminService';
+import { createService, updateService } from '../../src/services/adminService';
 import apiClient from '../../src/api/apiClient';
 /**
  * tipo de servicio
@@ -31,6 +31,7 @@ type Servicio = {
     nombre?: string;
     descripcion?: string;
     precio?: number;
+    duracion?: number;
     imagen?: string;
   categoriaId?: number;
   subcategoriaId?: number;
@@ -82,8 +83,9 @@ export default function AdminServicioForm() {
 
     const [nombre, setNombre] = useState(servicio?.nombre ?? '');
     const [descripcion, setDescripcion] = useState(servicio?.descripcion ?? '');
-    //precio y stock se guardan como string para faciitar la entrada de textoInput
+    //precio y duracion se guardan como string para facilitar la entrada de TextInput
     const [precio, setPrecio] = useState(servicio?.precio?.toString() ?? '');
+    const [duracion, setDuracion] = useState(servicio?.duracion?.toString() ?? '');
     const [imagenUrl, setImagenUrl] = useState(servicio?.imagen ?? '');
     const [categoriaId, setCategoriaId] = useState(servicio?.categoriaId?.toString() ?? '');
     const [subcategoriaId, setSubcategoriaId] = useState(servicio?.subcategoriaId?.toString() ?? '');
@@ -124,32 +126,32 @@ export default function AdminServicioForm() {
      * y regresa a a pantalla anterir si fue exitoso
      */
     const handleSubmit = async () => {
-        // validacion basica los 4 campos obligatorios no pueden estar vacios 
-      if (!nombre || !descripcion || !precio || !categoriaId || !subcategoriaId) {
-        Alert.alert('Error', 'Todos los campos son obligatorios, incluyendo categoría y subcategoría');
+        // validacion basica los campos obligatorios no pueden estar vacios 
+      if (!nombre || !descripcion || !precio || !duracion || !categoriaId || !subcategoriaId) {
+        Alert.alert('Error', 'Todos los campos son obligatorios, incluyendo duración, categoría y subcategoría');
             return;//detiene la ejecucion si hay la peticion http 
         }
 
         setLoading(true);// Desabilita el boton durante la peticion 
         try {
-            // contruye el objeto de datos convirtendolod precio y stock a numerico
+            // contruye el objeto de datos convirtendolod precio y duracion a numerico
             const data = {
                 nombre,
                 descripcion,
                 precio: parseFloat(precio),
+                duracion: parseInt(duracion, 10),
                 imagenUrl,
               categoriaId: parseInt(categoriaId, 10),
               subcategoriaId: parseInt(subcategoriaId, 10),
             };
 
             if (editing && servicio) {
-                // modo edicion llama a updateProduct con el id del servicio
-                //se usa id como fallback 
-                await updateProduct(servicio.id || servicio.id, data);
-                Alert.alert('Exitoso', 'servicio actualizado');
+                // modo edicion llama a updateService con el id del servicio
+                await updateService(servicio.id || servicio.id, data);
+                Alert.alert('Exitoso', 'Servicio actualizado');
             } else {
-                //cuando el formulario esta vacio se comporta como crecain
-                await createProduct(data);
+                // cuando el formulario esta vacio se comporta como creación
+                await createService(data);
                 Alert.alert('Exito', 'Servicio creado');
             }
             router.back();// regresa a admin/servicios despues de guardar
@@ -188,6 +190,16 @@ export default function AdminServicioForm() {
         value={precio}
         onChangeText={setPrecio}
         keyboardType="numeric" // Muestra teclado numérico en dispositivos móviles.
+      />
+
+      {/* ── CAMPO: Duración ─────────────────────────────────────────────── */}
+      <Text style={styles.label}>Duración (minutos)</Text>
+      <TextInput
+        style={styles.input}
+        value={duracion}
+        onChangeText={setDuracion}
+        keyboardType="numeric"
+        placeholder="Duración en minutos"
       />
       
       {/* ── CAMPO: Categoría ID ─────────────────────────────────────────── */}
@@ -231,24 +243,28 @@ export default function AdminServicioForm() {
 
       {/* ── BOTÓN DE GUARDAR ────────────────────────────────────────────── */}
       {/* El título cambia según el modo: "Actualizar" si edita, "Crear" si es nuevo. */}
-      {/* disabled evita envíos múltiples mientras loading=true. */}
-      <Button
-        title={editing ? 'Actualizar' : 'Crear'}
+      <Pressable
+        style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleSubmit}
         disabled={loading}
-      />
+      >
+        <Text style={styles.buttonText}>{editing ? 'Actualizar' : 'Crear'}</Text>
+      </Pressable>
     </ScrollView>
   );
 }
 
 // ── ESTILOS ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // Contenedor del ScrollView: padding interior, fondo blanco.
+  // Contenedor del ScrollView: padding interior, fondo claro similar a la web.
   // flexGrow: 1 hace que ocupe toda la pantalla aunque el contenido sea corto.
-  container: { padding: 20, backgroundColor: '#fff', flexGrow: 1 },
+  container: { padding: 20, backgroundColor: '#f9f6f2', flexGrow: 1 },
   // Etiqueta de campo: negrita con margen superior para separar campos.
-  label: { fontWeight: 'bold', marginTop: 10 },
-  // Campo de texto: borde gris, esquinas ligeramente redondeadas, padding interior.
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 5, padding: 8, marginTop: 5, marginBottom: 10 },
+  label: { fontWeight: 'bold', marginTop: 10, color: '#3e2f25' },
+  // Campo de texto: borde gris suave, esquinas redondeadas, padding interior.
+  input: { borderWidth: 1, borderColor: '#d6c5b4', borderRadius: 5, padding: 8, marginTop: 5, marginBottom: 10, backgroundColor: '#fff' },
   helper: { fontSize: 12, color: '#666', marginBottom: 8 },
+  button: { marginTop: 20, backgroundColor: '#a56363', borderRadius: 10, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
+  buttonDisabled: { opacity: 0.7 },
+  buttonText: { color: '#fff', fontWeight: '700' },
 });

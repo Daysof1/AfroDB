@@ -20,7 +20,7 @@ import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, TextInput, V
 import { ThemedText } from '../../components/themed-text';
 
 import  apiClient  from '../../src/api/apiClient';
-import { activarUsuario, desactivarUsuario, deleteUsuario } from '../../src/services/usuarioAdminService';
+import { activarUsuario, desactivarUsuario } from '../../src/services/usuarioAdminService';
 import { useAuth } from "../../src/context/AuthContext";
 import { SearchBar } from "react-native-screens";
 
@@ -71,7 +71,7 @@ export default function AdminUsuariosScreen() {
             const params = [];
             if (search.trim()) params.push(`buscar=${encodeURIComponent(search.trim())}`);
             params.push(`page=${page}`);
-            params.push('limite=10');
+            params.push('limite=15');
             const url = `/admin/usuarios?${params.join('&')}`;
             const res = await apiClient.get(url);
             const usuariosData : Usuario[] = res.data?.data?.usuarios || [];

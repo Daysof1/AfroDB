@@ -80,7 +80,7 @@ export default function AdminServiciosScreen() {
             const params: string[] = [];
             if (search.trim()) params.push(`buscar=${encodeURIComponent(search.trim())}`);
             params.push(`pagina=${page}`);
-            params.push(`limite=10`);
+            params.push(`limite=20`);//
             const url = `/admin/servicios?${params.join('&')}`;
             const res = await apiClient.get(url);
             const serviciosData: Servicio[] = res.data?.data?.servicios || res.data?.data?.Servicios || [];
@@ -105,6 +105,7 @@ export default function AdminServiciosScreen() {
     };
 
     const isAdmin = user?.rol === 'administrador';
+    const auxiliar = user?.rol === 'auxiliar'; //
 
     
   // ── RENDERIZADO ───────────────────────────────────────────────────────────
@@ -170,7 +171,7 @@ export default function AdminServiciosScreen() {
               </View>
             </Pressable>
 
-            {isAdmin && (
+            {(isAdmin || auxiliar) && (
               <View style={styles.actionsRow}>
                 <Pressable
                   style={[styles.actionBtn, { backgroundColor: item.activo ? '#a56363' : '#c8a27a' }]}

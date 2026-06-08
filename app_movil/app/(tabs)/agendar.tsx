@@ -23,6 +23,7 @@ import { useAuth } from "../../src/context/AuthContext";
 import { useAgendar } from "../../src/context/AgendarContext";
 import catalogoService from '../../src/services/catalogoService';
 import { ThemedText } from '../../components/themed-text';
+import { formatTimeWithPeriod, getTimePeriodLabel } from '../../src/utils/time';
 
 
 // HELPERS de navegacion 
@@ -48,9 +49,57 @@ export default function AgendarScreen() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
+  const [horaError, setHoraError] = useState('');
+  const [selectedPeriod, setSelectedPeriod] = useState<'mañana' | 'tarde' | 'noche'>('mañana');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [expandirServicios, setExpandirServicios] = useState(false);
+
+  const getPeriodRange = (period: 'mañana' | 'tarde' | 'noche') => {
+    switch (period) {
+      case 'mañana': return { min: 6, max: 11, label: '6:00 - 11:59' };
+      case 'tarde': return { min: 12, max: 17, label: '12:00 - 17:59' };
+      case 'noche': return { min: 18, max: 21, label: '18:00 - 21:59' };
+      default: return { min: 6, max: 11, label: '6:00 - 11:59' };
+    }
+  };
+
+  const validateHora = (horaValue: string, period: 'mañana' | 'tarde' | 'noche' = selectedPeriod) => {
+    if (!horaValue) {
+      return { valid: true, error: '' };
+    }
+
+    const [hourPart, minutePart] = horaValue.split(':');
+    const hour = Number(hourPart);
+    const minute = Number(minutePart);
+
+    if (Number.isNaN(hour) || Number.isNaN(minute)) {
+      return { valid: false, error: 'Formato inválido. Usa HH:MM' };
+    }
+
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return { valid: false, error: 'Hora fuera de rango' };
+    }
+
+    const range = getPeriodRange(period);
+    if (hour < range.min || hour > range.max) {
+      return { valid: false, error: `Las horas de ${period} son ${range.label}` };
+    }
+
+    return { valid: true, error: '' };
+  };
+
+  const handleHoraChange = (value: string) => {
+    setHora(value);
+    const validation = validateHora(value, selectedPeriod);
+    setHoraError(validation.error);
+  };
+
+  const handlePeriodChange = (period: 'mañana' | 'tarde' | 'noche') => {
+    setSelectedPeriod(period);
+    setHora('');
+    setHoraError('');
+  };
 
   // Cargar servicios disponibles
   useEffect(() => {
@@ -101,11 +150,43 @@ export default function AgendarScreen() {
       return;
     }
 
+    // Validar que la fecha sea válida y esté en el futuro
+    const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!fechaRegex.test(fecha)) {
+      Alert.alert('Fecha inválida', 'Usa el formato YYYY-MM-DD (ej: 2026-06-30)');
+      return;
+    }
+
+    const fechaSeleccionada = new Date(fecha);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    if (fechaSeleccionada < hoy) {
+      Alert.alert('Fecha inválida', 'No se puede agendar en una fecha pasada');
+      return;
+    }
+
+    const horaValidation = validateHora(hora, selectedPeriod);
+    if (!horaValidation.valid) {
+      Alert.alert('Hora inválida', horaValidation.error || 'Verifica la hora ingresada');
+      return;
+    }
+
+    // Formatear hora con padding: "8:30" -> "08:30:00"
+    const [hh, mm] = hora.split(':');
+    const horaFormateada = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00`;
+
     const payload: any = { 
       fecha, 
-      hora, 
+      hora: horaFormateada,
       servicios: selectedIds 
     };
+
+    console.log('=== PAYLOAD ENVIADO ===');
+    console.log('Fecha:', fecha);
+    console.log('Hora formateada:', horaFormateada);
+    console.log('Servicios:', selectedIds);
+    console.log('Payload completo:', payload);
+    console.log('=======================');
 
     setSubmitting(true);
     try {
@@ -116,10 +197,26 @@ export default function AgendarScreen() {
       setSelectedIds([]);
       setFecha('');
       setHora('');
+      setSelectedPeriod('mañana');
       router.replace('/');
     } catch (err: unknown) {
-      const msg = (err as { message?: string })?.message;
-      Alert.alert('Error', msg || 'No se pudo agendar la cita');
+      console.log('=== ERROR AL AGENDAR ===');
+      console.log('Error completo:', err);
+      console.log('Error type:', typeof err);
+      if (err && typeof err === 'object') {
+        console.log('Error keys:', Object.keys(err));
+        console.log('Error.message:', (err as any).message);
+        console.log('Error.response:', (err as any).response);
+        console.log('Error.response.data:', (err as any).response?.data);
+      }
+      console.log('========================');
+      
+      let errorMsg = 'No se pudo agendar la cita';
+      if (err && typeof err === 'object') {
+        const anyErr = err as any;
+        errorMsg = anyErr.response?.data?.message || anyErr.message || errorMsg;
+      }
+      Alert.alert('Error', errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -130,6 +227,7 @@ export default function AgendarScreen() {
     setSelectedIds([]);
     setFecha('');
     setHora('');
+    setSelectedPeriod('mañana');
     router.back();
   };
 
@@ -292,13 +390,52 @@ export default function AgendarScreen() {
           <ThemedText style={styles.formLabel}>
             <Ionicons name="time" size={14} color="#a57c63" /> Hora (HH:MM)
           </ThemedText>
+
+          {/* Selector de Período */}
+          <ThemedText style={styles.formSubLabel}>¿A qué hora prefiere?</ThemedText>
+          <View style={styles.periodSelector}>
+            {(['mañana', 'tarde', 'noche'] as const).map((period) => (
+              <Pressable
+                key={period}
+                onPress={() => handlePeriodChange(period)}
+                style={[
+                  styles.periodButton,
+                  selectedPeriod === period && styles.periodButtonActive,
+                ]}
+              >
+                <ThemedText
+                  style={[
+                    styles.periodButtonText,
+                    selectedPeriod === period && styles.periodButtonTextActive,
+                  ]}
+                >
+                  {period.charAt(0).toUpperCase() + period.slice(1)}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Rango de horas */}
+          <ThemedText style={styles.periodInfo}>
+            Horario disponible: {getPeriodRange(selectedPeriod).label}
+          </ThemedText>
+
+          {/* Input de hora */}
           <TextInput
             value={hora}
-            onChangeText={setHora}
-            placeholder="14:30"
-            style={styles.input}
+            onChangeText={handleHoraChange}
+            placeholder={selectedPeriod === 'mañana' ? '08:30' : selectedPeriod === 'tarde' ? '14:30' : '19:00'}
+            style={[styles.input, horaError && styles.inputError]}
             placeholderTextColor="#9ca3af"
           />
+          {hora && !horaError && (
+            <ThemedText style={styles.horaLabel}>
+              {formatTimeWithPeriod(hora)}
+            </ThemedText>
+          )}
+          {horaError && (
+            <ThemedText style={styles.errorText}>{horaError}</ThemedText>
+          )}
         </View>
 
         {/* BOTONES */}
@@ -463,6 +600,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#222',
   },
+  formSubLabel: {
+    fontSize: 12,
+    color: '#7b6758',
+    marginTop: 8,
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+
+  // Selector de período
+  periodSelector: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  periodButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1.5,
+    borderColor: '#d4c5ba',
+    borderRadius: 6,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  periodButtonActive: {
+    backgroundColor: '#a57c63',
+    borderColor: '#a57c63',
+  },
+  periodButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#7b6758',
+  },
+  periodButtonTextActive: {
+    color: '#fff',
+  },
+  periodInfo: {
+    fontSize: 11,
+    color: '#999',
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
 
   // Inputs
   input: {
@@ -473,6 +652,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#111',
     backgroundColor: '#fafafa',
+  },
+  inputError: {
+    borderColor: '#ef4444',
+  },
+  horaLabel: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#6b8e6f',
+    fontWeight: '600',
+  },
+  errorText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#ef4444',
+    fontWeight: '600',
   },
 
   // Botón principal
