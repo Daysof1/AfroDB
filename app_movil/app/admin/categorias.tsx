@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ThemedText } from '../../components/themed-text';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../../src/api/apiClient';
 import { useAuth } from '../../src/context/AuthContext';
@@ -13,28 +14,64 @@ type Categoria = {
 
 export default function AdminCategoriasScreen() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [allCategorias, setAllCategorias] = useState<Categoria[]>([]);
+  const [busqueda, setBusqueda] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const { isAuthenticated, user } = useAuth() as { isAuthenticated: boolean; user?: { rol?: string } | null };
 
-  const loadCategorias = async () => {
+  const fetchCategorias = async (page = 1, search = '') => {
     setLoading(true);
+    setErrorMessage('');
     try {
-      const response = await apiClient.get('/admin/categorias');
-      const payload = response.data?.data || response.data || {};
-      const lista = payload.categorias || [];
-      setCategorias(Array.isArray(lista) ? lista : []);
-    } catch (error) {
-      Alert.alert('Error', (error as Error).message || 'No se pudieron cargar las categorías');
+      // El endpoint admin/categorias devuelve todas las categorías.
+      // No hay búsqueda/paginación en backend, así que traemos todo
+      // y filtramos en el cliente por nombre.
+      const url = `/admin/categorias`;
+      const res = await apiClient.get(url);
+      const categoriasData: Categoria[] = res.data?.data?.categorias || [];
+      setAllCategorias(categoriasData);
+
+      if (search && search.trim()) {
+        const s = search.trim().toLowerCase();
+        setCategorias(
+          categoriasData.filter((c) => {
+            const combined = `${c.nombre || ''} ${c.descripcion || ''}`.toLowerCase();
+            return combined.includes(s);
+          })
+        );
+      } else {
+        setCategorias(categoriasData);
+      }
+
+      setPagina(page);
+      setTotalPaginas(1);
+    } catch (error: unknown) {
+      setErrorMessage((error as { message?: string })?.message || 'Error al cargar categorías');
     } finally {
       setLoading(false);
     }
   };
 
+  // avanza y retrocede paginas (simulado en cliente)
+  const handlePagina = (next: number) => {
+    const nuevaPagina = Math.max(1, Math.min(totalPaginas, pagina + next));
+    setPagina(nuevaPagina);
+  };
+
+  const isAdmin = user?.rol === 'administrador';
+
+  // Debounce para la búsqueda en cliente
+  const searchTimeout = useRef<any>(null);
+
   useEffect(() => {
-    loadCategorias();
+    // carga inicial
+    fetchCategorias(1, '');
   }, []);
 
   const handleCreate = async () => {
@@ -56,7 +93,7 @@ export default function AdminCategoriasScreen() {
       });
       setNombre('');
       setDescripcion('');
-      await loadCategorias();
+      await fetchCategorias(1, busqueda);
       Alert.alert('Éxito', 'Categoría creada correctamente');
     } catch (error) {
       Alert.alert('Error', (error as Error).message || 'No se pudo crear la categoría');
@@ -68,13 +105,14 @@ export default function AdminCategoriasScreen() {
   const handleToggle = async (categoria: Categoria) => {
     try {
       await apiClient.patch(`/admin/categorias/${categoria.id}/toggle`);
-      await loadCategorias();
+      await fetchCategorias(1, busqueda);
     } catch (error) {
       Alert.alert('Error', (error as Error).message || 'No se pudo cambiar el estado');
     }
   };
 
   return (
+    
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <Ionicons name="folder-outline" size={28} color="#fff" />
@@ -82,6 +120,33 @@ export default function AdminCategoriasScreen() {
           <Text style={styles.title}>Categorías</Text>
           <Text style={styles.subtitle}>Crear y activar/desactivar categorías</Text>
         </View>
+      </View>
+      <View style={styles.searchRow}>
+        <TextInput
+          placeholder="Buscar categoría..."
+          value={busqueda}
+          onChangeText={(text) => {
+            setBusqueda(text);
+            if (searchTimeout.current) clearTimeout(searchTimeout.current);
+            searchTimeout.current = setTimeout(() => fetchCategorias(1, text), 300);
+          }}
+          style={[styles.input, { flex: 1 }]}
+        />
+        {busqueda ? (
+          <Pressable
+            style={[styles.searchBtn, styles.clearBtn]}
+            onPress={() => {
+              if (searchTimeout.current) clearTimeout(searchTimeout.current);
+              setBusqueda('');
+              setCategorias(allCategorias);
+            }}
+          >
+            <Ionicons name="close" size={20} color="#fff" />
+          </Pressable>
+        ) : null}
+        <Pressable style={styles.searchBtn} onPress={() => fetchCategorias(1, busqueda)}>
+          <ThemedText style={styles.searchBtnText}>Buscar</ThemedText>
+        </Pressable>
       </View>
 
       {user?.rol === 'auxiliar' ? (
@@ -130,11 +195,13 @@ export default function AdminCategoriasScreen() {
               <Text style={styles.toggleBtnText}>{categoria.activo ? 'Desactivar' : 'Activar'}</Text>
             </Pressable>
           </View>
+          
         ))
       )}
     </ScrollView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { padding: 16, gap: 12, backgroundColor: '#f9f6f2', flexGrow: 1 },
@@ -143,7 +210,7 @@ const styles = StyleSheet.create({
   subtitle: { color: 'rgba(255,255,255,0.9)', marginTop: 2 },
   formCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, gap: 10, borderWidth: 1, borderColor: '#e6d3b3' },
   label: { fontWeight: '700', color: '#3e2f25' },
-  input: { borderWidth: 1, borderColor: '#e6d3b3', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#faf2e6', color: '#3e2f25' },
+  input: { borderWidth: 1, borderColor: '#e6d3b3', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#fff', color: '#3e2f25' },
   textarea: { minHeight: 90, textAlignVertical: 'top' },
   primaryBtn: { backgroundColor: '#a56363', borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
   primaryBtnText: { color: '#fff', fontWeight: '800' },
@@ -160,4 +227,8 @@ const styles = StyleSheet.create({
   toggleBtnOn: { backgroundColor: '#a56363' },
   toggleBtnOff: { backgroundColor: '#3e2f25' },
   toggleBtnText: { color: '#fff', fontWeight: '800' },
+   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8},
+    searchBtn: { backgroundColor: '#c8a27a', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center' },
+  clearBtn: { backgroundColor: '#a56363', borderRadius: 14, paddingHorizontal: 10, justifyContent: 'center', alignItems: 'center' },
+  searchBtnText: { color: '#fff', fontWeight: '700' },
 });
