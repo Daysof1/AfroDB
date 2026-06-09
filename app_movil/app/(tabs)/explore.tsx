@@ -44,7 +44,7 @@ type AuthCtx = {
     //Login: funcion qe recibe el email y contraseña lanza error si falla
     login: (email: string, pssword: string) => Promise<unknown>;
     //register funcion que registra un nuvo usuario lanza error si falla 
-    register: (data: {nombre: string, apellido: string, email: string, password: string, telefono?: string, direccion?: string }) => Promise<unknown>; 
+    register: (data: {nombre: string, apellido: string, email: string, password: string, tipo_documento: string, documento: string, telefono?: string, direccion?: string }) => Promise<unknown>; 
     //logout: funcion de cerrar la sesion del usuario 
     logout: () => Promise<void>;
     //updatePerfil: funcion que actualiza os datos del usuario 
@@ -71,6 +71,9 @@ export default function TabTwoScreen() {
     const [ confirmPassword, setConfirmPassword ] = useState('');
     const [ telefono, setTelefono ] = useState('');
     const [ direccion, setDireccion ] = useState('');
+    const [ tipoDocumento, setTipoDocumento ] = useState('C.C.');
+    const [ documento, setDocumento ] = useState('');
+    const documentoOptions = ['T.I.', 'C.C.', 'C.E.', 'P.A.'];
     // loadingSubmit true mientras se procesa el login o register evita el doble envio
     const [ loadingSubmit, setLoadingSubmit ] = useState(false);
     //mensajes de retroalimentacion al usuario ( error o exito )
@@ -110,6 +113,8 @@ export default function TabTwoScreen() {
         setApellido('');
         setTelefono('');
         setDireccion('');
+        setTipoDocumento('C.C.');
+        setDocumento('');
         setIsRegisterMode(false);
         setErrorMessage('');
         setSuccessMessage('');
@@ -123,8 +128,8 @@ export default function TabTwoScreen() {
         if(isRegisterMode) {
             //Validaciones de registro 
             //todos los campos marcados con * son obligatorias
-            if (!nombre || !apellido || !email || !password || !confirmPassword) {
-                setErrorMessage('Completa todos los campos obigatorios *. ');
+            if (!nombre || !apellido || !email || !password || !confirmPassword || !tipoDocumento || !documento) {
+                setErrorMessage('Completa todos los campos obligatorios: nombre, apellido, tipo de documento, documento, email, contraseña y confirmación.');
                 return;
             }
 
@@ -159,17 +164,20 @@ export default function TabTwoScreen() {
             if (isRegisterMode) {
                 //llama a resgister() del contexto con os datos del formulario 
                 //el operador spread condicional ... solo incluye telefono/direcion si no estan vacios
-                await register({ nombre, apellido, email, password,
+                await register({ nombre, apellido, email, password, tipo_documento: tipoDocumento, documento,
                     ...(telefono ? { telefono } : {}),
                     ...(direccion ? { direccion } : {}),
                 });
                 setSuccessMessage('Registro exitoso! Ahora inicia sesion');
                 setIsRegisterMode(false); //Vuelve al logi tras el regisstro exitoso
-                // limpia los campos que no se comparten en el formulario login 
+                // limpia los campos del formulario de registro
+                setNombre('');
+                setApellido('');
+                setEmail('');
                 setPassword('');
                 setConfirmPassword('');
-                setEditNombre('');
-                setApellido('');
+                setTipoDocumento('C.C.');
+                setDocumento('');
                 setTelefono('');
                 setDireccion('');
             } else {
@@ -288,6 +296,33 @@ export default function TabTwoScreen() {
           {isRegisterMode ? (
             <>
               {/* Confirmar contraseña: debe coincidir con el campo anterior */}
+              <View style={styles.dropdownContainer}>
+                <ThemedText style={styles.dropdownLabel}>Tipo de documento *</ThemedText>
+                <View style={styles.optionList}>
+                  {documentoOptions.map((option) => (
+                    <Pressable
+                      key={option}
+                      onPress={() => setTipoDocumento(option)}
+                      style={[
+                        styles.optionButton,
+                        tipoDocumento === option && styles.optionButtonSelected,
+                      ]}
+                    >
+                      <Text
+                        style={tipoDocumento === option ? styles.optionTextSelected : styles.optionText}
+                      >
+                        {option}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+              <TextInput
+                placeholder="Documento *"
+                value={documento}
+                onChangeText={setDocumento}
+                style={styles.input}
+              />
               <TextInput
                 placeholder="Confirmar contrasena *"
                 secureTextEntry
@@ -584,6 +619,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef2f2', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#fca5a5',
   },
   errorText: { color: '#b91c1c', fontSize: 13 },
+
+  dropdownContainer: { gap: 8 },
+  dropdownLabel: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
+  optionList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  optionButton: {
+    borderWidth: 1, borderColor: '#d5d5d5', borderRadius: 10,
+    paddingVertical: 10, paddingHorizontal: 12, backgroundColor: '#fff',
+  },
+  optionButtonSelected: {
+    backgroundColor: '#a57c63', borderColor: '#a57c63',
+  },
+  optionText: { color: '#374151', fontWeight: '600' },
+  optionTextSelected: { color: '#fff', fontWeight: '600' },
 
   // Campo de texto genérico: borde gris, fondo blanco, bordes redondeados.
   input: {
