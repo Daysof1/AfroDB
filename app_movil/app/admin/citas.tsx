@@ -3,8 +3,8 @@
  * Navega desde el dashboard de admin cuando se presiona "Ver detalles" en la tarjeta de Citas.
  */
 
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, View, TextInput } from 'react-native';
 import { ThemedText } from '../../components/themed-text';
 import apiClient from '../../src/api/apiClient';
 import { useAuth } from '../../src/context/AuthContext';
@@ -64,6 +64,7 @@ export default function AdminCitasScreen() {
   const [detalleCitas, setDetalleCitas] = useState<Record<string, Cita>>({});
   const [loadingDetalleId, setLoadingDetalleId] = useState<string | number | null>(null);
   const [cancellingId, setCancellingId] = useState<string | number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadCitaDetalle = async (id: string | number) => {
     const cacheKey = String(id);
@@ -134,7 +135,31 @@ export default function AdminCitasScreen() {
       setLoading(false);
     }
   }; 
-  
+
+  const filteredCitas = useMemo(() => {
+    const normalize = (value: unknown) =>
+      String(value ?? '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+    const query = normalize(searchQuery.trim());
+    if (!query) return citas;
+
+    return citas.filter((item) => {
+      const servicioNombre = normalize(item.servicio);
+      const serviciosNombres = Array.isArray(item.Servicios)
+        ? item.Servicios.map((servicio) => normalize(servicio.nombre)).join(' ')
+        : '';
+      const descripcion = normalize(item.notas);
+      const clienteNombre = normalize(`${item.cliente?.nombre ?? ''} ${item.cliente?.apellido ?? ''}`);
+      const profesionalNombre = normalize(`${item.profesional?.nombre ?? item.Profesional?.nombre ?? ''} ${item.profesional?.apellido ?? item.Profesional?.apellido ?? ''}`);
+      const usuarioNombre = normalize(`${item.usuario?.nombre ?? ''} ${item.usuario?.apellido ?? ''}`);
+      const citaId = normalize(item.id);
+      const hayTexto = `${servicioNombre} ${serviciosNombres} ${descripcion} ${clienteNombre} ${profesionalNombre} ${usuarioNombre} ${citaId}`;
+      return hayTexto.includes(query);
+    });
+  }, [citas, searchQuery]);
 
   useEffect(() => {
     if (isAuthenticated && (isAdmin || isAux)) {
@@ -152,6 +177,7 @@ export default function AdminCitasScreen() {
       </View>
     );
   }
+  
 
   return (
     <View style={styles.container}>
@@ -165,10 +191,34 @@ export default function AdminCitasScreen() {
 
       {errorMessage ? <ThemedText style={styles.error}>{errorMessage}</ThemedText> : null}
 
+      {/* ── BARRA DE BÚSQUEDA ──────────────────────────────────────────── */}
+<View style={styles.searchRow}>
+  <TextInput
+    placeholder="Buscar cita..."
+    value={searchQuery}
+    onChangeText={setSearchQuery}
+    style={styles.input}
+  />
+
+  {searchQuery.trim().length > 0 && (
+    <Pressable
+      style={styles.clearBtn}
+      onPress={() => setSearchQuery('')}
+    >
+      <ThemedText style={styles.searchBtnText}>X</ThemedText>
+    </Pressable>
+  )}
+
+  <Pressable style={styles.searchBtn}>
+    <ThemedText style={styles.searchBtnText}>Buscar</ThemedText>
+  </Pressable>
+</View>
+
+
       <FlatList
-        data={citas}
+        data={filteredCitas}
         keyExtractor={(item, index) => String(item.id ?? index)}
-        contentContainerStyle={citas.length === 0 ? styles.emptyContainer : undefined}
+        contentContainerStyle={filteredCitas.length === 0 ? styles.emptyContainer : undefined}
         ListEmptyComponent={!loading ? <ThemedText>No hay citas registradas.</ThemedText> : null}
         renderItem={({ item }) => {
           const clienteNombre = item.cliente?.nombre || item.usuario?.nombre || '';
@@ -263,9 +313,11 @@ const styles = StyleSheet.create({
   serviceLabel: { fontWeight: '600' },
   serviceInfo: { marginTop: 2, color: '#5b4b40', fontSize: 13 },
   hint: { marginTop: 10, color: '#7b6758', fontSize: 12 },
-  cancelButton: { marginTop: 8, backgroundColor: '#f2dede', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center' },
+  cancelButton: { marginTop: 8, backgroundColor: '#f1bebe', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center' },
   cancelText: { color: '#a94442', fontWeight: '600' },
+  input: { flex: 1, borderWidth: 1, borderColor: '#d6c7ae', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff' },
   searchBtn: { backgroundColor: '#3e2f25', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
   clearBtn: { backgroundColor: '#3f2d25', borderRadius: 14, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
   searchBtnText: { color: '#fff', fontWeight: '700' },
+  searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
 });
