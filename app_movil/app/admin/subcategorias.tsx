@@ -9,6 +9,7 @@
     id: number;
     nombre: string;
     activo: boolean;
+    tipo?: 'producto' | 'servicio';
     };
 
     type Subcategoria = {
@@ -75,6 +76,16 @@
     }, []);
 
     useEffect(() => {
+        // Limpiar categoría seleccionada al cambiar el tipo si no corresponde
+        if (categoriaId) {
+            const categoriaSeleccionada = categorias.find(cat => String(cat.id) === categoriaId);
+            if (!categoriaSeleccionada || categoriaSeleccionada.tipo !== tipo) {
+                setCategoriaId('');
+            }
+        }
+    }, [tipo]);
+
+    useEffect(() => {
         const term = searchTerm.toLowerCase().trim();
         if (!term) {
         setFilteredSubcategorias(subcategorias);
@@ -105,6 +116,14 @@
 
         if (!nombre.trim()) {
         Alert.alert('Error', 'El nombre de la subcategoría es obligatorio');
+        return;
+        }
+
+        if (descripcion.trim().length > 250) {
+        Alert.alert(
+            'Error',
+            'La descripción de su subcategoría no puede tener más de 250 caracteres'
+        );
         return;
         }
 
@@ -178,7 +197,7 @@
                 style={styles.input}
                 value={nombre}
                 onChangeText={setNombre}
-                placeholder="Ej: Smartphones"
+                placeholder="Ej: Asesoria imagen"
             />
 
             <Text style={styles.label}>Descripción</Text>
@@ -193,7 +212,7 @@
             <Text style={styles.label}>Categoría</Text>
             <View style={styles.optionList}>
                 {categorias.length > 0 ? (
-                categorias.map((categoria) => (
+                categorias.filter((categoria) => categoria.tipo === tipo).map((categoria) => (
                     <Pressable
                     key={categoria.id}
                     onPress={() => setCategoriaId(String(categoria.id))}
@@ -286,33 +305,33 @@
 
     const styles = StyleSheet.create({
         container: { padding: 16, backgroundColor: '#f9f6f2', flexGrow: 1 },
-        header: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#8b6f47', borderRadius: 20, padding: 16 },
+        header: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#8b6f47', borderRadius: 20, padding: 16},
         title: { color: '#fff', fontSize: 22, fontWeight: '800' },
         subtitle: { color: 'rgba(255,255,255,0.92)', marginTop: 2 },
-        formCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#e6d3b3', marginBottom: 14 },
+        formCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#8b6f47', marginBottom: 14 },
         label: { fontWeight: '700', color: '#3e2f25', marginBottom: 6 },
-        input: { borderWidth: 1, borderColor: '#e6d3b3', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#fff', color: '#3e2f25', marginBottom: 12 },
+        input: { borderWidth: 1, borderColor: '#8b6f47', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#fff', color: '#3e2f25', marginBottom: 12 },
         textarea: { minHeight: 90, textAlignVertical: 'top' },
         optionList: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
-        optionButton: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#f3e6d8', borderRadius: 12, borderWidth: 1, borderColor: '#e6d3b3', marginRight: 8, marginBottom: 8 },
+        optionButton: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#f3e6d8', borderRadius: 12, borderWidth: 1, borderColor: '#8b6f47', marginRight: 8, marginBottom: 8 },
         optionButtonSelected: { backgroundColor: '#8b6f47', borderColor: '#8b6f47' },
         optionText: { color: '#3e2f25', fontWeight: '700' },
         optionTextSelected: { color: '#fff', fontWeight: '700' },
         primaryBtn: { backgroundColor: '#8b6f47', borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', marginTop: 6 },
         primaryBtnText: { color: '#fff', fontWeight: '800' },
         disabledBtn: { opacity: 0.7 },
-        infoCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#e6d3b3', marginBottom: 14 },
+        infoCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#8b6f47', marginBottom: 14 },
         infoTitle: { fontWeight: '800', color: '#3e2f25', marginBottom: 6 },
         infoText: { color: '#7b6758' },
         loadingBox: { alignItems: 'center', paddingVertical: 24 },
         loadingText: { color: '#7b6758' },
         error: { color: '#991b1b', fontWeight: '700' },
-        searchRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+        searchRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, padding: 10 },
         searchBtn: { backgroundColor: '#8b6f47', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 6, justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
-        clearBtn: { backgroundColor: '#a56363' },
+        clearBtn: { backgroundColor: '#8b6f47' },
         searchBtnText: { color: '#fff', fontWeight: '700' },
         list: { paddingBottom: 24 },
-        itemCard: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#e6d3b3', padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+        itemCard: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#8b6f47', padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
         itemTitle: { fontSize: 16, fontWeight: '800', color: '#3e2f25' },
         itemDesc: { color: '#7b6758', marginTop: 4, marginBottom: 6 },
         meta: { color: '#5f4a39', fontSize: 12, marginBottom: 2 },

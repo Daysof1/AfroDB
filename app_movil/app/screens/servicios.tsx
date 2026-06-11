@@ -12,6 +12,8 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useAgendar } from "../../src/context/AgendarContext";
 import { ThemedText } from '../../components/themed-text';
 import { ThemedView } from '../../components/themed-view';
+import apiClient from "../../src/api/apiClient";
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_GAP = 10;
@@ -34,17 +36,89 @@ export default function ServiciosScreen() {
   const [categoriaActiva, setCategoriaActiva] = useState<any>('all');
   const [servicioDetalle, setServicioDetalle] = useState<any>(null);
   const [paginaActual, setPaginaActual] = useState(1);
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+
+const fetchServicios = async (page = 1, search = '') => {
+  setLoading(true);
+  setErrorMessage('');
+
+  try {
+    const params = new URLSearchParams();
+
+    if (search.trim()) {
+      params.append('buscar', search.trim());
+    }
+
+    params.append('pagina', String(page));
+    params.append('limite', '10');
+
+    const res = await apiClient.get(`/admin/servicios?${params.toString()}`);
+
+    const serviciosData = Array.isArray(res.data?.data?.servicios)
+      ? res.data.data.servicios
+      : [];
+
+    setServicios(serviciosData);
+    setPagina(page);
+    setTotalPaginas(
+      Number(res.data?.data?.paginacion?.totalPaginas) || 1
+    );
+  } catch (error: any) {
+    setErrorMessage(
+      error?.response?.data?.message ||
+      error?.message ||
+      'Error al cargar servicios'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const buildCategorias = (rawCategorias: any[], items: any[], tipoDeseado: string) => {
+    const categoriasRaw = Array.isArray(rawCategorias) ? rawCategorias : [];
+    const categoriasConNombre = categoriasRaw.filter((cat: any) => cat && typeof cat.id !== 'undefined' && cat.nombre);
+    console.log('servicios.tsx buildCategorias - raw count:', categoriasRaw.length, 'valid count:', categoriasConNombre.length);
+
+    const tieneTipo = categoriasConNombre.some((cat: any) => typeof cat.tipo !== 'undefined');
+    console.log('servicios.tsx buildCategorias - tiene tipo en categorías:', tieneTipo);
+
+    if (tieneTipo) {
+      const filtradas = categoriasConNombre.filter((cat: any) => cat.tipo === tipoDeseado);
+      console.log('servicios.tsx buildCategorias - filtradas por tipo:', filtradas.map((cat: any) => ({ id: cat.id, nombre: cat.nombre, tipo: cat.tipo })));
+      if (filtradas.length > 0) return filtradas;
+    }
+
+    const derivadas: any[] = [];
+    const vistos = new Set<string>();
+    items.forEach((item: any) => {
+      const cat = item?.categoria;
+      if (cat && typeof cat.id !== 'undefined' && cat.nombre) {
+        const idKey = String(cat.id);
+        if (!vistos.has(idKey)) {
+          vistos.add(idKey);
+          derivadas.push({ id: cat.id, nombre: cat.nombre, tipo: tipoDeseado });
+        }
+      }
+    });
+    console.log('servicios.tsx buildCategorias - derivadas desde servicios:', derivadas.map((cat: any) => ({ id: cat.id, nombre: cat.nombre })));
+
+    if (derivadas.length > 0) return derivadas;
+    return categoriasConNombre;
+  };
 
   const loadServicios = async ({ isRefresh = false } = {}) => {
     if (!isRefresh) setRefreshing(true);
     else setLoading(true);
     setErrorMessage('');
     try {
-      const [serviciosData, categoriaData] = await Promise.all([catalogoService.getServicios({ pagina: 1, limite: 200 }),
+      const [serviciosData, categoriaData] = await Promise.all([
+        catalogoService.getServicios({ pagina: 1, limite: 200 }),
         catalogoService.getCategorias(),
       ]);
+      console.log('servicios.tsx loadServicios - categorias raw:', categoriaData);
       setServicios(Array.isArray(serviciosData) ? serviciosData : []);
-    setCategorias(Array.isArray(categoriaData) ? categoriaData : []);
+      setCategorias(buildCategorias(categoriaData, serviciosData, 'servicio'));
     } catch (error: unknown) {
       const msg = (error as { message?: string })?.message;
       setErrorMessage(msg || 'No fue posible cargar los servicios');
@@ -59,26 +133,38 @@ export default function ServiciosScreen() {
   }, []);
 
   useEffect(() => {
+    console.log('servicios.tsx categorias state:', categorias);
+  }, [categorias]);
+
+  useEffect(() => {
     setPaginaActual(1);
   }, [busqueda, categoriaActiva]);
 
   const serviciosFiltrados = useMemo(() => {
-      const termino = busqueda.trim().toLowerCase();
-      return servicios.filter((p: any) => {
-        const coincideTexto =
-          termino === '' ||
-          p.nombre?.toLowerCase().includes(termino) ||
-          p.descripcion?.toLowerCase().includes(termino);
+    const termino = busqueda.trim().toLowerCase();
+    
+    return servicios.filter((p: any) => {
+      // Filtro por búsqueda: nombre, descripción, categoría, duración
+      const coincideTexto = termino === '' || [
+        p.nombre?.toLowerCase(),
+        p.descripcion?.toLowerCase(),
+        p.categoria?.nombre?.toLowerCase(),
+        p.subcategoria?.nombre?.toLowerCase(),
+        p.precio?.toString(),
+        p.duracion?.toString(),
+      ].some(field => field?.includes(termino));
 
-        const coincideCategoria =
+      // Filtro por categoría
+      const coincideCategoria =
         categoriaActiva === 'all' ||
         String(p.categoriaId || p.categoria?.id) === categoriaActiva;
+
       return coincideTexto && coincideCategoria;
     });
   }, [busqueda, categoriaActiva, servicios]);
   
     const hasServicios = useMemo(() => serviciosFiltrados.length > 0, [serviciosFiltrados]);
-    const totalPaginas = useMemo(
+    const totalPaginasFiltrados = useMemo(
       () => Math.ceil(serviciosFiltrados.length / SERVICIOS_POR_PAGINA),
       [serviciosFiltrados, SERVICIOS_POR_PAGINA]
     );
@@ -93,8 +179,10 @@ export default function ServiciosScreen() {
       router.push('/agendar');
     };
   
-    const ListHeader = () => (
-    <>
+    const ListHeader = () => {
+      console.log('servicios.tsx ListHeader - categorias antes de map:', categorias.length, categorias.map((cat: any) => ({ id: cat.id, nombre: cat.nombre })));
+      return (
+      <>
 
         {/* HERO BANNER */}
         <ImageBackground source={{ uri: AFRODB_IMAGE }} style={styles.hero} imageStyle={{ borderRadius: 24 }}>
@@ -106,22 +194,34 @@ export default function ServiciosScreen() {
           </ThemedText>
         </ImageBackground>
 
-        {/* BUSCADOR */}
-            <View style={styles.searchContainer}>
-            <Ionicons name="search" size={18} color="#9ca3af" />
-            <TextInput
-                placeholder="Buscar servicios..."
-                value={busqueda}
-                onChangeText={setBusqueda}
-                style={styles.searchInput}
-                placeholderTextColor="#9ca3af"
+        <View style={styles.searchRow}>   
+          <View style={{ position: 'relative', flex: 1 }}>
+            <Ionicons name="search" size={18} color="#9ca3af" style={{ position: 'absolute', left: 12, top: 12, zIndex: 1 }} />
+            <TextInput       
+              placeholder="Buscar servicios..."
+              value={busqueda}
+              onChangeText={(text) => {
+                setBusqueda(text);
+                fetchServicios(1, text); // Búsqueda en tiempo real
+              }}
+              style={[styles.input, { paddingLeft: 40 }]}
             />
-            {busqueda.length > 0 && (
-                <Pressable onPress={() => setBusqueda('')}>
-                <Ionicons name="close-circle" size={18} color="#9ca3af" />
-                </Pressable>
-            )}
-            </View>
+          </View>
+        
+          {busqueda.trim().length > 0 && (
+            <Pressable
+              style={styles.clearBtn}
+              onPress={() => {
+                setBusqueda('');
+                setCategoriaActiva('all');
+                setPaginaActual(1);
+                fetchServicios(1, '');
+              }}
+            >
+              <ThemedText style={styles.searchBtnText}>X</ThemedText>
+            </Pressable>
+          )}
+        </View>
 
             {/* CHIPS DE CATEGORÍAS */}
             <ScrollView
@@ -132,7 +232,7 @@ export default function ServiciosScreen() {
                     onPress={() => setCategoriaActiva('all')}
                     style={[styles.chip, categoriaActiva === 'all' && styles.chipActive]}>
                     <ThemedText style={[styles.chipText, categoriaActiva === 'all' && styles.chipTextActive]}>
-                        Todas
+                        Todos
                     </ThemedText>
                 </Pressable>
                 {categorias.map((cat: any) => (
@@ -161,10 +261,11 @@ export default function ServiciosScreen() {
           </View>
         )}
         </>
-    );
+      );
+    };
 
-const ListFooter = () =>
-    !loading && hasServicios && totalPaginas > 1 ? (
+  const ListFooter = () =>
+    !loading && hasServicios && totalPaginasFiltrados > 1 ? (
       <View style={styles.paginacionRow}>
         <Pressable
           style={[styles.pagBtn, paginaActual === 1 && styles.pagBtnDisabled]}
@@ -176,16 +277,16 @@ const ListFooter = () =>
           </ThemedText>
         </Pressable>
         <ThemedText style={styles.pagInfo}>
-          {String(paginaActual)} / {String(totalPaginas)}
+          {String(paginaActual)} / {String(totalPaginasFiltrados)}
         </ThemedText>
         <Pressable
-          style={[styles.pagBtn, paginaActual === totalPaginas && styles.pagBtnDisabled]}
-          onPress={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
-          disabled={paginaActual === totalPaginas}>
-          <ThemedText style={[styles.pagBtnText, paginaActual === totalPaginas && styles.pagBtnTextDisabled]}>
+          style={[styles.pagBtn, paginaActual === totalPaginasFiltrados && styles.pagBtnDisabled]}
+          onPress={() => setPaginaActual((p) => Math.min(totalPaginasFiltrados, p + 1))}
+          disabled={paginaActual === totalPaginasFiltrados}>
+          <ThemedText style={[styles.pagBtnText, paginaActual === totalPaginasFiltrados && styles.pagBtnTextDisabled]}>
             Siguiente
           </ThemedText>
-          <Ionicons name="chevron-forward" size={15} color={paginaActual === totalPaginas ? '#d1d5db' : '#a57c63'} />
+          <Ionicons name="chevron-forward" size={15} color={paginaActual === totalPaginasFiltrados ? '#d1d5db' : '#a57c63'} />
         </Pressable>
       </View>
     ) : (
@@ -348,6 +449,7 @@ const styles = StyleSheet.create({
   paginacionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 8, paddingHorizontal: 4 },
   modalCard: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, gap: 10, backgroundColor: '#fff' },
   searchInput: { flex: 1, fontSize: 15, color: '#111', padding: 12, borderWidth: 1, borderColor: '#e4d8cb', borderRadius: 8 },
+  searchClearBtn: { padding: 4, justifyContent: 'center', alignItems: 'center' },
   cardImage: { width: '100%', height: 130 },
   cardBadge: { position: 'absolute', top: 8, left: 8, backgroundColor: 'rgba(165,124,99,0.86)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
   cardBadgeText: { color: '#fff', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
@@ -369,4 +471,9 @@ const styles = StyleSheet.create({
   modalStock: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   modalStockText: { fontSize: 13, color: '#6b7280' },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 6, marginBottom: 8 },
+  searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  input: { flex: 1, borderWidth: 1, borderColor: '#d6c7ae', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff' },
+  searchBtn: { backgroundColor: '#b87a5a', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center'},
+  clearBtn: { backgroundColor: '#b87a5a', borderRadius: 14, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
+  searchBtnText: { color: '#fff', fontWeight: '700' },
 });
