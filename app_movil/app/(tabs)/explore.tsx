@@ -176,7 +176,7 @@ export default function TabTwoScreen() {
                 setEmail('');
                 setPassword('');
                 setConfirmPassword('');
-                setTipoDocumento('C.C.');
+                setTipoDocumento('');
                 setDocumento('');
                 setTelefono('');
                 setDireccion('');
@@ -258,6 +258,33 @@ export default function TabTwoScreen() {
           {/* Campos adicionales SOLO en modo registro */}
           {isRegisterMode ? (
             <>
+              <View style={styles.dropdownContainer}>
+                <ThemedText style={styles.dropdownLabel}>Tipo de documento *</ThemedText>
+                <View style={styles.optionList}>
+                  {documentoOptions.map((option) => (
+                    <Pressable
+                      key={option}
+                      onPress={() => setTipoDocumento(option)}
+                      style={[
+                        styles.optionButton,
+                        tipoDocumento === option && styles.optionButtonSelected,
+                      ]}
+                    >
+                      <Text
+                        style={tipoDocumento === option ? styles.optionTextSelected : styles.optionText}
+                      >
+                        {option}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+              <TextInput
+                placeholder="Documento *"
+                value={documento}
+                onChangeText={setDocumento}
+                style={styles.input}
+              />
               <TextInput
                 placeholder="Nombre *"
                 value={nombre}
@@ -295,34 +322,6 @@ export default function TabTwoScreen() {
           {/* Campos adicionales SOLO en modo registro */}
           {isRegisterMode ? (
             <>
-              {/* Confirmar contraseña: debe coincidir con el campo anterior */}
-              <View style={styles.dropdownContainer}>
-                <ThemedText style={styles.dropdownLabel}>Tipo de documento *</ThemedText>
-                <View style={styles.optionList}>
-                  {documentoOptions.map((option) => (
-                    <Pressable
-                      key={option}
-                      onPress={() => setTipoDocumento(option)}
-                      style={[
-                        styles.optionButton,
-                        tipoDocumento === option && styles.optionButtonSelected,
-                      ]}
-                    >
-                      <Text
-                        style={tipoDocumento === option ? styles.optionTextSelected : styles.optionText}
-                      >
-                        {option}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-              <TextInput
-                placeholder="Documento *"
-                value={documento}
-                onChangeText={setDocumento}
-                style={styles.input}
-              />
               <TextInput
                 placeholder="Confirmar contrasena *"
                 secureTextEntry

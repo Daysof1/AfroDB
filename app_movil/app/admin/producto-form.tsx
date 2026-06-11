@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   // Campo de texto: borde gris suave, esquinas redondeadas, padding interior.
   input: { borderWidth: 1, borderColor: '#d6c5b4', borderRadius: 5, padding: 8, marginTop: 5, marginBottom: 10, backgroundColor: '#fff' },
   helper: { fontSize: 12, color: '#666', marginBottom: 8 },
-  button: { marginTop: 20, backgroundColor: '#a56363', borderRadius: 10, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
+  button: { marginTop: 20, backgroundColor: '#b87a5a', borderRadius: 10, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
   buttonDisabled: { opacity: 0.7 },
   buttonText: { color: '#fff', fontWeight: '700' },
 });

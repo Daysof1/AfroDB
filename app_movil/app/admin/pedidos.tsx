@@ -123,22 +123,45 @@ export default function AdminPedidoScreen() {
       <ThemedText type="title">Pedidos</ThemedText>
 
       {/* ── BARRA DE BÚSQUEDA ──────────────────────────────────────────── */}
-      <View style={styles.searchRow}>
-        <TextInput
-          placeholder="Buscar pedido..."
-          value={busqueda}
-          onChangeText={(text) => {
-            setBusqueda(text);          // Actualiza el estado del texto.
-            fetchPedidos(1, text);      // Búsqueda en tiempo real: resetea a página 1 con el nuevo texto.
-          }}
-          style={styles.input}
-        />
-        {/* Botón de búsqueda manual (por si el usuario prefiere no buscar en tiempo real) */}
-        <Pressable style={styles.searchBtn} onPress={() => fetchPedidos(1, busqueda)}>
-          <ThemedText style={styles.searchBtnText}>Buscar</ThemedText>
-        </Pressable>
-      </View>
+<View style={styles.searchRow}>
+  <TextInput
+    placeholder="Buscar pedido..."
+    value={busqueda}
+    onChangeText={(text) => {
+      setBusqueda(text);
+      fetchPedidos(1, text); // Búsqueda en tiempo real
+    }}
+    style={styles.input}
+  />
 
+  {busqueda.trim().length > 0 && (
+    <Pressable
+      style={styles.clearBtn}
+      onPress={() => {
+        setBusqueda('');
+        fetchPedidos(1, '');
+      }}
+    >
+      <ThemedText style={styles.searchBtnText}>X</ThemedText>
+    </Pressable>
+  )}
+
+  {/* Botón de búsqueda manual */}
+  <Pressable
+    style={styles.searchBtn}
+    onPress={() => fetchPedidos(1, busqueda)}
+  >
+    <ThemedText style={styles.searchBtnText}>Buscar</ThemedText>
+  </Pressable>
+</View>
+
+{/* Spinner: visible mientras se cargan los pedidos */}
+{loading ? (
+  <View style={styles.centered}>
+    <ActivityIndicator size="large" />
+    <ThemedText>Cargando pedidos...</ThemedText>
+  </View>
+) : null}
       {/* Spinner: visible mientras se cargan los pedidos */}
       {loading ? (
         <View style={styles.centered}>
@@ -211,21 +234,22 @@ const styles = StyleSheet.create({
   // Fila de búsqueda: input flexible + botón a la derecha.
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   // Campo de texto: ocupa el espacio disponible (flex:1), borde gris, fondo blanco.
-  input: { flex: 1, borderWidth: 1, borderColor: '#e6d3b3', borderRadius: 10, paddingHorizontal: 12, backgroundColor: '#fff', color: '#3e2f25' },
+  input: { flex: 1, borderWidth: 1, borderColor: '#624029', borderRadius: 10, paddingHorizontal: 12, backgroundColor: '#fff', color: '#3e2f25' },
   // Botón de búsqueda: color principal de la web.
-  searchBtn: { backgroundColor: '#a56363', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
+  searchBtn: { backgroundColor: '#3e2f25', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
+  clearBtn: { backgroundColor: '#3f2d25', borderRadius: 14, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
   searchBtnText: { color: '#fff', fontWeight: '700' },
   // La lista ocupa todo el espacio vertical disponible entre la búsqueda y la paginación.
   list: { flex: 1 },
   // Tarjeta de pedido: borde suave y fondo blanco con sombra tenue.
-  card: { borderWidth: 1, borderColor: '#e6d3b3', borderRadius: 12, padding: 10, backgroundColor: '#fff', marginBottom: 10 },
+  card: { borderWidth: 1, borderColor: '#624029', borderRadius: 12, padding: 10, backgroundColor: '#fff', marginBottom: 10 },
   cardBody: { flex: 1 },
   // Estilo secundario para el total (tono cálido).
   meta: { color: '#7b6758', fontSize: 13 },
   // Fila de paginación centrada horizontalmente.
   paginationRow: { flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
   // Botón de página: color principal de la web.
-  pageBtn: { backgroundColor: '#a56363', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  pageBtn: { backgroundColor: '#3e2f25', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   pageBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   pageLabel: { fontWeight: 'bold', color: '#3e2f25' },
 });

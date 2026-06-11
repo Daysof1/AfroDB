@@ -133,7 +133,8 @@ export default function AdminCitasScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }; 
+  
 
   useEffect(() => {
     if (isAuthenticated && (isAdmin || isAux)) {
@@ -253,7 +254,7 @@ export default function AdminCitasScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#f9f6f2' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8, padding: 16 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#e6d3b3' },
+  card: { backgroundColor: '#ebd6c3', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#d8b08c' },
   error: { color: '#a56363', marginBottom: 12 },
   emptyContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'center' },
   detailsBox: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e6d3b3', gap: 4 },
@@ -263,5 +264,8 @@ const styles = StyleSheet.create({
   serviceInfo: { marginTop: 2, color: '#5b4b40', fontSize: 13 },
   hint: { marginTop: 10, color: '#7b6758', fontSize: 12 },
   cancelButton: { marginTop: 8, backgroundColor: '#f2dede', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center' },
-  cancelText: { color: '#a94442', fontWeight: '600' }
+  cancelText: { color: '#a94442', fontWeight: '600' },
+  searchBtn: { backgroundColor: '#3e2f25', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
+  clearBtn: { backgroundColor: '#3f2d25', borderRadius: 14, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
+  searchBtnText: { color: '#fff', fontWeight: '700' },
 });

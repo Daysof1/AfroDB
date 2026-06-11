@@ -121,21 +121,37 @@ export default function AdminUsuariosScreen() {
       <ThemedText type="title">Usuarios</ThemedText>
 
       {/* ── BARRA DE BÚSQUEDA ──────────────────────────────────────────── */}
-      <View style={styles.searchRow}>
-        <TextInput
-          placeholder="Buscar usuario..."
-          value={busqueda}
-          onChangeText={(text) => {
-            setBusqueda(text);
-            fetchUsuarios(1, text); // Búsqueda en tiempo real al escribir.
-          }}
-          style={styles.input}
-        />
-        {/* Botón de búsqueda manual */}
-        <Pressable style={styles.searchBtn} onPress={handleBuscar}>
-          <ThemedText style={styles.searchBtnText}>Buscar</ThemedText>
-        </Pressable>
-      </View>
+<View style={styles.searchRow}>
+  <TextInput
+    placeholder="Buscar usuario..."
+    value={busqueda}
+    onChangeText={(text) => {
+      setBusqueda(text);
+      fetchUsuarios(1, text); // Búsqueda en tiempo real al escribir.
+    }}
+    style={styles.input}
+  />
+
+  {busqueda.trim().length > 0 && (
+    <Pressable
+      style={styles.clearBtn}
+      onPress={() => {
+        setBusqueda('');
+        fetchUsuarios(1, '');
+      }}
+    >
+      <ThemedText style={styles.searchBtnText}>X</ThemedText>
+    </Pressable>
+  )}
+
+  {/* Botón de búsqueda manual */}
+  <Pressable
+    style={styles.searchBtn}
+    onPress={handleBuscar}
+  >
+    <ThemedText style={styles.searchBtnText}>Buscar</ThemedText>
+  </Pressable>
+</View>
 
       {/* Spinner visible mientras carga */}
       {loading ? (
@@ -168,7 +184,7 @@ export default function AdminUsuariosScreen() {
             {isAdmin && (
               <View style={styles.actionsRow}>
                 <Pressable
-                  style={[styles.actionBtn, { backgroundColor: item.activo ? '#a56363' : '#c8a27a' }]}
+                  style={[styles.actionBtn, { backgroundColor: item.activo ? '#c49b61' : '#d8c3a5' }]}
                   onPress={async () => {
                     try {
                       if (item.activo) {
@@ -215,8 +231,9 @@ const styles = StyleSheet.create({
   error: { color: '#a56363' },
   // Fila de búsqueda: input expandible + botón fijo.
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  input: { flex: 1, borderWidth: 1, borderColor: '#d6c7ae', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff' },
-  searchBtn: { backgroundColor: '#c8a27a', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center' },
+  input: { flex: 1, borderWidth: 1, borderColor: '#d8c3a5', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff' },
+  searchBtn: { backgroundColor: '#d8c3a5', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center' },
+  clearBtn: { backgroundColor: 'rgb(126, 100, 81)', borderRadius: 14, paddingHorizontal: 11, justifyContent: 'center', alignItems: 'center' },
   searchBtnText: { color: '#fff', fontWeight: '700' },
   list: { flex: 1 },
   card: { borderRadius: 18, padding: 18, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e6d3b3', marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
@@ -233,7 +250,7 @@ const styles = StyleSheet.create({
   // Paginación centrada.
   paginationRow: { flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
   // Botones de página reseteados al tema.
-  pageBtn: { backgroundColor: '#e6d3b3', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  pageBtn: { backgroundColor: '#d8c3a5', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   pageBtnText: { color: '#3e2f25', fontWeight: '700', fontSize: 15 },
   pageLabel: { fontWeight: 'bold' },
 });

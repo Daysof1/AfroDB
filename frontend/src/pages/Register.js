@@ -102,7 +102,7 @@ export default function Register() {
                   <option value="C.C.">C.C.</option>
                   <option value="T.I.">T.I.</option>
                   <option value="C.E.">C.E.</option>
-                  <option value="Pasaporte">Pasaporte</option>
+                  <option value="P.A.">P.A.</option>
                 </select>
               </div>
 

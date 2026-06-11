@@ -49,7 +49,9 @@ export default function RootLayout() {
             <Stack.Screen name="admin/dashboard" options={{ title: 'Dashboard Admin' }} />
             <Stack.Screen name="admin/categorias" options={{ title: 'Categorías' }} />
             <Stack.Screen name="admin/productos" options={{ title: 'Productos' }} />
+            <Stack.Screen name="admin/servicios" options={{ title: 'Servicios' }} />
             <Stack.Screen name="admin/producto-form" options={{ title: 'Crear/Editar Producto' }} />
+            <Stack.Screen name="admin/subcategorias" options={{ title: 'Subcategorías' }} />
             <Stack.Screen name="admin/usuarios" options={{ title: 'Usuarios' }} />
             <Stack.Screen name="admin/pedidos" options={{ title: 'Pedidos' }} />
             <Stack.Screen name="admin/citas" options={{ title: 'Citas' }} />

@@ -62,6 +62,7 @@ export default function AdminDashboardScreen() {
 
     const [stats, setStats] = useState({
         categorias: 0,
+        subcategorias: 0,
         servicios: 0,
         productos: 0,
         usuarios: 0, // numero de usuarios registrados solo el admin
@@ -81,13 +82,14 @@ export default function AdminDashboardScreen() {
         try {
             const results = await Promise.allSettled([
                 apiClient.get('/admin/categorias/estadisticas'),
+                apiClient.get('/admin/subcategorias/estadisticas'),
                 apiClient.get('/admin/servicios?limite=1'),
                 apiClient.get('/admin/productos?limite=1'),
                 apiClient.get('/admin/pedidos/estadisticas'),
                 apiClient.get('/admin/citas/estadisticas'),
             ]);
 
-            const [catsRes, serRes, prodsRes, ordersRes, citasRes] = results;
+            const [catsRes, subsRes, serRes, prodsRes, ordersRes, citasRes] = results;
 
             let userStats = null;
             if (isAdmin) {
@@ -100,6 +102,10 @@ export default function AdminDashboardScreen() {
 
             const categorias = catsRes.status === 'fulfilled'
                 ? catsRes.value.data?.data?.total ?? 0
+                : 0;
+
+            const subcategorias = subsRes.status === 'fulfilled'
+                ? subsRes.value.data?.data?.total ?? 0
                 : 0;
 
             const servicios = serRes.status === 'fulfilled'
@@ -149,6 +155,7 @@ export default function AdminDashboardScreen() {
 
             setStats({
                 categorias,
+                subcategorias,
                 servicios,
                 productos,
                 usuarios: userStats?.data?.data?.total || 0,
@@ -189,11 +196,18 @@ export default function AdminDashboardScreen() {
     // La tarjeta de 'Usuarios' solo se muestra a administradores (show: isAdmin).
     const cards: StatCard[] = [
         { title: 'Categorías', value: stats.categorias, icon: 'folder-outline', gradient: ['#a56363', '#c8a27a'], route: '/admin/categorias', show: true },
-        { title: 'Servicios', value: stats.servicios, icon: 'folder-open-outline', gradient: ['#c8a27a', '#a56363'], route: '/admin/servicios', show: true },
-        { title: 'Productos', value: stats.productos, icon: 'cube-outline', gradient: ['#c8a27a', '#a56363'], route: '/admin/productos', show: true },
-        { title: 'Usuarios', value: stats.usuarios, icon: 'people-outline', gradient: ['#c8a27a', '#a56363'], route: '/admin/usuarios', show: isAdmin },
-        { title: 'Pedidos', value: stats.pedidos, icon: 'cart-outline', gradient: ['#3e2f25', '#c8a27a'], route: '/admin/pedidos', show: true },
-        { title: 'Citas', value: stats.citas, icon: 'calendar-outline', gradient: ['#c8a27a', '#a56363'], route: '/admin/citas', show: true },
+
+    { title: 'Subcategorías', value: stats.subcategorias, icon: 'layers-outline', gradient: ['#8b6f47', '#d4b483'], route: '/admin/subcategorias', show: true },
+
+    { title: 'Productos', value: stats.productos, icon: 'cube-outline', gradient: ['#b87a5a', '#e2c4a6'], route: '/admin/productos', show: true },
+
+    { title: 'Servicios', value: stats.servicios, icon: 'build-outline', gradient: ['#7a5c46', '#c8a27a'], route: '/admin/servicios', show: true },
+
+    { title: 'Usuarios', value: stats.usuarios, icon: 'people-outline', gradient: ['#8a7b5a', '#d8c3a5'], route: '/admin/usuarios', show: isAdmin },
+
+    { title: 'Pedidos', value: stats.pedidos, icon: 'cart-outline', gradient: ['#3e2f25', '#9c7b5b'], route: '/admin/pedidos', show: true },
+
+    { title: 'Citas', value: stats.citas, icon: 'calendar-outline', gradient: ['#a66a4c', '#d8b08c'], route: '/admin/citas', show: true },
     ];
 
     // ── HELPER: formateador de moneda ─────────────────────────────────────────
@@ -270,37 +284,81 @@ export default function AdminDashboardScreen() {
         </View>
       )}
 
-      {/* ── ACCESOS RÁPIDOS ──────────────────────────────────────────────── */}
-      {/* Sección con botones outline de colores para ir rápidamente a cada módulo. */}
-      <View style={styles.section}>
-        {/* Encabezado de sección: fondo índigo con ícono + título */}
-        <View style={styles.sectionHeader}>
-          <Ionicons name="flash" size={18} color="#fff" />
-          <Text style={styles.sectionTitle}>Accesos Rápidos</Text>
-        </View>
-        <View style={styles.sectionBody}>
-          {/* Botón: Agregar Producto → va a /admin/productos (color índigo) */}
-          <Pressable style={[styles.actionBtn, { borderColor: '#c8a27a' }]} onPress={() => push('/admin/productos')}>
-            <Ionicons name="add-circle-outline" size={18} color="#c8a27a" />
-            <Text style={[styles.actionText, { color: '#c8a27a' }]}>Agregar Producto</Text>
-          </Pressable>
-          {/* Botón: Agregar Categoría → va a /admin/categorias */}
-          <Pressable style={[styles.actionBtn, { borderColor: '#a56363' }]} onPress={() => push('/admin/categorias')}>
-            <Ionicons name="add-circle-outline" size={18} color="#a56363" />
-            <Text style={[styles.actionText, { color: '#a56363' }]}>Agregar Categoría</Text>
-          </Pressable>
-          {/* Botón: Gestionar Pedidos → va a /admin/pedidos */}
-          <Pressable style={[styles.actionBtn, { borderColor: '#3e2f25' }]} onPress={() => push('/admin/pedidos')}>
-            <Ionicons name="list-outline" size={18} color="#3e2f25" />
-            <Text style={[styles.actionText, { color: '#3e2f25' }]}>Gestionar Pedidos</Text>
-          </Pressable>
-          {/* Botón: Visitar Tienda → va a '/' */}
-          <Pressable style={[styles.actionBtn, { borderColor: '#7b6758' }]} onPress={() => push('/')}>
-            <Ionicons name="storefront-outline" size={18} color="#7b6758" />
-            <Text style={[styles.actionText, { color: '#7b6758' }]}>Visitar Tienda</Text>
-          </Pressable>
-        </View>
-      </View>
+{/* ── ACCESOS RÁPIDOS ──────────────────────────────────────────────── */}
+<View style={styles.section}>
+  <View style={styles.sectionHeader}>
+    <Ionicons name="flash" size={18} color="#fff" />
+    <Text style={styles.sectionTitle}>Accesos Rápidos</Text>
+  </View>
+
+  <View style={styles.sectionBody}>
+    {/* Agregar Servicio */}
+    <Pressable
+      style={[styles.actionBtn, { borderColor: '#7a5c46' }]}
+      onPress={() => push('/admin/servicios')}
+    >
+      <Ionicons name="add-circle-outline" size={18} color="#7a5c46" />
+      <Text style={[styles.actionText, { color: '#7a5c46' }]}>
+        Agregar Servicio
+      </Text>
+    </Pressable>
+
+    {/* Agregar Producto */}
+    <Pressable
+      style={[styles.actionBtn, { borderColor: '#b87a5a' }]}
+      onPress={() => push('/admin/productos')}
+    >
+      <Ionicons name="add-circle-outline" size={18} color="#b87a5a" />
+      <Text style={[styles.actionText, { color: '#b87a5a' }]}>
+        Agregar Producto
+      </Text>
+    </Pressable>
+
+    {/* Agregar Categoría */}
+    <Pressable
+      style={[styles.actionBtn, { borderColor: '#a56363' }]}
+      onPress={() => push('/admin/categorias')}
+    >
+      <Ionicons name="add-circle-outline" size={18} color="#a56363" />
+      <Text style={[styles.actionText, { color: '#a56363' }]}>
+        Agregar Categoría
+      </Text>
+    </Pressable>
+
+    {/* Agregar Subcategoría */}
+    <Pressable
+      style={[styles.actionBtn, { borderColor: '#8b6f47' }]}
+      onPress={() => push('/admin/subcategorias')}
+    >
+      <Ionicons name="layers-outline" size={18} color="#8b6f47" />
+      <Text style={[styles.actionText, { color: '#8b6f47' }]}>
+        Agregar Subcategoría
+      </Text>
+    </Pressable>
+
+    {/* Gestionar Pedidos */}
+    <Pressable
+      style={[styles.actionBtn, { borderColor: '#3e2f25' }]}
+      onPress={() => push('/admin/pedidos')}
+    >
+      <Ionicons name="list-outline" size={18} color="#3e2f25" />
+      <Text style={[styles.actionText, { color: '#3e2f25' }]}>
+        Gestionar Pedidos
+      </Text>
+    </Pressable>
+
+    {/* Visitar Tienda */}
+    <Pressable
+      style={[styles.actionBtn, { borderColor: '#8a7b5a' }]}
+      onPress={() => push('/')}
+    >
+      <Ionicons name="storefront-outline" size={18} color="#8a7b5a" />
+      <Text style={[styles.actionText, { color: '#8a7b5a' }]}>
+        Visitar Tienda
+      </Text>
+    </Pressable>
+  </View>
+</View>
 
       {/* ── INFORMACIÓN DEL SISTEMA ──────────────────────────────────────── */}
       {/* Tarjeta informativa con estado del sistema, URL de la API y rol actual. */}

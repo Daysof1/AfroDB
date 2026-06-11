@@ -114,21 +114,37 @@ export default function AdminProductosScreen() {
       {/* Título de la pantalla */}
       <ThemedText type="title">Productos</ThemedText>
 
-      {/* ── BARRA DE BÚSQUEDA ──────────────────────────────────────────── */}
-      <View style={styles.searchRow}>
-        <TextInput
-          placeholder="Buscar producto..."
-          value={busqueda}
-          onChangeText={(text) => {
-            setBusqueda(text);
-            fetchProductos(1, text); // Búsqueda en tiempo real: resetea a página 1.
-          }}
-          style={styles.input}
-        />
-        <Pressable style={styles.searchBtn} onPress={() => fetchProductos(1, busqueda)}>
-          <ThemedText style={styles.searchBtnText}>Buscar</ThemedText>
-        </Pressable>
-      </View>
+{/* ── BARRA DE BÚSQUEDA ──────────────────────────────────────────── */}
+<View style={styles.searchRow}>
+  <TextInput
+    placeholder="Buscar producto..."
+    value={busqueda}
+    onChangeText={(text) => {
+      setBusqueda(text);
+      fetchProductos(1, text); // Búsqueda en tiempo real
+    }}
+    style={styles.input}
+  />
+
+  {busqueda.trim().length > 0 && (
+    <Pressable
+      style={styles.clearBtn}
+      onPress={() => {
+        setBusqueda('');
+        fetchProductos(1, '');
+      }}
+    >
+      <ThemedText style={styles.searchBtnText}>X</ThemedText>
+    </Pressable>
+  )}
+
+  <Pressable
+    style={styles.searchBtn}
+    onPress={() => fetchProductos(1, busqueda)} // Búsqueda al presionar el botón
+  >
+    <ThemedText style={styles.searchBtnText}>Buscar</ThemedText>
+  </Pressable>
+</View>
 
       {/* Botón para crear un nuevo producto: navega al formulario vacío */}
       <Pressable style={styles.createBtn} onPress={() => push('/admin/producto-form')}>
@@ -174,7 +190,7 @@ export default function AdminProductosScreen() {
             {isAdmin && (
               <View style={styles.actionsRow}>
                 <Pressable
-                  style={[styles.actionBtn, { backgroundColor: item.activo ? '#a56363' : '#c8a27a' }]}
+                  style={[styles.actionBtn, { backgroundColor: item.activo ? '#7c452a' : '#b87a5a' }]}
                   onPress={async () => {
                     try {
                       if (item.activo) {
@@ -217,12 +233,13 @@ export default function AdminProductosScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, gap: 10, backgroundColor: '#f9f6f2' },
   centered: { alignItems: 'center', gap: 10, marginVertical: 20 },
-  error: { color: '#a56363' },
+  error: { color: '#b87a5a' },
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   input: { flex: 1, borderWidth: 1, borderColor: '#d6c7ae', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff' },
-  searchBtn: { backgroundColor: '#c8a27a', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center' },
+  searchBtn: { backgroundColor: '#b87a5a', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center'},
+  clearBtn: { backgroundColor: '#b87a5a', borderRadius: 14, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
   searchBtnText: { color: '#fff', fontWeight: '700' },
-  createBtn: { backgroundColor: '#a56363', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 8 },
+  createBtn: { backgroundColor: '#b87a5a', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 8 },
   createBtnText: { color: '#fff', fontWeight: '700' },
   list: { flex: 1 },
   card: { borderRadius: 18, padding: 16, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e6d3b3', marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },

@@ -9,8 +9,11 @@ type Categoria = {
   id: number;
   nombre: string;
   descripcion?: string | null;
+  tipo?: 'producto' | 'servicio';
   activo: boolean;
 };
+
+const tipoOptions = ['producto', 'servicio'] as const;
 
 export default function AdminCategoriasScreen() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -23,6 +26,7 @@ export default function AdminCategoriasScreen() {
   const [saving, setSaving] = useState(false);
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [tipo, setTipo] = useState<'producto' | 'servicio'>('producto');
   const { isAuthenticated, user } = useAuth() as { isAuthenticated: boolean; user?: { rol?: string } | null };
 
   const fetchCategorias = async (page = 1, search = '') => {
@@ -90,9 +94,11 @@ export default function AdminCategoriasScreen() {
       await apiClient.post('/admin/categorias', {
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || null,
+        tipo,
       });
       setNombre('');
       setDescripcion('');
+      setTipo('producto');
       await fetchCategorias(1, busqueda);
       Alert.alert('Éxito', 'Categoría creada correctamente');
     } catch (error) {
@@ -167,6 +173,23 @@ export default function AdminCategoriasScreen() {
             multiline
           />
 
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.label}>Tipo de categoría</Text>
+            <View style={styles.optionList}>
+              {tipoOptions.map((option) => (
+                <Pressable
+                  key={option}
+                  onPress={() => setTipo(option)}
+                  style={[styles.optionButton, tipo === option && styles.optionButtonSelected]}
+                >
+                  <Text style={tipo === option ? styles.optionTextSelected : styles.optionText}>
+                    {option === 'producto' ? 'Producto' : 'Servicio'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
           <Pressable style={[styles.primaryBtn, saving && styles.disabledBtn]} onPress={handleCreate} disabled={saving}>
             {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Crear categoría</Text>}
           </Pressable>
@@ -184,6 +207,7 @@ export default function AdminCategoriasScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.itemTitle}>{categoria.nombre}</Text>
               <Text style={styles.itemDesc}>{categoria.descripcion || 'Sin descripción'}</Text>
+              <Text style={styles.itemType}>{categoria.tipo ? `Tipo: ${categoria.tipo}` : 'Tipo: producto'}</Text>
               <Text style={[styles.badge, categoria.activo ? styles.badgeActive : styles.badgeInactive]}>
                 {categoria.activo ? 'Activa' : 'Inactiva'}
               </Text>
@@ -205,7 +229,7 @@ export default function AdminCategoriasScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 16, gap: 12, backgroundColor: '#f9f6f2', flexGrow: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#c8a27a', borderRadius: 20, padding: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#a56363', borderRadius: 20, padding: 16 },
   title: { color: '#fff', fontSize: 22, fontWeight: '800' },
   subtitle: { color: 'rgba(255,255,255,0.9)', marginTop: 2 },
   formCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, gap: 10, borderWidth: 1, borderColor: '#e6d3b3' },
@@ -227,8 +251,15 @@ const styles = StyleSheet.create({
   toggleBtnOn: { backgroundColor: '#a56363' },
   toggleBtnOff: { backgroundColor: '#3e2f25' },
   toggleBtnText: { color: '#fff', fontWeight: '800' },
-   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8},
-    searchBtn: { backgroundColor: '#c8a27a', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center' },
+  searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8},
+  searchBtn: { backgroundColor: '#c8a27a', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center' },
   clearBtn: { backgroundColor: '#a56363', borderRadius: 14, paddingHorizontal: 10, justifyContent: 'center', alignItems: 'center' },
   searchBtnText: { color: '#fff', fontWeight: '700' },
+  dropdownContainer: { gap: 8 },
+  optionList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  optionButton: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#f3e6d8', borderRadius: 12, borderWidth: 1, borderColor: '#e6d3b3' },
+  optionButtonSelected: { backgroundColor: '#a56363', borderColor: '#a56363' },
+  optionText: { color: '#3e2f25', fontWeight: '700' },
+  optionTextSelected: { color: '#fff', fontWeight: '700' },
+  itemType: { color: '#7b6758', marginBottom: 8, fontStyle: 'italic' },
 });
