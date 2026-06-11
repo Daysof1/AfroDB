@@ -194,17 +194,19 @@ const fetchServicios = async (page = 1, search = '') => {
           </ThemedText>
         </ImageBackground>
 
-        <View style={styles.searchRow}>      
-          <TextInput       
-            placeholder="Buscar servicios..."
-            value={busqueda}
-            onChangeText={(text) => {
-              setBusqueda(text);
-              fetchServicios(1, text); // Búsqueda en tiempo real
-            }}
-            
-            style={styles.input}
-          />
+        <View style={styles.searchRow}>   
+          <View style={{ position: 'relative', flex: 1 }}>
+            <Ionicons name="search" size={18} color="#9ca3af" style={{ position: 'absolute', left: 12, top: 12, zIndex: 1 }} />
+            <TextInput       
+              placeholder="Buscar servicios..."
+              value={busqueda}
+              onChangeText={(text) => {
+                setBusqueda(text);
+                fetchServicios(1, text); // Búsqueda en tiempo real
+              }}
+              style={[styles.input, { paddingLeft: 40 }]}
+            />
+          </View>
         
           {busqueda.trim().length > 0 && (
             <Pressable
