@@ -39,6 +39,38 @@ export default function ProductosScreen() {
   const [productoDetalle, setProductoDetalle] = useState<any>(null);
   const [paginaActual, setPaginaActual] = useState(1);
 
+  const buildCategorias = (rawCategorias: any[], items: any[], tipoDeseado: string) => {
+    const categoriasRaw = Array.isArray(rawCategorias) ? rawCategorias : [];
+    const categoriasConNombre = categoriasRaw.filter((cat: any) => cat && typeof cat.id !== 'undefined' && cat.nombre);
+    console.log('productos.tsx buildCategorias - raw count:', categoriasRaw.length, 'valid count:', categoriasConNombre.length);
+
+    const tieneTipo = categoriasConNombre.some((cat: any) => typeof cat.tipo !== 'undefined');
+    console.log('productos.tsx buildCategorias - tiene tipo en categorías:', tieneTipo);
+
+    if (tieneTipo) {
+      const filtradas = categoriasConNombre.filter((cat: any) => cat.tipo === tipoDeseado);
+      console.log('productos.tsx buildCategorias - filtradas por tipo:', filtradas.map((cat: any) => ({ id: cat.id, nombre: cat.nombre, tipo: cat.tipo })));
+      if (filtradas.length > 0) return filtradas;
+    }
+
+    const derivadas: any[] = [];
+    const vistos = new Set<string>();
+    items.forEach((item: any) => {
+      const cat = item?.categoria;
+      if (cat && typeof cat.id !== 'undefined' && cat.nombre) {
+        const idKey = String(cat.id);
+        if (!vistos.has(idKey)) {
+          vistos.add(idKey);
+          derivadas.push({ id: cat.id, nombre: cat.nombre, tipo: tipoDeseado });
+        }
+      }
+    });
+    console.log('productos.tsx buildCategorias - derivadas desde productos:', derivadas.map((cat: any) => ({ id: cat.id, nombre: cat.nombre })));
+
+    if (derivadas.length > 0) return derivadas;
+    return categoriasConNombre;
+  };
+
   const loadCatalogo = async ({ isRefresh = false } = {}) => {
     if (!isRefresh) setRefreshing(true);
     else setLoading(true);
@@ -48,8 +80,9 @@ export default function ProductosScreen() {
         catalogoService.getProductos({ pagina: 1, limite: 200 }),
         catalogoService.getCategorias(),
       ]);
+      console.log('productos.tsx loadCatalogo - categorias raw:', categoriasData);
       setProductos(Array.isArray(productosData) ? productosData : []);
-      setCategorias(Array.isArray(categoriasData) ? categoriasData : []);
+      setCategorias(buildCategorias(categoriasData, productosData, 'producto'));
     } catch (error: unknown) {
       const msg = (error as { message?: string })?.message;
       setErrorMessage(msg || 'No fue posible cargar el catálogo');
@@ -64,20 +97,31 @@ export default function ProductosScreen() {
   }, []);
 
   useEffect(() => {
+    console.log('productos.tsx categorias state:', categorias);
+  }, [categorias]);
+
+  useEffect(() => {
     setPaginaActual(1);
   }, [busqueda, categoriaActiva]);
 
   const productosFiltrados = useMemo(() => {
     const termino = busqueda.trim().toLowerCase();
+    
     return productos.filter((p: any) => {
-      const coincideTexto =
-        termino === '' ||
-        p.nombre?.toLowerCase().includes(termino) ||
-        p.descripcion?.toLowerCase().includes(termino);
+      // Filtro por búsqueda: nombre, descripción, categoría, subcategoría, precio
+      const coincideTexto = termino === '' || [
+        p.nombre?.toLowerCase(),
+        p.descripcion?.toLowerCase(),
+        p.categoria?.nombre?.toLowerCase(),
+        p.subcategoria?.nombre?.toLowerCase(),
+        p.precio?.toString(),
+      ].some(field => field?.includes(termino));
 
+      // Filtro por categoría
       const coincideCategoria =
         categoriaActiva === 'all' ||
         String(p.categoriaId || p.categoria?.id) === categoriaActiva;
+
       return coincideTexto && coincideCategoria;
     });
   }, [busqueda, categoriaActiva, productos]);
@@ -124,18 +168,29 @@ export default function ProductosScreen() {
         <TextInput
           placeholder="Buscar productos..."
           value={busqueda}
-          onChangeText={setBusqueda}
+          onChangeText={(text) => {
+            setBusqueda(text);
+            setPaginaActual(1);
+          }}
           style={styles.searchInput}
           placeholderTextColor="#9ca3af"
         />
-        {busqueda.length > 0 && (
-          <Pressable onPress={() => setBusqueda('')}>
+        {busqueda.trim().length > 0 && (
+          <Pressable
+            style={styles.searchClearBtn}
+            onPress={() => {
+              setBusqueda('');
+              setCategoriaActiva('all');
+              setPaginaActual(1);
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="close-circle" size={18} color="#9ca3af" />
           </Pressable>
         )}
       </View>
 
       {/* CHIPS DE CATEGORÍAS */}
+      {console.log('productos.tsx ListHeader - categorias antes de map:', categorias.length, categorias.map((cat: any) => ({ id: cat.id, nombre: cat.nombre })))}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -147,10 +202,11 @@ export default function ProductosScreen() {
             Todas
           </ThemedText>
         </Pressable>
+         {/* Un chip por cada categoría del backend */}
         {categorias.map((cat: any) => (
           <Pressable
             key={cat.id}
-            onPress={() => setCategoriaActiva(String(cat.id))}
+            onPress={() => setCategoriaActiva(String(cat.id))} // Guarda el ID como string.
             style={[styles.chip, categoriaActiva === String(cat.id) && styles.chipActive]}>
             <ThemedText style={[styles.chipText, categoriaActiva === String(cat.id) && styles.chipTextActive]}>
               {cat.nombre}
@@ -333,6 +389,7 @@ const styles = StyleSheet.create({
   featureDesc: { fontSize: 11, color: '#7b6758' },
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: '#e4d8cb', paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12, gap: 8, shadowColor: '#a57c63', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   searchInput: { flex: 1, fontSize: 15, color: '#111', padding: 0 },
+  searchClearBtn: { padding: 4, justifyContent: 'center', alignItems: 'center' },
   chipsRow: { gap: 8, paddingVertical: 4, marginBottom: 16 },
   chip: { borderRadius: 999, borderWidth: 1.5, borderColor: '#d8c5b2', paddingVertical: 7, paddingHorizontal: 14, backgroundColor: '#fff' },
   chipActive: { backgroundColor: '#a57c63', borderColor: '#a57c63' },
@@ -374,4 +431,8 @@ const styles = StyleSheet.create({
   modalStock: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   modalStockText: { fontSize: 13, color: '#6b7280' },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 6, marginBottom: 8 },
+  input: { flex: 1, borderWidth: 1, borderColor: '#d6c7ae', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff' },
+  searchBtn: { backgroundColor: '#b87a5a', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center'},
+  clearBtn: { backgroundColor: '#b87a5a', borderRadius: 14, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
+  searchBtnText: { color: '#fff', fontWeight: '700' },
 });

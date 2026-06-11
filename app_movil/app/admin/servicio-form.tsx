@@ -37,8 +37,8 @@ type Servicio = {
   subcategoriaId?: number;
 };
 
-type Categoria = { id: number; nombre: string };
-type Subcategoria = { id: number; nombre: string; categoriaId: number };
+type Categoria = { id: number; nombre: string; tipo?: string };
+type Subcategoria = { id: number; nombre: string; categoriaId: number; tipo?: string };
 
 export default function AdminServicioForm() {
     /**
@@ -104,8 +104,17 @@ export default function AdminServicioForm() {
           const cats = catsRes.data?.data?.categorias || catsRes.data?.categorias || [];
           const subs = subsRes.data?.data?.subcategorias || subsRes.data?.subcategorias || [];
 
-          setCategorias(Array.isArray(cats) ? cats : []);
-          setSubcategorias(Array.isArray(subs) ? subs : []);
+          // Filtrar solo categorías de tipo 'servicio'
+          const categoriasFiltradas = Array.isArray(cats) ? cats.filter((cat: Categoria) => cat.tipo === 'servicio') : [];
+          
+          // Filtrar subcategorías que pertenezcan a categorías de tipo 'servicio'
+          const subcategoriasFiltradas = Array.isArray(subs) ? subs.filter((sub: Subcategoria) => {
+            const categoriaPadre = categoriasFiltradas.find((cat: Categoria) => cat.id === sub.categoriaId);
+            return !!categoriaPadre;
+          }) : [];
+
+          setCategorias(categoriasFiltradas);
+          setSubcategorias(subcategoriasFiltradas);
         } catch {
           setCategorias([]);
           setSubcategorias([]);
@@ -262,7 +271,7 @@ const styles = StyleSheet.create({
   // Etiqueta de campo: negrita con margen superior para separar campos.
   label: { fontWeight: 'bold', marginTop: 10, color: '#3e2f25' },
   // Campo de texto: borde gris suave, esquinas redondeadas, padding interior.
-  input: { borderWidth: 1, borderColor: '#bb9a82', borderRadius: 5, padding: 8, marginTop: 5, marginBottom: 10, backgroundColor: '#fff' },
+  input: { borderWidth: 1, borderColor: '#7a5c46', borderRadius: 5, padding: 8, marginTop: 5, marginBottom: 10, backgroundColor: '#fff' },
   helper: { fontSize: 12, color: '#666', marginBottom: 8 },
   button: { marginTop: 20, backgroundColor: '#7a5c46', borderRadius: 10, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
   buttonDisabled: { opacity: 0.7 },

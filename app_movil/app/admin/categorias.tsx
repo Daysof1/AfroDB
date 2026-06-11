@@ -162,7 +162,7 @@ export default function AdminCategoriasScreen() {
       ) : (
         <View style={styles.formCard}>
           <Text style={styles.label}>Nombre</Text>
-          <TextInput style={styles.input} value={nombre} onChangeText={setNombre} placeholder="Ej: Electrónica" />
+          <TextInput style={styles.input} value={nombre} onChangeText={setNombre} placeholder="Ej: Imagen y Estilo" />
 
           <Text style={styles.label}>Descripción</Text>
           <TextInput
@@ -232,16 +232,16 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#a56363', borderRadius: 20, padding: 16 },
   title: { color: '#fff', fontSize: 22, fontWeight: '800' },
   subtitle: { color: 'rgba(255,255,255,0.9)', marginTop: 2 },
-  formCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, gap: 10, borderWidth: 1, borderColor: '#e6d3b3' },
+  formCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, gap: 10, borderWidth: 1, borderColor: '#a56363'},
   label: { fontWeight: '700', color: '#3e2f25' },
-  input: { borderWidth: 1, borderColor: '#e6d3b3', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#fff', color: '#3e2f25' },
+  input: { borderWidth: 1, borderColor: '#a56363', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#fff', color: '#3e2f25' },
   textarea: { minHeight: 90, textAlignVertical: 'top' },
   primaryBtn: { backgroundColor: '#a56363', borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
   primaryBtnText: { color: '#fff', fontWeight: '800' },
   disabledBtn: { opacity: 0.7 },
   loadingBox: { alignItems: 'center', gap: 8, paddingVertical: 20 },
   loadingText: { color: '#7b6758' },
-  itemCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, flexDirection: 'row', gap: 12, alignItems: 'center', borderWidth: 1, borderColor: '#e6d3b3' },
+  itemCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, flexDirection: 'row', gap: 12, alignItems: 'center', borderWidth: 1, borderColor: '#a56363' },
   itemTitle: { fontSize: 16, fontWeight: '800', color: '#3e2f25' },
   itemDesc: { color: '#7b6758', marginTop: 4, marginBottom: 8 },
   badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, overflow: 'hidden', fontSize: 12, fontWeight: '700' },
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   toggleBtnOff: { backgroundColor: '#3e2f25' },
   toggleBtnText: { color: '#fff', fontWeight: '800' },
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8},
-  searchBtn: { backgroundColor: '#c8a27a', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center' },
+  searchBtn: { backgroundColor: '#a56363', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center' },
   clearBtn: { backgroundColor: '#a56363', borderRadius: 14, paddingHorizontal: 10, justifyContent: 'center', alignItems: 'center' },
   searchBtnText: { color: '#fff', fontWeight: '700' },
   dropdownContainer: { gap: 8 },
