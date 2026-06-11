@@ -5,6 +5,7 @@ import { apiRequest } from '../../api/client.js';
 export default function AuxiliarCitas() {
   const [citas, setCitas] = useState([]);
   const [error, setError] = useState('');
+  const [busqueda, setBusqueda] = useState('');
 
   const loadCitas = async () => {
     try {
@@ -18,6 +19,19 @@ export default function AuxiliarCitas() {
   useEffect(() => {
     loadCitas();
   }, []);
+
+  const citasFiltradas = citas.filter((cita) => {
+    const textoBusqueda = busqueda.toLowerCase().trim();
+    return (
+      !textoBusqueda ||
+      (cita?.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (cita?.profesional?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (cita?.estado || '').toLowerCase().includes(textoBusqueda) ||
+      (cita.fecha || '').toLowerCase().includes(textoBusqueda) ||
+      (cita.hora || '').toLowerCase().includes(textoBusqueda) ||
+      (cita.notas || '').toLowerCase().includes(textoBusqueda)
+    );
+  });
 
   const handleCancelar = async (id) => {
     try {
@@ -38,9 +52,18 @@ export default function AuxiliarCitas() {
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
+      <div className="filtros">
+        <input
+          type="text"
+          placeholder="Buscar citas..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+      </div>
 
       <div className="cards-grid">
-        {citas.map((cita) => (
+        {citasFiltradas.map((cita) => (
           <div key={cita.id} className="service-card">
             <h3>{(cita.Servicios || []).map((servicio) => servicio.nombre).join(', ') || 'Cita'}</h3>
             <p><strong>Cliente:</strong> {cita?.cliente?.nombre || 'Cliente'}</p>

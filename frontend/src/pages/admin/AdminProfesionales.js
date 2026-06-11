@@ -7,6 +7,7 @@ export default function AdminProfesionales() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [busqueda, setBusqueda] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState({
     tipo_documento: 'C.C.',
@@ -31,6 +32,18 @@ export default function AdminProfesionales() {
   useEffect(() => {
     loadProfesionales();
   }, []);
+
+  const profesionalesFiltrados = profesionales.filter((profesional) => {
+    const textoBusqueda = busqueda.toLowerCase().trim();
+    return (
+      !textoBusqueda ||
+      (profesional.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (profesional.apellido || '').toLowerCase().includes(textoBusqueda) ||
+      (profesional.documento || '').toLowerCase().includes(textoBusqueda) ||
+      (profesional.email || '').toLowerCase().includes(textoBusqueda) ||
+      (profesional.telefono || '').toLowerCase().includes(textoBusqueda)
+    );
+  });
 
   const handleEdit = (profesional) => {
     setEditingId(profesional.id);
@@ -104,6 +117,15 @@ export default function AdminProfesionales() {
 
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
+      <div className="filtros">
+        <input
+          type="text"
+          placeholder="Buscar profesionales..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+      </div>
 
       {isFormOpen && (
         <div className="form-container">
@@ -174,7 +196,7 @@ export default function AdminProfesionales() {
       )}
 
       <div className="cards-grid">
-        {profesionales.map((profesional) => (
+        {profesionalesFiltrados.map((profesional) => (
           <div key={profesional.id} className="service-card">
             <h3>{profesional.nombre} {profesional.apellido || ''}</h3>
             <p><strong>Documento:</strong> {profesional.documento || 'N/A'}</p>

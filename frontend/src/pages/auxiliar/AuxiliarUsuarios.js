@@ -5,6 +5,8 @@ import { apiRequest } from '../../api/client.js';
 export default function AuxiliarUsuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [error, setError] = useState('');
+  const [busqueda, setBusqueda] = useState('');
+  const limite = 100;
 
   const loadUsuarios = async () => {
     try {
@@ -19,6 +21,19 @@ export default function AuxiliarUsuarios() {
     loadUsuarios();
   }, []);
 
+  const usuariosFiltrados = usuarios.filter((usuario) => {
+    const textoBusqueda = busqueda.toLowerCase().trim();
+    return (
+      !textoBusqueda ||
+      (usuario.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (usuario.apellido || '').toLowerCase().includes(textoBusqueda) ||
+      (usuario.documento || '').toLowerCase().includes(textoBusqueda) ||
+      (usuario.email || '').toLowerCase().includes(textoBusqueda) ||
+      (usuario.telefono || '').toLowerCase().includes(textoBusqueda) ||
+      (usuario.direccion || '').toLowerCase().includes(textoBusqueda)
+    );
+  });
+
   return (
     <div className="admin-page">
       <div className="page-header">
@@ -26,9 +41,18 @@ export default function AuxiliarUsuarios() {
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
+      <div className="filtros">
+        <input
+          type="text"
+          placeholder="Buscar usuarios..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+      </div>
 
       <div className="cards-grid">
-        {usuarios.map((usuario) => (
+        {usuariosFiltrados.map((usuario) => (
           <div key={usuario.id} className="service-card">
             <h3>{usuario.nombre} {usuario.apellido || ''}</h3>
             <p><strong>Tipo Doc:</strong> {usuario.tipo_documento || 'N/A'}</p>

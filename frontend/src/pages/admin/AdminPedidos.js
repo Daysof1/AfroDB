@@ -7,6 +7,7 @@ export default function AdminPedidos() {
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [estado, setEstado] = useState('');
+  const [busqueda, setBusqueda] = useState('');
 
   const loadPedidos = async () => {
     try {
@@ -20,6 +21,20 @@ export default function AdminPedidos() {
   useEffect(() => {
     loadPedidos();
   }, []);
+
+  const pedidosFiltrados = pedidos.filter((pedido) => {
+    const textoBusqueda = busqueda.toLowerCase().trim();
+    return (
+      !textoBusqueda ||
+      String(pedido.id).includes(textoBusqueda) ||
+      (pedido?.usuario?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (pedido?.usuario?.apellido || '').toLowerCase().includes(textoBusqueda) ||
+      (pedido.direccionEnvio || '').toLowerCase().includes(textoBusqueda) ||
+      (pedido.telefono || '').toLowerCase().includes(textoBusqueda) ||
+      (pedido.metodoPago || '').toLowerCase().includes(textoBusqueda) ||
+      (pedido.estado || '').toLowerCase().includes(textoBusqueda)
+    );
+  });
 
   const handleEdit = (pedido) => {
     setEditingId(pedido.id);
@@ -51,9 +66,18 @@ export default function AdminPedidos() {
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
+      <div className="filtros">
+        <input
+          type="text"
+          placeholder="Buscar pedidos..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+      </div>
 
       <div className="cards-grid">
-        {pedidos.map((pedido) => (
+        {pedidosFiltrados.map((pedido) => (
           <div key={pedido.id} className="service-card">
             <h3>Pedido #{pedido.id}</h3>
             <p><strong>Cliente:</strong> {pedido?.usuario?.nombre || 'Cliente'}</p>
@@ -67,8 +91,20 @@ export default function AdminPedidos() {
             <p><strong>Entrega:</strong> {pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toLocaleString() : 'Pendiente'}</p>
             <p><strong>Fecha:</strong> {pedido.createdAt ? new Date(pedido.createdAt).toLocaleDateString() : 'N/A'}</p>
             <p>
-              <span className={`badge ${pedido.estado === 'entregado' ? 'badge-success' : 'badge-danger'}`}>
-                {pedido.estado || 'Sin estado'}
+              <span
+                className={`badge ${
+                  (pedido.estado || '').toLowerCase() === 'pendiente'
+                  ? 'badge-warning'
+                  : (pedido.estado || '').toLowerCase() === 'enviado'
+                  ? 'badge-info'
+                  : (pedido.estado || '').toLowerCase() === 'entregado'
+                  ? 'badge-success'
+                  : (pedido.estado || '').toLowerCase() === 'cancelado'
+                  ? 'badge-danger'
+                  : 'badge-secondary'
+                }`}
+              >
+              {pedido.estado}
               </span>
             </p>
             {editingId === pedido.id ? (

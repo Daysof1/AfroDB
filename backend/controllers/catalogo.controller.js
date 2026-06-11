@@ -119,13 +119,13 @@ const getProductos = async (req, res) => {
         {
           model: Categoria,
           as: 'categoria',
-          attributes: ['id', 'nombre'],
+          attributes: ['id', 'nombre', 'tipo'],
           where: { activo: true }    // Solo categorías activas
         },
         {
           model: Subcategoria,
           as: 'subcategoria',
-          attributes: ['id', 'nombre'],
+          attributes: ['id', 'nombre', 'tipo'],
           where: { activo: true }    // Solo subcategorías activas
         }
       ],
@@ -229,11 +229,27 @@ const getCategorias = async (req, res) => {
   try {
     // Importa Op de Sequelize para usar operadores
     const { Op } = require('sequelize');
+    const { tipo } = req.query; // Parámetro opcional: 'producto' o 'servicio'
+    
+    // Construye el filtro where
+    const where = { activo: true };
+    if (tipo) {
+      // Filtra por tipo, pero también incluye NULL para retro-compatibilidad
+      // Si es 'producto' y hay categorías sin tipo, asúmelas como producto
+      if (tipo === 'producto') {
+        where[Op.or] = [
+          { tipo: 'producto' },
+          { tipo: null }
+        ];
+      } else if (tipo === 'servicio') {
+        where.tipo = 'servicio';
+      }
+    }
     
     // Obtiene todas las categorías activas, ordenadas alfabéticamente
     const categorias = await Categoria.findAll({
-      where: { activo: true },
-      attributes: ['id', 'nombre', 'descripcion'],
+      where,
+      attributes: ['id', 'nombre', 'descripcion', 'tipo'],
       order: [['nombre', 'ASC']]     // A-Z por nombre
     });
     
@@ -306,9 +322,10 @@ const getSubcategoriasPorCategoria = async (req, res) => {
     const subcategorias = await Subcategoria.findAll({
       where: {
         categoriaId: id,    // Que pertenezcan a esta categoría
-        activo: true         // Solo activas
+        activo: true,        // Solo activas
+        tipo: categoria.tipo // Filtrar por el mismo tipo de la categoría
       },
-      attributes: ['id', 'nombre', 'descripcion'],
+      attributes: ['id', 'nombre', 'descripcion', 'tipo'],
       order: [['nombre', 'ASC']]
     });
     

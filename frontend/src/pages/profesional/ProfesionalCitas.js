@@ -8,6 +8,7 @@ export default function ProfesionalCitas() {
   const [citas, setCitas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [busqueda, setBusqueda] = useState('');
 
   const [filtro, setFiltro] = useState('Todos');
 
@@ -26,6 +27,16 @@ export default function ProfesionalCitas() {
   useEffect(() => {
     loadCitas();
   }, []);
+
+  /**  const citasFiltradas = citas.filter((cita) => {
+    const textoBusqueda = busqueda.toLowerCase().trim();
+    return (
+      !textoBusqueda ||
+      (cita.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (cita.Servicios || []).some((servicio) => servicio.nombre.toLowerCase().includes(textoBusqueda))
+    );
+  });**/
+  
 
   const citasFiltradas = filtro === 'Todos' 
     ? citas 
@@ -59,17 +70,32 @@ export default function ProfesionalCitas() {
         >
           Todas ({citas.length})
         </button>
+         <button
+          className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
+          onClick={() => setFiltro('Pendiente')}
+        >
+          Pendientes ({citas.filter((c) => (c.estado || '').toLowerCase() === 'pendiente').length})
+        </button>
+
         <button
           className={`filter-btn ${filtro === 'Confirmada' ? 'active' : ''}`}
           onClick={() => setFiltro('Confirmada')}
         >
           Confirmadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'confirmada').length})
         </button>
-        <button
-          className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
-          onClick={() => setFiltro('Pendiente')}
+
+         <button
+          className={`filter-btn ${filtro === 'Completada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Completada')}
         >
-          Pendientes ({citas.filter((c) => (c.estado || '').toLowerCase() === 'pendiente').length})
+          Completadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'completada').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Cancelada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Cancelada')}
+        >
+          Canceladas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'cancelada').length})
         </button>
       </div>
 
@@ -84,9 +110,21 @@ export default function ProfesionalCitas() {
               <div key={cita.id} className="cita-card-prof">
                 <div className="cita-header-prof">
                   <h3>{cita?.cliente?.nombre || 'Cliente'}</h3>
-                  <span className={`badge ${(cita.estado || '').toLowerCase() === 'confirmada' ? 'badge-success' : 'badge-warning'}`}>
-                    {cita.estado}
-                  </span>
+                  <span
+                className={`badge ${
+                  (cita.estado || '').toLowerCase() === 'pendiente'
+                  ? 'badge-warning'
+                  : (cita.estado || '').toLowerCase() === 'confirmada'
+                  ? 'badge-info'
+                  : (cita.estado || '').toLowerCase() === 'completada'
+                  ? 'badge-success'
+                  : (cita.estado || '').toLowerCase() === 'cancelada'
+                  ? 'badge-danger'
+                  : 'badge-secondary'
+                }`}
+              >
+              {cita.estado}
+              </span>
                 </div>
 
                 <div className="cita-info-prof">

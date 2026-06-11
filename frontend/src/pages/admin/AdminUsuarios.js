@@ -6,11 +6,13 @@ export default function AdminUsuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [busqueda, setBusqueda] = useState('');
+  const limite = 100;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUsuarioId, setEditingUsuarioId] = useState(null);
   const [newUsuario, setNewUsuario] = useState({
-    tipo_documento: 'C.C.',
+    tipo_documento: '',
     documento: '',
     nombre: '',
     apellido: '',
@@ -23,7 +25,7 @@ export default function AdminUsuarios() {
 
   const loadUsuarios = async () => {
     try {
-      const response = await apiRequest('/admin/usuarios');
+      const response = await apiRequest(`/admin/usuarios?limite=${limite}`);
       setUsuarios(response?.data?.usuarios || []);
     } catch (err) {
       setError(err.message || 'No se pudieron cargar usuarios');
@@ -33,6 +35,19 @@ export default function AdminUsuarios() {
   useEffect(() => {
     loadUsuarios();
   }, []);
+
+  const usuariosFiltrados = usuarios.filter((usuario) => {
+    const textoBusqueda = busqueda.toLowerCase().trim();
+    return (
+      !textoBusqueda ||
+      (usuario.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (usuario.apellido || '').toLowerCase().includes(textoBusqueda) ||
+      (usuario.documento || '').toLowerCase().includes(textoBusqueda) ||
+      (usuario.email || '').toLowerCase().includes(textoBusqueda) ||
+      (usuario.telefono || '').toLowerCase().includes(textoBusqueda) ||
+      (usuario.direccion || '').toLowerCase().includes(textoBusqueda)
+    );
+  });
 
   const handleCrearUsuario = async (e) => {
     e.preventDefault();
@@ -51,7 +66,7 @@ export default function AdminUsuarios() {
       setSuccess(isEditing ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente');
       setEditingUsuarioId(null);
       setNewUsuario({
-        tipo_documento: 'C.C.',
+        tipo_documento: '',
         documento: '',
         nombre: '',
         apellido: '',
@@ -133,6 +148,15 @@ export default function AdminUsuarios() {
 
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
+      <div className="filtros">
+        <input
+          type="text"
+          placeholder="Buscar usuarios..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+      </div>
 
       {isFormOpen && (
         <div className="form-container">
@@ -172,7 +196,7 @@ export default function AdminUsuarios() {
       )}
 
       <div className="cards-grid">
-        {usuarios.map((usuario) => (
+        {usuariosFiltrados.map((usuario) => (
           <div key={usuario.id} className="service-card">
             <h3>{usuario.nombre} {usuario.apellido || ''}</h3>
             <p><strong>Tipo Doc:</strong> {usuario.tipo_documento || 'N/A'}</p>

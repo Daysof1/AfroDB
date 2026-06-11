@@ -93,9 +93,6 @@ router.post('/register', register);
 // Respuesta exitosa (200 OK):
 //   { success: true, data: { usuario: { id, nombre, email, rol, ... }, token: "eyJ..." } }
 router.post('/login', login);
-router.post('/forgot-password', forgotPassword);
-router.get('/reset-password/:token', validateResetToken);
-router.post('/reset-password/:token', resetPassword);
 
 // ==========================================
 // RUTAS PROTEGIDAS (Requieren autenticación)
@@ -142,6 +139,9 @@ router.put('/me', verificarAuth, upload.single('foto'), updateMe);
 // Respuesta exitosa (200 OK):
 //   { success: true, message: "Contraseña actualizada exitosamente" }
 router.put('/change-password', verificarAuth, changePassword);
+router.post('/forgot-password', forgotPassword);
+router.get('/reset-password/:token', validateResetToken);
+router.post('/reset-password/:token', resetPassword);
 
 // ==========================================
 // EXPORTAR ROUTER

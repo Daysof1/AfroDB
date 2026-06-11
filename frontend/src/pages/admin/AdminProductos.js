@@ -110,7 +110,9 @@ export default function AdminProductos() {
     const coincideBusqueda =
       !textoBusqueda ||
       (producto.nombre || '').toLowerCase().includes(textoBusqueda) ||
-      (producto.descripcion || '').toLowerCase().includes(textoBusqueda);
+      (producto.descripcion || '').toLowerCase().includes(textoBusqueda) ||
+      (producto?.categoria?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (producto?.subcategoria?.nombre || '').toLowerCase().includes(textoBusqueda);
 
     return (
       (filtroCategoria === 'Todos' || categoriaNombre === filtroCategoria) &&

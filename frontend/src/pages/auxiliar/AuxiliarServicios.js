@@ -107,7 +107,9 @@ export default function AuxiliarServicios() {
     const coincideBusqueda =
       !textoBusqueda ||
       (servicio.nombre || '').toLowerCase().includes(textoBusqueda) ||
-      (servicio.descripcion || '').toLowerCase().includes(textoBusqueda);
+      (servicio.descripcion || '').toLowerCase().includes(textoBusqueda) ||
+      (servicio?.categoria?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (servicio?.subcategoria?.nombre || '').toLowerCase().includes(textoBusqueda);
 
     return (
       (filtroCategoria === 'Todos' || categoriaNombre === filtroCategoria) &&

@@ -36,7 +36,7 @@ export default function ClienteServicios() {
   useEffect(() => {
     const loadCategorias = async () => {
       try {
-        const response = await apiRequest('/catalogo/categorias');
+        const response = await apiRequest('/catalogo/categorias?tipo=servicio');
         setCategorias(response?.data?.categorias || []);
       } catch (err) {
         setError(err.message || 'No se pudieron cargar categorías');

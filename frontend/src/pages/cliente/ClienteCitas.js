@@ -408,9 +408,21 @@ export default function ClienteCitas() {
               <div key={cita.id} className="cita-card">
                 <div className="cita-header">
                   <h3>{(cita.Servicios || []).map((s) => s.nombre).join(', ') || 'Cita'}</h3>
-                  <span className={`badge ${(cita.estado || '').toLowerCase() === 'confirmada' ? 'badge-success' : 'badge-warning'}`}>
-                    {formatEstado(cita.estado)}
-                  </span>
+                  <span
+                className={`badge ${
+                  (cita.estado || '').toLowerCase() === 'pendiente'
+                  ? 'badge-warning'
+                  : (cita.estado || '').toLowerCase() === 'confirmada'
+                  ? 'badge-info'
+                  : (cita.estado || '').toLowerCase() === 'completada'
+                  ? 'badge-success'
+                  : (cita.estado || '').toLowerCase() === 'cancelada'
+                  ? 'badge-danger'
+                  : 'badge-secondary'
+                }`}
+              >
+              {cita.estado}
+              </span>
                 </div>
 
                 <div className="cita-info">

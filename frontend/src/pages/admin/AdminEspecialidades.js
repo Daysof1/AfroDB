@@ -6,6 +6,10 @@ export default function AdminEspecialidades() {
   const [especialidades, setEspecialidades] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [busqueda, setBusqueda] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const limite = 100;
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEspecialidadId, setEditingEspecialidadId] = useState(null);
   const [newEspecialidad, setNewEspecialidad] = useState({ nombre: '', descripcion: '' });
@@ -22,6 +26,15 @@ export default function AdminEspecialidades() {
   useEffect(() => {
     loadEspecialidades();
   }, []);
+
+  const especialidadesFiltradas = especialidades.filter((especialidad) => {
+    const textoBusqueda = busqueda.toLowerCase().trim();
+    return (
+      !textoBusqueda ||
+      (especialidad.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (especialidad.descripcion || '').toLowerCase().includes(textoBusqueda)
+    );
+  });
 
   const handleCrear = async (e) => {
     e.preventDefault();
@@ -102,9 +115,18 @@ export default function AdminEspecialidades() {
           </form>
         </div>
       )}
+      <div className="filtros">
+        <input
+          type="text"
+          placeholder="Buscar especialidades..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+      </div>
 
       <div className="cards-grid">
-        {especialidades.map((especialidad) => (
+        {especialidadesFiltradas.map((especialidad) => (
           <div key={especialidad.id} className="service-card">
             <h3>{especialidad.nombre}</h3>
             <p>{especialidad.descripcion || 'Sin descripción'}</p>

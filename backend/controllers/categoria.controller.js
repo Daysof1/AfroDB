@@ -34,7 +34,7 @@ const getCategorias = async (req, res) => {
       opciones.include = [{
         model: Subcategoria,
         as: 'subcategorias',
-        attributes: ['id', 'nombre', 'descripcion', 'activo']
+        attributes: ['id', 'nombre', 'descripcion', 'activo', 'tipo']
       }];
     }
 

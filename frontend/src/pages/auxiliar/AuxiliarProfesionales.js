@@ -7,6 +7,7 @@ export default function AuxiliarProfesionales() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [busqueda, setBusqueda] = useState('');
   const [formData, setFormData] = useState({
     tipo_documento: 'C.C.',
     documento: '',
@@ -30,6 +31,18 @@ export default function AuxiliarProfesionales() {
   useEffect(() => {
     loadProfesionales();
   }, []);
+
+  const profesionalesFiltrados = profesionales.filter((profesional) => {
+    const textoBusqueda = busqueda.toLowerCase().trim();
+    return (
+      !textoBusqueda ||
+      (profesional.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (profesional.apellido || '').toLowerCase().includes(textoBusqueda) ||
+      (profesional.documento || '').toLowerCase().includes(textoBusqueda) ||
+      (profesional.email || '').toLowerCase().includes(textoBusqueda) ||
+      (profesional.telefono || '').toLowerCase().includes(textoBusqueda)
+    );
+  });
 
   const handleEdit = (profesional) => {
     setEditingId(profesional.id);
@@ -84,9 +97,18 @@ export default function AuxiliarProfesionales() {
 
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
+      <div className="filtros">
+        <input
+          type="text"
+          placeholder="Buscar profesionales..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+      </div>
 
       <div className="cards-grid">
-        {profesionales.map((profesional) => (
+        {profesionalesFiltrados.map((profesional) => (
           <div key={profesional.id} className="service-card">
             <h3>{profesional.nombre} {profesional.apellido || ''}</h3>
             <p><strong>Tipo Doc:</strong> {editingId === profesional.id ? (

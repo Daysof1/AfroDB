@@ -176,6 +176,14 @@
 .btn-success:hover {
   background: #449d44;
 }
+.btn-success {
+  background: #5cb85c;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #449d44;
+}
 
 .btn-sm {
   padding: 0.5rem 1rem;
@@ -462,6 +470,11 @@
 .badge-danger {
   background: #f8d7da;
   color: #721c24;
+}
+
+.badge-info {
+  background: #a1afee;
+  color: #394eaa;
 }
 
 /* BTN CLASS */

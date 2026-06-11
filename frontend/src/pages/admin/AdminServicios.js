@@ -13,7 +13,7 @@ export default function AdminServicios() {
   const [busqueda, setBusqueda] = useState('');
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
-  const limite = 10;
+  const limite = 100;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingServicioId, setEditingServicioId] = useState(null);
@@ -116,7 +116,9 @@ export default function AdminServicios() {
     const coincideBusqueda =
       !textoBusqueda ||
       (servicio.nombre || '').toLowerCase().includes(textoBusqueda) ||
-      (servicio.descripcion || '').toLowerCase().includes(textoBusqueda);
+      (servicio.descripcion || '').toLowerCase().includes(textoBusqueda) ||
+      (servicio?.categoria?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (servicio?.subcategoria?.nombre || '').toLowerCase().includes(textoBusqueda);
 
     return (
       (filtroCategoria === 'Todos' || categoriaNombre === filtroCategoria) &&
