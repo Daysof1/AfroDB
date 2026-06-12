@@ -21,6 +21,7 @@ import { useLocalSearchParams } from "expo-router";
 import { ThemedText } from '../../../components/themed-text';
 //ciente http axios con JWT
 import apiClient from '../../../src/api/apiClient';
+import { useAuth } from '../../../src/context/AuthContext';
 
 /**
  * TIPOS
@@ -65,6 +66,7 @@ export default function AdminPedidoDetalleScreen() {
     const [loading, setLoading] = useState(true);//activo mientras se hace la peticion api
     const [errorMessage, setErrorMessage] = useState(''); //Mensaje de error si falla la carga
     const [cambiando, setCambiando] = useState(false); //true miestra se esta cambiando el estado evita doble click
+    const { user, isLoadingSession } = useAuth() as any;
 
     /**
      * funcion fetchPedido
@@ -96,13 +98,24 @@ export default function AdminPedidoDetalleScreen() {
      */
 
     useEffect(() => {
-        fetchPedido();
-        /**
-         * eslint-disable-next-line react-hooks/exhaustive-deps
-         * fetchPedido no se incluye en el array de dependencias para evitar bucles infinitos
-         * el lint warning se suprime con el comentario de arribe 
-         */
-    }, [id]);
+      // Espera a que la sesión esté restaurada antes de decidir si cargar el pedido.
+      if (isLoadingSession) return;
+
+      // Si el usuario no es administrador no intentamos pedir el detalle al API
+      if (user?.rol !== 'administrador') {
+        setLoading(false);
+        setPedido(null);
+        setErrorMessage('');
+        return;
+      }
+
+      fetchPedido();
+      /**
+       * eslint-disable-next-line react-hooks/exhaustive-deps
+       * fetchPedido no se incluye en el array de dependencias para evitar bucles infinitos
+       * el lint warning se suprime con el comentario de arribe 
+       */
+    }, [id, isLoadingSession, user?.rol]);
 
     /**
      * funcion cambiar estado
@@ -145,6 +158,25 @@ export default function AdminPedidoDetalleScreen() {
     );
   }
 
+  // Si aún se restaura la sesión, mostrar spinner para evitar mostrar mensajes erróneos
+  if (isLoadingSession) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" />
+        <ThemedText>Cargando sesión...</ThemedText>
+      </View>
+    );
+  }
+
+  // Si el usuario es auxiliar no puede ver el detalle de pedidos
+  if (user?.rol === 'auxiliar') {
+    return (
+      <View style={styles.centered}>
+        <ThemedText style={styles.error}>Solo los administradores pueden ver esta opción.</ThemedText>
+      </View>
+    );
+  }
+
   // ── RENDERIZADO CONDICIONAL: pedido no encontrado ─────────────────────────
   // Si la petición tuvo éxito pero el servidor no devolvió datos del pedido.
   if (!pedido) {
@@ -154,6 +186,7 @@ export default function AdminPedidoDetalleScreen() {
       </View>
     );
   }
+
 
   // ── RENDERIZADO PRINCIPAL ─────────────────────────────────────────────────
   // Se muestra solo cuando el pedido se cargó correctamente.
@@ -241,7 +274,7 @@ const styles = StyleSheet.create({
   centered: { alignItems: 'center', gap: 10, marginVertical: 20 },
 
   // Color rojo oscuro para mensajes de error.
-  error: { color: '#b93a32' },
+  error: { color: '#000000' },
 
   // Encabezado "Productos:" con margen superior y negrita.
   sectionTitle: { marginTop: 10, fontWeight: 'bold' },

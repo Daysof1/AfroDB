@@ -275,7 +275,7 @@ export default function AdminDashboardScreen() {
       {/* Solo se muestra cuando ya terminó de cargar (evita mostrar $0 mientras carga). */}
       {!loading && (
         <View style={styles.salesBanner}>
-          <Ionicons name="trending-up-outline" size={22} color="#c8a27a" />
+          <Ionicons name="trending-up-outline" size={22} color="#aa6924" />
           <View style={{ flex: 1 }}>
             <Text style={styles.salesLabel}>Ventas Totales</Text>
             {/* Total de ventas formateado en COP */}
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   // ── HEADER ────────────────────────────────────────
   header: {
     borderRadius: 16,
-    backgroundColor: '#c8a27a',
+    backgroundColor: '#d6a672',
     padding: 20,
     gap: 8,
   },
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     gap: 12,
     backgroundColor: '#fff',
     borderLeftWidth: 6,
-    borderLeftColor: '#c8a27a',
+    borderLeftColor: '#d6a672',
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   // Contenedor con borde y overflow hidden para que el header redondeado se vea bien.
   section: {
     borderRadius: 12, overflow: 'hidden',
-    borderWidth: 1, borderColor: '#e6d3b3',
+    borderWidth: 1, borderColor: '#d6a672',
   },
   // Encabezado de sección: fondo oscuro con ícono + título.
   sectionHeader: {

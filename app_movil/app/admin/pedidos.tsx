@@ -70,21 +70,35 @@ export default function AdminPedidoScreen() {
         try {
             //construye el query del strimng dinamicamente
             const params: string[] = [];
-            if (search.trim()) params.push(`buscar=${encodeURIComponent(search.trim())}`);//codifica los carateres especiales en la busqueda
-            params.push(`pagina=${page}`);// numero de la pagina
-            params.push('limite=10');// 10 pedidos por pagina
+        if (search.trim()) params.push(`buscar=${encodeURIComponent(search.trim())}`);//codifica los carateres especiales en la busqueda
+        params.push(`pagina=${page}`);// numero de la pagina
+        // Si hay una búsqueda, pedir más items al backend y luego filtrar en el cliente
+        params.push(search.trim() ? 'limite=100' : 'limite=10');
             const url = `/admin/pedidos?${params.join('&')}`; //construye la url completa  con los parametros
             //peticion get autenticada el token JWT lo agrega el apiClient automaticamente
             const res = await apiClient.get(url);
             // extrar los pedidos de array
             const pedidosData: Pedido[] = res.data?.data?.pedidos || [];
+        // Si el backend no soporta búsqueda por texto, filtramos en el cliente
+        let finalPedidos = pedidosData;
+        const q = search.trim().toLowerCase();
+        if (q) {
+          finalPedidos = pedidosData.filter(p => {
+            const idStr = String(p.id || '').toLowerCase();
+            const nombre = (p.usuario?.nombre || '').toLowerCase();
+            const apellido = (p.usuario?.apellido || '').toLowerCase();
+            const estado = (p.estado || '').toLowerCase();
+            const total = String(p.total || '').toLowerCase();
+            return idStr.includes(q) || nombre.includes(q) || apellido.includes(q) || estado.includes(q) || total.includes(q);
+          });
+        }
             // la respuesta tiene estructura { data : data: { pedido...}}
             //el operador ? evita errores si algun nivel es undefined 
-            setPedidos(pedidosData); //actualiza el estado con los pedidos obtenidos
+        setPedidos(finalPedidos); //actualiza el estado con los pedidos obtenidos (posiblemente filtrados)
             setPagina
             (page);
             //actualiza la pagina actual a medida que se va escribindo
-            setTotalPaginas(res.data?.data?.paginacion?.totalPaginas || 1);
+        setTotalPaginas(res.data?.data?.paginacion?.totalPaginas || 1);
         }   catch (error: unknown) {
             //si la peticion falla guarda el mensaje de error para mostrarlo en pantalla
             setErrorMessage((error as { message?: string })?.message || 'no se pudo cargar el pedido');
@@ -151,7 +165,7 @@ export default function AdminPedidoScreen() {
     style={styles.searchBtn}
     onPress={() => fetchPedidos(1, busqueda)}
   >
-    <ThemedText style={styles.searchBtnText}>Buscar</ThemedText>
+
   </Pressable>
 </View>
 

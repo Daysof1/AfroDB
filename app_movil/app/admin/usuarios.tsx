@@ -231,17 +231,17 @@ const styles = StyleSheet.create({
   error: { color: '#a56363' },
   // Fila de búsqueda: input expandible + botón fijo.
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  input: { flex: 1, borderWidth: 1, borderColor: '#d8c3a5', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff' },
-  searchBtn: { backgroundColor: '#d8c3a5', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center' },
+  input: { flex: 1, borderWidth: 1, borderColor: 'rgb(126, 100, 81)', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff' },
+  searchBtn: { backgroundColor: 'rgb(126, 100, 81)', borderRadius: 14, paddingHorizontal: 16, justifyContent: 'center' },
   clearBtn: { backgroundColor: 'rgb(126, 100, 81)', borderRadius: 14, paddingHorizontal: 11, justifyContent: 'center', alignItems: 'center' },
   searchBtnText: { color: '#fff', fontWeight: '700' },
   list: { flex: 1 },
-  card: { borderRadius: 18, padding: 18, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e6d3b3', marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  card: { borderRadius: 18, padding: 18, backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgb(126, 100, 81)', marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 },
   userInfo: { flex: 1, gap: 4 },
   userEmail: { color: '#7b6758', fontSize: 13 },
   userBadge: { backgroundColor: '#f3e6d8', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
-  userBadgeText: { color: '#3e2f25', fontWeight: '700', fontSize: 12 },
+  userBadgeText: { color: '#423126', fontWeight: '700', fontSize: 12 },
   actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
   actionBtn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, marginBottom: 2 },
   actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   // Paginación centrada.
   paginationRow: { flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
   // Botones de página reseteados al tema.
-  pageBtn: { backgroundColor: '#d8c3a5', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  pageBtn: { backgroundColor: 'rgb(126, 100, 81)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   pageBtnText: { color: '#3e2f25', fontWeight: '700', fontSize: 15 },
   pageLabel: { fontWeight: 'bold' },
 });

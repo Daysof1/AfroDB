@@ -36,7 +36,7 @@ import { ThemedView } from '../../components/themed-view';
  */
 type AuthCtx = {
     //Usser datos el usuario autenticado, null si no inicio ssin
-    user: { nombre?: string, apellido?: string, email?: string, rol?: string  } | null;
+    user: { nombre?: string, apellido?: string, email?: string, rol?: string, telefono?: string, direccion?: string } | null;
     //isAuthenticated: true si hay sesion activa
     isAuthenticated: boolean;
     // isLoading: true iesra se verifica si hay sesion guardada al abrir la app
@@ -44,11 +44,11 @@ type AuthCtx = {
     //Login: funcion qe recibe el email y contraseña lanza error si falla
     login: (email: string, pssword: string) => Promise<unknown>;
     //register funcion que registra un nuvo usuario lanza error si falla 
-    register: (data: {nombre: string, apellido: string, email: string, password: string, tipo_documento: string, documento: string, telefono?: string, direccion?: string }) => Promise<unknown>; 
+    register: (data: {nombre: string, apellido: string, email: string, password: string}) => Promise<unknown>; 
     //logout: funcion de cerrar la sesion del usuario 
     logout: () => Promise<void>;
     //updatePerfil: funcion que actualiza os datos del usuario 
-    updatePerfil: (data: { nombre?: string, email?: string, password?: string }) => Promise<unknown>;
+    updatePerfil: (data: { nombre?: string, apellido?: string, email?: string, telefono?: string, direccion?: string }) => Promise<unknown>;
 };
 
 //routerPush navega apilando la nueva pantalla permite volver atras con la opcion de atras 
@@ -60,6 +60,7 @@ const routerPush = (path: string) => (router as unknown as { push: (p: string) =
 
 export default function TabTwoScreen() {
     const { user, isAuthenticated, logout, login, register, isLoadingSession, updatePerfil } = useAuth() as AuthCtx;
+    const canEditPerfil = ['administrador', 'auxiliar', 'cliente'].includes(user?.rol || '');
     // estado del formulario login y registro 
     //isRegisterMode true muestra formulario de registro false muestra login
     const [isRegisterMode, setIsRegisterMode ] = useState(false);
@@ -86,8 +87,12 @@ export default function TabTwoScreen() {
     const [editMode, setEditMode] = useState(false);
     //campos editables del perfil
     const [editNombre, setEditNombre] = useState('');
+    const [editApellido, setEditApellido] = useState('');
     const [editEmail, setEditEmail] = useState('');
-    const [editPassword, setEditPassword] = useState('');
+    const [editTipoDocumento, setEditTipoDocumento] = useState('');
+    const [editDocumento, setEditDocumento] = useState('');
+    const [editTelefono, setEditTelefono] = useState('');
+    const [editDireccion, setEditDireccion] = useState('');
     //savingPerfil true mientras se guarda el perfil en backend
     const [savingPerfil, setSavingPerfil] = useState(false);
     //Mensaje de error o exito
@@ -99,6 +104,16 @@ export default function TabTwoScreen() {
     const resetFeedback = () => {
         setErrorMessage('');
         setSuccessMessage('');
+    };
+
+    const openEditPerfil = () => {
+        setEditMode(true);
+        setPerfilSuccess('');
+        setEditNombre(user?.nombre || '');
+        setEditApellido(user?.apellido || '');
+        setEditEmail(user?.email || '');
+        setEditTelefono(user?.telefono || '');
+        setEditDireccion(user?.direccion || '');
     };
 
     //Funcion: handleLogout
@@ -164,7 +179,7 @@ export default function TabTwoScreen() {
             if (isRegisterMode) {
                 //llama a resgister() del contexto con os datos del formulario 
                 //el operador spread condicional ... solo incluye telefono/direcion si no estan vacios
-                await register({ nombre, apellido, email, password, tipo_documento: tipoDocumento, documento,
+                await register({ nombre, apellido, email, password,
                     ...(telefono ? { telefono } : {}),
                     ...(direccion ? { direccion } : {}),
                 });
@@ -203,24 +218,32 @@ export default function TabTwoScreen() {
         setPerfilError('');
         setPerfilSuccess('');
         //al menos no de los tres campos debe estar modificado
-        if (!editNombre.trim() && !editEmail.trim() && !editPassword.trim()) {
+        if (!editNombre.trim() && !editApellido.trim() && !editEmail.trim() && !editTipoDocumento.trim() && !editDocumento.trim() && !editTelefono.trim() && !editDireccion.trim()) {
             setPerfilError('Modifica al menos un campo');
             return;
         }
         setSavingPerfil(true);
         try {
-            //solo envia los campos que tiene valor los vacios se emiten
-            const data : { nombre?: string, email?: string; password?: string } = {};
+            //solo envia los campos que tiene valor; los vacios se omiten
+            const data : { nombre?: string; apellido?: string; email?: string; tipo_documento?: string; documento?: string; telefono?: string; direccion?: string } = {};
             if (editNombre.trim()) data.nombre = editNombre.trim();
+            if (editApellido.trim()) data.apellido = editApellido.trim();
             if (editEmail.trim()) data.email = editEmail.trim();
-            if (editPassword.trim()) data.password = editPassword.trim();
+            if (editTipoDocumento.trim()) data.tipo_documento = editTipoDocumento.trim();
+            if (editDocumento.trim()) data.documento = editDocumento.trim();
+            if (editTelefono.trim()) data.telefono = editTelefono.trim();
+            if (editDireccion.trim()) data.direccion = editDireccion.trim();
             await updatePerfil(data); //llama al contexto que hace put /usuarios/perfil
             setPerfilSuccess('Perfil actualizado correctamente');
             setEditMode(false); //cierra el formulario de edicin
             //limpia los campos de edicion
             setEditNombre('');
+            setEditApellido('');
             setEditEmail('');
-            setEditPassword('');
+            setEditTipoDocumento('');
+            setEditDocumento('');
+            setEditTelefono('');
+            setEditDireccion('');
 
         } catch (error: unknown) {
             setPerfilError((error as { message?: string })?. message || 'No fue posible actualizar el perfil');
@@ -459,21 +482,29 @@ export default function TabTwoScreen() {
             onChangeText={setEditNombre}
             style={styles.input}
           />
-          {/* Campo de email: teclado email, sin mayúsculas automáticas */}
+          {/* Campo de apellido */}
           <TextInput
-            placeholder={`Email actual: ${user?.email || ''}`}
-            value={editEmail}
-            onChangeText={setEditEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
+            placeholder={`Apellido actual: ${user?.apellido || ''}`}
+            value={editApellido}
+            onChangeText={setEditApellido}
             style={styles.input}
           />
-          {/* Campo de contraseña: dejar vacío = no cambiar */}
+
+          {/* Campo de email: teclado email, sin mayúsculas automáticas, sólo lectura */}
+
+          {/* Campo de teléfono */}
           <TextInput
-            placeholder="Nueva contrasena (dejar vacio para no cambiar)"
-            value={editPassword}
-            onChangeText={setEditPassword}
-            secureTextEntry
+            placeholder={`Teléfono actual: ${user?.telefono || ''}`}
+            value={editTelefono}
+            onChangeText={setEditTelefono}
+            keyboardType="phone-pad"
+            style={styles.input}
+          />
+          {/* Campo de dirección */}
+          <TextInput
+            placeholder={`Dirección actual: ${user?.direccion || ''}`}
+            value={editDireccion}
+            onChangeText={setEditDireccion}
             style={styles.input}
           />
           {/* Banner de error si la actualización falla */}
@@ -497,10 +528,12 @@ export default function TabTwoScreen() {
         </View>
       ) : (
         // ── BOTÓN PARA ABRIR EL FORMULARIO DE EDICIÓN ─────────────────────
-        <Pressable style={[styles.btn, styles.btnOutline]} onPress={() => { setEditMode(true); setPerfilSuccess(''); }}>
-          <Ionicons name="create-outline" size={17} color="#a57c63" />
-          <Text style={[styles.btnTextOutline, { color: '#a57c63' }]}>Editar perfil</Text>
-        </Pressable>
+        canEditPerfil ? (
+          <Pressable style={[styles.btn, styles.btnOutline]} onPress={openEditPerfil}>
+            <Ionicons name="create-outline" size={17} color="#a57c63" />
+            <Text style={[styles.btnTextOutline, { color: '#a57c63' }]}>Editar perfil</Text>
+          </Pressable>
+        ) : null
       )}
 
       {/* ── BOTÓN: PANEL DE ADMINISTRACIÓN (solo admin y auxiliar) ─────── */}

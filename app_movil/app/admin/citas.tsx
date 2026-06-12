@@ -63,6 +63,7 @@ export default function AdminCitasScreen() {
   const [expandedCitaId, setExpandedCitaId] = useState<string | number | null>(null);
   const [detalleCitas, setDetalleCitas] = useState<Record<string, Cita>>({});
   const [loadingDetalleId, setLoadingDetalleId] = useState<string | number | null>(null);
+  const [confirmadaId, setConfirmadaId] = useState<string | number | null>(null);
   const [cancellingId, setCancellingId] = useState<string | number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -84,6 +85,86 @@ export default function AdminCitasScreen() {
       setLoadingDetalleId(null);
     }
   };
+
+const confirmarCita = (id: string | number) => {
+  Alert.alert(
+    'Confirmar cita',
+    '¿Estás seguro de que deseas confirmar esta cita?',
+    [
+      {
+        text: 'Cancelar',
+        style: 'cancel',
+      },
+      {
+        text: 'Sí, confirmar',
+        onPress: async () => {
+          setConfirmadaId(id);
+
+          try {
+            if (isAdmin || isAux) {
+              const res = await apiClient.put(
+                `/admin/citas/${id}/estado`,
+                { estado: 'confirmada' }
+              );
+
+              const updated =
+                res.data?.data?.cita ??
+                res.data?.data ??
+                res.data ??
+                {};
+
+              setCitas((prev) =>
+                prev.map((c) =>
+                  String(c.id) === String(id)
+                    ? { ...c, ...(updated || {}), estado: 'confirmada' }
+                    : c
+                )
+              );
+
+              setDetalleCitas((prev) => ({
+                ...prev,
+                [String(id)]: {
+                  ...(prev[String(id)] || {}),
+                  ...(updated || {}),
+                  estado: 'confirmada',
+                },
+              }));
+            } else {
+              await apiClient.put(`/cliente/citas/${id}/confirmada`);
+
+              setCitas((prev) =>
+                prev.map((c) =>
+                  String(c.id) === String(id)
+                    ? { ...c, estado: 'confirmada' }
+                    : c
+                )
+              );
+
+              setDetalleCitas((prev) => ({
+                ...prev,
+                [String(id)]: {
+                  ...(prev[String(id)] || {}),
+                  estado: 'confirmada',
+                },
+              }));
+            }
+
+            Alert.alert('Éxito', 'La cita ha sido confirmada correctamente.');
+          } catch (error: any) {
+            const msg =
+              error?.response?.data?.message ||
+              error?.message ||
+              'No se pudo confirmar la cita. Intenta nuevamente.';
+
+            Alert.alert('Error', msg);
+          } finally {
+            setConfirmadaId(null);
+          }
+        },
+      },
+    ]
+  );
+};
 
   const cancelarCita = (id: string | number) => {
     Alert.alert('Confirmar cancelación', '¿Estás seguro de que deseas cancelar esta cita?', [
@@ -209,9 +290,7 @@ export default function AdminCitasScreen() {
     </Pressable>
   )}
 
-  <Pressable style={styles.searchBtn}>
-    <ThemedText style={styles.searchBtnText}>Buscar</ThemedText>
-  </Pressable>
+
 </View>
 
 
@@ -281,7 +360,18 @@ export default function AdminCitasScreen() {
                   ) : null}
                   {item.notas ? <ThemedText>Notas: {item.notas}</ThemedText> : null}
                   {typeof item.total === 'number' ? <ThemedText>Total: ${item.total.toLocaleString('es-CO')}</ThemedText> : null}
-                  {item.estado !== 'cancelada' ? (
+                  {item.estado?.toLowerCase() === 'pendiente' ? (
+                    <Pressable
+                      style={[styles.confirmButton, confirmadaId === item.id ? { opacity: 0.7 } : undefined]}
+                      onPress={() => confirmarCita(item.id ?? '')}
+                      disabled={confirmadaId === item.id}
+                    >
+                      <ThemedText style={styles.confirmButtonText}>{confirmadaId === item.id ? 'Confirmando...' : 'Confirmar cita'}</ThemedText>
+                    </Pressable>
+                  ) : null}
+                  {item.estado?.toLowerCase() === 'confirmada' ? (
+                    <ThemedText>La cita ya fue confirmada.</ThemedText>
+                  ) : item.estado?.toLowerCase() !== 'cancelada' ? (
                     <Pressable
                       style={[styles.cancelButton, cancellingId === item.id ? { opacity: 0.7 } : undefined]}
                       onPress={() => cancelarCita(item.id ?? '')}
@@ -313,11 +403,21 @@ const styles = StyleSheet.create({
   serviceLabel: { fontWeight: '600' },
   serviceInfo: { marginTop: 2, color: '#5b4b40', fontSize: 13 },
   hint: { marginTop: 10, color: '#7b6758', fontSize: 12 },
-  cancelButton: { marginTop: 8, backgroundColor: '#f1bebe', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center' },
-  cancelText: { color: '#a94442', fontWeight: '600' },
+  cancelButton: { marginTop: 8, backgroundColor: '#a94442', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center' },
+  cancelText: { color: '#fff', fontWeight: '600' },
   input: { flex: 1, borderWidth: 1, borderColor: '#d6c7ae', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff' },
   searchBtn: { backgroundColor: '#3e2f25', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
   clearBtn: { backgroundColor: '#3f2d25', borderRadius: 14, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
+  confirmButton: {
+    marginTop: 8,
+    backgroundColor: '#5d9d51',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  confirmButtonText: { color: '#fff', fontWeight: '700' },
   searchBtnText: { color: '#fff', fontWeight: '700' },
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
 });
+

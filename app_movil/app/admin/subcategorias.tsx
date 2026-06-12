@@ -29,6 +29,7 @@
     export default function AdminSubcategoriasScreen() {
     const { user } = useAuth() as { user: AuthUser | null };
     const isAdmin = user?.rol === 'administrador';
+    const isAuxiliar = user?.rol === 'auxiliar';
 
     const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
     const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -286,7 +287,7 @@
                     {item.activo ? 'Activa' : 'Inactiva'}
                     </Text>
                 </View>
-                {isAdmin && (
+                {(isAdmin || isAuxiliar) && (
                     <Pressable
                     style={[styles.toggleBtn, item.activo ? styles.toggleBtnOff : styles.toggleBtnOn]}
                     onPress={() => handleToggle(item)}
