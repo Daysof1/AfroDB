@@ -75,7 +75,7 @@ export default function Navbar({ userRole, onLogout }) {
               {showCatalogAndServices && (
                 <>
                   <Link to="/cliente/catalogo">Catálogo</Link>
-                  <Link to={servicesRoute}>Servicios</Link>
+                  <Link to={servicesRoute}>Agendar</Link>
                 </>
               )}
               <Link to="/profile">Mi Perfil</Link>

@@ -76,7 +76,9 @@ export default function Profile() {
       formData.append('apellido', editData.apellido || '');
       formData.append('telefono', editData.telefono || '');
       formData.append('direccion', editData.direccion || '');
-      formData.append('tipo_documento', editData.tipo_documento || '');
+      if (editData.tipo_documento) {
+        formData.append('tipo_documento', editData.tipo_documento);
+      }
       if (photoFile) {
         formData.append('foto', photoFile);
       }
@@ -216,13 +218,18 @@ export default function Profile() {
                   </div>
                   <div className="form-group">
                     <label htmlFor="tipo_documento">Tipo de Documento</label>
-                    <input
-                      type="text"
+                    <select
                       id="tipo_documento"
                       name="tipo_documento"
                       value={editData.tipo_documento || ''}
-                      disabled
-                    />
+                      onChange={handleEditChange}
+                    >
+                      <option value="C.C.">C.C.</option>
+                      <option value="T.I.">T.I.</option>
+                      <option value="C.E.">C.E.</option>
+                      <option value="P.A.">P.A.</option>
+                      <option value="otro">Otro</option>
+                    </select>
                   </div>
                   <div className="form-group">
                     <label htmlFor="documento">Documento</label>

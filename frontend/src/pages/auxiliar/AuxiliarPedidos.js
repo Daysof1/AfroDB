@@ -9,6 +9,8 @@ export default function AuxiliarPedidos() {
   const [estado, setEstado] = useState('');
   const [busqueda, setBusqueda] = useState('');
 
+  const [filtro, setFiltro] = useState('Todos');
+
   const loadPedidos = async () => {
     try {
       const response = await apiRequest('/admin/pedidos');
@@ -24,7 +26,7 @@ export default function AuxiliarPedidos() {
 
   const pedidosFiltrados = pedidos.filter((pedido) => {
     const textoBusqueda = busqueda.toLowerCase().trim();
-    return (
+    const coincideBusqueda =
       !textoBusqueda ||
       String(pedido.id).includes(textoBusqueda) ||
       (pedido?.usuario?.nombre || '').toLowerCase().includes(textoBusqueda) ||
@@ -32,9 +34,14 @@ export default function AuxiliarPedidos() {
       (pedido.direccionEnvio || '').toLowerCase().includes(textoBusqueda) ||
       (pedido.telefono || '').toLowerCase().includes(textoBusqueda) ||
       (pedido.metodoPago || '').toLowerCase().includes(textoBusqueda) ||
-      (pedido.estado || '').toLowerCase().includes(textoBusqueda)
-    );
-  });
+      (pedido.estado || '').toLowerCase().includes(textoBusqueda);
+
+      const coincideEstado =
+    filtro === 'Todos' ||
+    (pedido.estado || '').toLowerCase() === filtro.toLowerCase();
+
+  return coincideBusqueda && coincideEstado;
+});
 
   const handleEdit = (pedido) => {
     setEditingId(pedido.id);
@@ -74,12 +81,76 @@ export default function AuxiliarPedidos() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
-      </div>
+      
 
+      <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todas ({pedidos.length})
+        </button>
+         <button
+          className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
+          onClick={() => setFiltro('Pendiente')}
+        >
+          Pendientes ({pedidos.filter((c) => (c.estado || '').toLowerCase() === 'pendiente').length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'Confirmada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Enviado')}
+        >
+          Confirmadas ({pedidos.filter((c) => (c.estado || '').toLowerCase() === 'enviado').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Completada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Completada')}
+        >
+          Completadas ({pedidos.filter((c) => (c.estado || '').toLowerCase() === 'entregado').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Cancelada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Cancelada')}
+        >
+          Canceladas ({pedidos.filter((c) => (c.estado || '').toLowerCase() === 'cancelada').length})
+        </button>
+        </div>
+
+
+        <div className="pedidos-container">
+        {pedidosFiltrados.length === 0 ? (
+          <div className="empty-state">
+            <p>No hay pedidos en esta categoría</p>
+          </div>
+        ) : (
+          <div className="pedidos-grid">
+            {pedidosFiltrados.map((pedido) => (
+              <div key={pedido.id} className="pedido-card">
+                <div className="pedido-header">
+                  <h3>Pedido #{pedido.id}</h3>
+                  <span
+                className={`badge ${
+                  (pedido.estado || '').toLowerCase() === 'pendiente'
+                  ? 'badge-warning'
+                  : (pedido.estado || '').toLowerCase() === 'confirmado'
+                  ? 'badge-info'
+                  : (pedido.estado || '').toLowerCase() === 'completado'
+                  ? 'badge-success'
+                  : (pedido.estado || '').toLowerCase() === 'cancelado'
+                  ? 'badge-danger'
+                  : 'badge-secondary'
+                }`}
+              >
+              {pedido.estado}
+              </span>
+                </div>
       <div className="cards-grid">
         {pedidosFiltrados.map((pedido) => (
           <div key={pedido.id} className="service-card">
             <h3>Pedido #{pedido.id}</h3>
+            <p><strong>Pedido:</strong> {(pedido.Servicios || []).map((servicio) => servicio.nombre).join(', ') || 'Servicio'}</p>
             <p><strong>Cliente:</strong> {pedido?.usuario?.nombre || 'Cliente'}</p>
             <p><strong>Dirección:</strong> {pedido.direccionEnvio || 'Sin dirección'}</p>
             <p><strong>Teléfono:</strong> {pedido.telefono || 'Sin teléfono'}</p>
@@ -95,6 +166,7 @@ export default function AuxiliarPedidos() {
                 {pedido.estado || 'Sin estado'}
               </span>
             </p>
+
             {editingId === pedido.id ? (
               <div className="form-container">
                 <div className="form-group">
@@ -120,6 +192,10 @@ export default function AuxiliarPedidos() {
         ))}
       </div>
     </div>
+  ))}
+</div>
+        )}
+      </div>
+    </div>
   );
 }
-

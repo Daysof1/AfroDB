@@ -98,9 +98,6 @@ export default function ClientePedidos() {
                   >
                     <FontAwesomeIcon icon={faEye} /> {pedidoExpandidoId === pedido.id ? 'Ocultar Detalles' : 'Ver Detalles'}
                   </button>
-                  {(pedido.estado || '').toLowerCase() === 'entregado' && (
-                    <button className="btn btn-sm btn-primary">⭐ Calificar</button>
-                  )}
                 </div>
               </div>
             ))}

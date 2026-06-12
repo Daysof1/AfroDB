@@ -12,7 +12,7 @@ const profesionalController = require('../controllers/profesional.controller');
 // ============================================
 
 router.get('/citas', verificarAuth, esProfesional, citaController.getCitasProfesional);
-router.put('/citas/:id/estado', verificarAuth, esProfesional, citaController.actualizarEstadoCita);
+router.put('/citas/:id/estado', citaController.actualizarEstadoCita);
 
 // ============================================
 // PERFIL PROFESIONAL
