@@ -28,19 +28,24 @@ export default function ProfesionalCitas() {
     loadCitas();
   }, []);
 
-  /**  const citasFiltradas = citas.filter((cita) => {
-    const textoBusqueda = busqueda.toLowerCase().trim();
-    return (
-      !textoBusqueda ||
-      (cita.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
-      (cita.Servicios || []).some((servicio) => servicio.nombre.toLowerCase().includes(textoBusqueda))
-    );
-  });**/
-  
+  const citasFiltradas = citas.filter((cita) => {
+  const textoBusqueda = busqueda.toLowerCase().trim();
 
-  const citasFiltradas = filtro === 'Todos' 
-    ? citas 
-    : citas.filter((c) => (c.estado || '').toLowerCase() === filtro.toLowerCase());
+  const coincideBusqueda =
+    !textoBusqueda ||
+    (cita?.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+    (cita?.profesional?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+    (cita?.estado || '').toLowerCase().includes(textoBusqueda) ||
+    (cita.fecha || '').toLowerCase().includes(textoBusqueda) ||
+    (cita.hora || '').toLowerCase().includes(textoBusqueda) ||
+    (cita.notas || '').toLowerCase().includes(textoBusqueda);
+
+  const coincideEstado =
+    filtro === 'Todos' ||
+    (cita.estado || '').toLowerCase() === filtro.toLowerCase();
+
+  return coincideBusqueda && coincideEstado;
+});
 
   const handleActualizarEstado = async (id, nuevoEstado) => {
     try {
@@ -64,6 +69,14 @@ export default function ProfesionalCitas() {
       {error && <div className="alert alert-error">{error}</div>}
 
       <div className="filters">
+        <input
+          type="text"
+          placeholder="Buscar citas..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+
         <button
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
@@ -129,8 +142,12 @@ export default function ProfesionalCitas() {
 
                 <div className="cita-info-prof">
                   <p><strong>Servicio:</strong> {(cita.Servicios || []).map((servicio) => servicio.nombre).join(', ') || 'Servicio'}</p>
+                  <p><strong>Profesional:</strong> {cita?.profesional?.nombre || 'Profesional'}</p>
                   <p><strong>Fecha:</strong> {cita.fecha}</p>
                   <p><strong>Hora:</strong> {cita.hora}</p>
+                  <p><strong>Duración:</strong> {Number(cita.duracionTotal || 0)} min</p>
+                  <p><strong>Total:</strong> ${Number(cita.total || 0).toLocaleString()}</p>
+                  <p><strong>Notas:</strong> {cita.notas || 'Sin notas'}</p>
                   <p><strong>Teléfono:</strong> {cita?.cliente?.telefono || 'N/A'}</p>
                 </div>
 

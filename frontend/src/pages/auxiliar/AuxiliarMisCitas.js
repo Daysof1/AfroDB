@@ -12,7 +12,7 @@ const normalizarTexto = (texto = '') =>
     .trim()
     .toLowerCase();
 
-export default function ClienteCitas() {
+export default function AuxiliarMisCitas() {
   const location = useLocation();
   const navigate = useNavigate();
   const [citas, setCitas] = useState([]);
@@ -24,7 +24,6 @@ export default function ClienteCitas() {
   const [reprogramacionData, setReprogramacionData] = useState({ fecha: '', hora: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const servicioPreseleccionadoId = useMemo(() => {
@@ -259,7 +258,7 @@ export default function ClienteCitas() {
   return (
     <div className="cliente-page">
       <div className="page-header">
-        <h1><FontAwesomeIcon icon={faCalendar} /> Mis Citas</h1>
+        <h1><FontAwesomeIcon icon={faCalendar} /> Mis Citas Personales</h1>
         <button className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
           {isFormOpen ? 'Cancelar' : '➕ Agendar Nueva Cita'}
         </button>
@@ -409,20 +408,20 @@ export default function ClienteCitas() {
                 <div className="cita-header">
                   <h3>{(cita.Servicios || []).map((s) => s.nombre).join(', ') || 'Cita'}</h3>
                   <span
-                className={`badge ${
-                  (cita.estado || '').toLowerCase() === 'pendiente'
-                  ? 'badge-warning'
-                  : (cita.estado || '').toLowerCase() === 'confirmada'
-                  ? 'badge-info'
-                  : (cita.estado || '').toLowerCase() === 'completada'
-                  ? 'badge-success'
-                  : (cita.estado || '').toLowerCase() === 'cancelada'
-                  ? 'badge-danger'
-                  : 'badge-secondary'
-                }`}
-              >
-              {cita.estado}
-              </span>
+                    className={`badge ${
+                      (cita.estado || '').toLowerCase() === 'pendiente'
+                      ? 'badge-warning'
+                      : (cita.estado || '').toLowerCase() === 'confirmada'
+                      ? 'badge-info'
+                      : (cita.estado || '').toLowerCase() === 'completada'
+                      ? 'badge-success'
+                      : (cita.estado || '').toLowerCase() === 'cancelada'
+                      ? 'badge-danger'
+                      : 'badge-secondary'
+                    }`}
+                  >
+                    {cita.estado}
+                  </span>
                 </div>
 
                 <div className="cita-info">
@@ -505,4 +504,3 @@ export default function ClienteCitas() {
     </div>
   );
 }
-

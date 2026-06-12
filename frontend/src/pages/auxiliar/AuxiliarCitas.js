@@ -7,6 +7,8 @@ export default function AuxiliarCitas() {
   const [error, setError] = useState('');
   const [busqueda, setBusqueda] = useState('');
 
+  const [filtro, setFiltro] = useState('Todos');
+
   const loadCitas = async () => {
     try {
       const response = await apiRequest('/admin/citas');
@@ -21,27 +23,33 @@ export default function AuxiliarCitas() {
   }, []);
 
   const citasFiltradas = citas.filter((cita) => {
-    const textoBusqueda = busqueda.toLowerCase().trim();
-    return (
-      !textoBusqueda ||
-      (cita?.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
-      (cita?.profesional?.nombre || '').toLowerCase().includes(textoBusqueda) ||
-      (cita?.estado || '').toLowerCase().includes(textoBusqueda) ||
-      (cita.fecha || '').toLowerCase().includes(textoBusqueda) ||
-      (cita.hora || '').toLowerCase().includes(textoBusqueda) ||
-      (cita.notas || '').toLowerCase().includes(textoBusqueda)
-    );
-  });
+  const textoBusqueda = busqueda.toLowerCase().trim();
 
-  const handleCancelar = async (id) => {
+  const coincideBusqueda =
+    !textoBusqueda ||
+    (cita?.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+    (cita?.profesional?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+    (cita?.estado || '').toLowerCase().includes(textoBusqueda) ||
+    (cita.fecha || '').toLowerCase().includes(textoBusqueda) ||
+    (cita.hora || '').toLowerCase().includes(textoBusqueda) ||
+    (cita.notas || '').toLowerCase().includes(textoBusqueda);
+
+  const coincideEstado =
+    filtro === 'Todos' ||
+    (cita.estado || '').toLowerCase() === filtro.toLowerCase();
+
+  return coincideBusqueda && coincideEstado;
+});
+
+  const handleActualizarEstado = async (id, nuevoEstado) => {
     try {
-      await apiRequest(`/admin/citas/${id}/estado`, {
+      await apiRequest(`/citas/${id}/estado`, {
         method: 'PUT',
-        body: JSON.stringify({ estado: 'cancelada' }),
+        body: JSON.stringify({ estado: nuevoEstado.toLowerCase() }),
       });
       await loadCitas();
     } catch (err) {
-      setError(err.message || 'No se pudo actualizar la cita');
+      setError(err.message || 'No se pudo actualizar el estado');
     }
   };
 
@@ -50,7 +58,7 @@ export default function AuxiliarCitas() {
       <div className="page-header">
         <h1>Auxiliar - Citas</h1>
       </div>
-
+    
       {error && <div className="alert alert-error">{error}</div>}
       <div className="filtros">
         <input
@@ -60,29 +68,114 @@ export default function AuxiliarCitas() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
+  
+        
+      <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todas ({citas.length})
+        </button>
+         <button
+          className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
+          onClick={() => setFiltro('Pendiente')}
+        >
+          Pendientes ({citas.filter((c) => (c.estado || '').toLowerCase() === 'pendiente').length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'Confirmada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Confirmada')}
+        >
+          Confirmadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'confirmada').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Completada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Completada')}
+        >
+          Completadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'completada').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Cancelada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Cancelada')}
+        >
+          Canceladas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'cancelada').length})
+        </button>
       </div>
 
-      <div className="cards-grid">
-        {citasFiltradas.map((cita) => (
-          <div key={cita.id} className="service-card">
-            <h3>{(cita.Servicios || []).map((servicio) => servicio.nombre).join(', ') || 'Cita'}</h3>
-            <p><strong>Cliente:</strong> {cita?.cliente?.nombre || 'Cliente'}</p>
-            <p><strong>Profesional:</strong> {cita?.profesional?.nombre || 'Profesional'}</p>
-            <p><strong>Fecha:</strong> {cita.fecha}</p>
-            <p><strong>Hora:</strong> {cita.hora || 'N/A'}</p>
-            <p><strong>Duración:</strong> {Number(cita.duracionTotal || 0)} min</p>
-            <p><strong>Total:</strong> ${Number(cita.total || 0).toLocaleString()}</p>
-            <p><strong>Notas:</strong> {cita.notas || 'Sin notas'}</p>
-            <p>
-              <span className={`badge ${(cita.estado || '').toLowerCase() === 'confirmada' ? 'badge-success' : 'badge-danger'}`}>
-                {cita.estado || 'Sin estado'}
-              </span>
-            </p>
-            <div className="card-actions">
-              <button className="btn btn-sm btn-danger" onClick={() => handleCancelar(cita.id)}>Cancelar</button>
-            </div>
+      <div className="citas-container">
+        {citasFiltradas.length === 0 ? (
+          <div className="empty-state">
+            <p>No hay citas en esta categoría</p>
           </div>
-        ))}
+        ) : (
+       <div className="citas-grid">
+            {citasFiltradas.map((cita) => (
+              <div key={cita.id} className="cita-card-prof">
+                <div className="cita-header-prof">
+                  <h3>{cita?.cliente?.nombre || 'Cliente'}</h3>
+                  <span
+                className={`badge ${
+                  (cita.estado || '').toLowerCase() === 'pendiente'
+                  ? 'badge-warning'
+                  : (cita.estado || '').toLowerCase() === 'confirmada'
+                  ? 'badge-info'
+                  : (cita.estado || '').toLowerCase() === 'completada'
+                  ? 'badge-success'
+                  : (cita.estado || '').toLowerCase() === 'cancelada'
+                  ? 'badge-danger'
+                  : 'badge-secondary'
+                }`}
+              >
+              {cita.estado}
+              </span>
+                </div>
+
+                <div className="cita-info-prof">
+                  <p>
+  <strong>Servicio:</strong>{' '}
+  {Array.isArray(cita?.Servicios)
+    ? cita.Servicios.map(s => s.nombre).join(', ')
+    : cita?.Servicios?.nombre || 'Servicio'}
+</p>
+                  <p><strong>Profesional:</strong> {cita?.profesional?.nombre || 'Profesional'}</p>
+                  <p><strong>Fecha:</strong> {cita.fecha}</p>
+                  <p><strong>Hora:</strong> {cita.hora}</p>
+                  <p><strong>Duración:</strong> {Number(cita.duracionTotal || 0)} min</p>
+                  <p><strong>Total:</strong> ${Number(cita.total || 0).toLocaleString()}</p>
+                  <p><strong>Notas:</strong> {cita.notas || 'Sin notas'}</p>
+                  <p><strong>Teléfono:</strong> {cita?.cliente?.telefono || 'N/A'}</p>
+                </div>
+
+            <div className="card-actions">
+             {(cita.estado || '').toLowerCase() === 'pendiente' && (
+                    <>
+                      <button 
+                        className="btn btn-sm btn-primary"
+                        onClick={() => handleActualizarEstado(cita.id, 'Confirmada')}
+                      >
+                        ✅ Confirmar
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleActualizarEstado(cita.id, 'Cancelada')}
+                      >
+                        ❌ Cancelar
+                      </button>
+                    </>
+                  )}
+                  {(cita.estado || '').toLowerCase() === 'confirmada' && (
+                    <button className="btn btn-sm btn-secondary" onClick={() => handleActualizarEstado(cita.id, 'Completada')}>
+                      ✓ Completada
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

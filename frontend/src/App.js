@@ -28,6 +28,7 @@ import AdminEspecialidades from './pages/admin/AdminEspecialidades.js';
 import AdminProfesionales from './pages/admin/AdminProfesionales.js';
 import AdminUsuarios from './pages/admin/AdminUsuarios.js';
 import AdminCitas from './pages/admin/AdminCitas.js';
+import AdminMisCitas from './pages/admin/AdminMisCitas.js';
 import AdminPedidos from './pages/admin/AdminPedidos.js';
 
 // Páginas Cliente
@@ -41,8 +42,11 @@ import ClienteCitas from './pages/cliente/ClienteCitas.js';
 // Páginas Profesional
 import ProfesionalDashboard from './pages/profesional/ProfesionalDashboard.js';
 import ProfesionalCitas from './pages/profesional/ProfesionalCitas.js';
+import ProfesionalMisCitas from './pages/profesional/ProfesionalMisCitas.js';
 import ProfesionalPerfil from './pages/profesional/ProfesionalPerfil.js';
 import ProfesionalEspecialidades from './pages/profesional/ProfesionalEspecialidades.js';
+
+//Paginas Auxiliar
 import AuxiliarDashboard from './pages/auxiliar/AuxiliarDashboard.js';
 import AuxiliarProductos from './pages/auxiliar/AuxiliarProductos.js';
 import AuxiliarServicios from './pages/auxiliar/AuxiliarServicios.js';
@@ -52,6 +56,7 @@ import AuxiliarEspecialidades from './pages/auxiliar/AuxiliarEspecialidades.js';
 import AuxiliarProfesionales from './pages/auxiliar/AuxiliarProfesionales.js';
 import AuxiliarUsuarios from './pages/auxiliar/AuxiliarUsuarios.js';
 import AuxiliarCitas from './pages/auxiliar/AuxiliarCitas.js';
+import AuxiliarMisCitas from './pages/auxiliar/AuxiliarMisCitas.js';
 import AuxiliarPedidos from './pages/auxiliar/AuxiliarPedidos.js';
 
 function App() {
@@ -180,6 +185,7 @@ function App() {
                   <Route path="/admin/profesionales" element={<AdminProfesionales />} />
                   <Route path="/admin/usuarios" element={<AdminUsuarios />} />
                   <Route path="/admin/citas" element={<AdminCitas />} />
+                  <Route path="/admin/mis-citas" element={<AdminMisCitas />} />
                   <Route path="/admin/pedidos" element={<AdminPedidos />} />
                 </>
               )}
@@ -210,6 +216,7 @@ function App() {
                   <Route path="/profesional/pedidos" element={<ClientePedidos />} />
                   <Route path="/profesional/servicios" element={<ClienteServicios />} />
                   <Route path="/profesional/citas" element={<ProfesionalCitas />} />
+                  <Route path="/profesional/mis-citas" element={<ProfesionalMisCitas />} />
                   <Route path="/profesional/perfil" element={<ProfesionalPerfil />} />
                   <Route path="/profesional/especialidades" element={<ProfesionalEspecialidades />} />
                 </>
@@ -228,6 +235,7 @@ function App() {
                   <Route path="/auxiliar/profesionales" element={<AuxiliarProfesionales />} />
                   <Route path="/auxiliar/usuarios" element={<AuxiliarUsuarios />} />
                   <Route path="/auxiliar/citas" element={<AuxiliarCitas />} />
+                  <Route path="/auxiliar/mis-citas" element={<AuxiliarMisCitas />} />
                   <Route path="/auxiliar/pedidos" element={<AuxiliarPedidos />} />
                 </>
               )}

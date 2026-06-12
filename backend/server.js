@@ -126,7 +126,7 @@ const { esProfesional } = require('./middleware/checkRole');
 const citaController = require('./controllers/cita.controller');
 const profesionalController = require('./controllers/profesional.controller');
 app.get('/api/citas', verificarAuth, esProfesional, citaController.getCitasProfesional);
-app.put('/api/citas/:id/estado', verificarAuth, esProfesional, citaController.actualizarEstadoCita);
+app.put('/api/citas/:id/estado', verificarAuth, citaController.actualizarEstadoCita);
 
 // Alias para perfil de profesional en /api/perfil
 app.get('/api/perfil', verificarAuth, esProfesional, profesionalController.getMiPerfilProfesional);
