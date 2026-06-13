@@ -143,6 +143,85 @@ export const exportarProductosAPDF = (productos) => {
 };
 
 /**
+ * Exportar citas a PDF
+ */
+export const exportarCitasAPDF = (citas) => {
+  const doc = new jsPDF('landscape'); // Modo horizontal para más columnas
+  const startY = configurarPDF(doc, 'REPORTE DE CITAS');
+  
+  const tableData = citas.map(cita => [
+    cita.id,
+    cita.cliente?.nombre || '-',
+    Array.isArray(cita.Servicios) && cita.Servicios.length > 0 ? cita.Servicios.map(s => s.nombre).join(', ') : '-',
+    cita.profesional?.nombre || '-',
+    cita.fecha,
+    cita.hora,
+    cita.duracionTotal || '-',
+    `$${Number(cita.total || 0).toLocaleString('es-CO')}`,
+    cita.estado
+  ]);
+  
+  autoTable(doc, {
+    startY,
+    head: [['ID', 'Cliente', 'Servicios', 'Profesional', 'Fecha', 'Hora', 'Duración', 'Total', 'Estado']],
+    body: tableData,
+    styles: { fontSize: 7, cellPadding: 2 },
+    headStyles: { fillColor: [46, 204, 113], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+    margin: { top: 10 }
+  });
+  
+  const finalY = doc.lastAutoTable.finalY + 10;
+  doc.setFontSize(11);
+  const totalVentas = citas.reduce((sum, c) => sum + Number(c.total || 0), 0);
+  doc.text(`Total de citas: ${citas.length}`, 14, finalY);
+  doc.text(`Pendientes: ${citas.filter(c => (c.estado || '').toLowerCase() === 'pendiente').length}`, 14, finalY + 7);
+  doc.text(`Confirmadas: ${citas.filter(c => (c.estado || '').toLowerCase() === 'confirmada').length}`, 14, finalY + 14);
+  doc.text(`Completadas: ${citas.filter(c => (c.estado || '').toLowerCase() === 'completada').length}`, 14, finalY + 21);
+  doc.text(`Canceladas: ${citas.filter(c => (c.estado || '').toLowerCase() === 'cancelada').length}`, 14, finalY + 28);
+  doc.text(`Total ingresos: $${totalVentas.toLocaleString('es-CO')}`, 14, finalY + 35);
+  
+  doc.save(`citas_${Date.now()}.pdf`);
+};
+
+/**
+ * Exportar servicios a PDF
+ */
+export const exportarServiciosAPDF = (servicios) => {
+  const doc = new jsPDF('landscape'); // Modo horizontal para más columnas
+  const startY = configurarPDF(doc, 'REPORTE DE SERVICIOS');
+  
+  const tableData = servicios.map(ser => [
+    ser.id,
+    ser.nombre,
+    ser.categoria?.nombre || '-',
+    ser.subcategoria?.nombre || '-',
+    `$${Number(ser.precio).toLocaleString('es-CO')}`,
+    ser.duracion,
+    ser.activo ? 'Activo' : 'Inactivo'
+  ]);
+  
+  autoTable(doc, {
+    startY,
+    head: [['ID', 'Nombre', 'Categoría', 'Subcategoría', 'Precio', 'Duración', 'Estado']],
+    body: tableData,
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [46, 204, 113], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+    margin: { top: 10 }
+  });
+  
+  const finalY = doc.lastAutoTable.finalY + 10;
+  doc.setFontSize(11);
+  const valorTotal = servicios.reduce((sum, s) => sum + (Number(s.precio) * s.stock), 0);
+  doc.text(`Total de servicios: ${servicios.length}`, 14, finalY);
+  doc.text(`Activas: ${servicios.filter(s => s.activo).length}`, 14, finalY + 7);
+  doc.text(`Inactivas: ${servicios.filter(s => !s.activo).length}`, 14, finalY + 14);
+
+  doc.save(`servicios_${Date.now()}.pdf`);
+};
+
+/**
  * Exportar usuarios a PDF
  */
 export const exportarUsuariosAPDF = (usuarios) => {
@@ -939,6 +1018,331 @@ export const exportarPedidosAExcel = async (pedidos) => {
   const a = document.createElement('a');
   a.href = url;
   a.download = `pedidos_${Date.now()}.xlsx`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+};
+
+/**
+ * Exportar servicios a Excel
+ */
+export const exportarServiciosAExcel = async (servicios) => {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Servicios');
+  
+  const fecha = new Date().toLocaleDateString('es-CO', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  // Título
+  worksheet.mergeCells('A1:H1');
+  const tituloCell = worksheet.getCell('A1');
+  tituloCell.value = 'REPORTE DE SERVICIOS';
+  tituloCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+  tituloCell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2ECC71' }
+  };
+  tituloCell.alignment = { vertical: 'middle', horizontal: 'center' };
+  tituloCell.border = {
+    top: { style: 'thick' },
+    bottom: { style: 'thick' },
+    left: { style: 'thick' },
+    right: { style: 'thick' }
+  };
+  worksheet.getRow(1).height = 30;
+  
+  // Fecha
+  worksheet.mergeCells('A2:H2');
+  const fechaCell = worksheet.getCell('A2');
+  fechaCell.value = `Generado: ${fecha}`;
+  fechaCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF555555' } };
+  fechaCell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFECF0F1' }
+  };
+  fechaCell.alignment = { vertical: 'middle', horizontal: 'center' };
+  worksheet.getRow(2).height = 20;
+  
+  // Encabezados
+  const encabezados = ['ID', 'Nombre', 'Categoría', 'Subcategoría', 'Precio', 'Duración (min)', 'Estado'];
+  const headerRow = worksheet.getRow(4);
+  headerRow.values = encabezados;
+  headerRow.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2ECC71' }
+  };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  headerRow.height = 25;
+  headerRow.eachCell((cell) => {
+    cell.border = {
+      top: { style: 'medium' },
+      bottom: { style: 'medium' },
+      left: { style: 'thin' },
+      right: { style: 'thin' }
+    };
+  });
+  
+  // Datos
+  let rowIndex = 5;
+
+  servicios.forEach(ser => {
+    const row = worksheet.getRow(rowIndex);
+    row.values = [
+      ser.id,
+      ser.nombre,
+      ser.categoria?.nombre || '',
+      ser.subcategoria?.nombre || '',
+      Number(ser.precio),
+      ser.duracion || 0,
+      ser.activo ? '✓ Activo' : '✗ Inactivo'
+    ];
+    row.alignment = { vertical: 'middle' };
+    row.eachCell((cell, colNumber) => {
+      if (colNumber === 5 || colNumber === 7) {
+        cell.numFmt = '$#,##0';
+      }
+      if (colNumber === 8) {
+        cell.font = { bold: true, color: { argb: ser.activo ? 'FF27AE60' : 'FFE74C3C' } };
+      }
+    });
+    rowIndex++;
+  });
+  
+  // Resumen
+  rowIndex++;
+  const resumenRow = worksheet.getRow(rowIndex);
+  resumenRow.getCell(1).value = '📊 RESUMEN';
+  resumenRow.getCell(1).font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+  resumenRow.getCell(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF27AE60' }
+  };
+  resumenRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  resumenRow.height = 25;
+  
+  rowIndex++;
+  worksheet.getRow(rowIndex).values = ['Total de servicios:', servicios.length];
+  worksheet.getRow(rowIndex).font = { bold: true };
+  
+  rowIndex++;
+  worksheet.getRow(rowIndex).values = ['✓ Activas:', servicios.filter(s => s.activo).length];
+  worksheet.getRow(rowIndex).getCell(1).font = { color: { argb: 'FF27AE60' } };
+  
+  rowIndex++;
+  worksheet.getRow(rowIndex).values = ['✗ Inactivas:', servicios.filter(s => !s.activo).length];
+  worksheet.getRow(rowIndex).getCell(1).font = { color: { argb: 'FFE74C3C' } };
+  
+  // Anchos de columna
+  worksheet.columns = [
+    { width: 8 },
+    { width: 35 },
+    { width: 18 },
+    { width: 18 },
+    { width: 15 },
+    { width: 15 },
+    { width: 18 },
+    { width: 15 }
+  ];
+  
+  // Descargar archivo
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `servicios_${Date.now()}.xlsx`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+};
+
+/**
+ * Exportar citas a Excel
+ */
+export const exportarCitasAExcel = async (citas) => {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Citas');
+  
+  const fecha = new Date().toLocaleDateString('es-CO', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  // Título
+  worksheet.mergeCells('A1:I1');
+  const tituloCell = worksheet.getCell('A1');
+  tituloCell.value = 'REPORTE DE CITAS';
+  tituloCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+  tituloCell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2ECC71' }
+  };
+  tituloCell.alignment = { vertical: 'middle', horizontal: 'center' };
+  tituloCell.border = {
+    top: { style: 'thick' },
+    bottom: { style: 'thick' },
+    left: { style: 'thick' },
+    right: { style: 'thick' }
+  };
+  worksheet.getRow(1).height = 30;
+  
+  // Fecha
+  worksheet.mergeCells('A2:I2');
+  const fechaCell = worksheet.getCell('A2');
+  fechaCell.value = `Generado: ${fecha}`;
+  fechaCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF555555' } };
+  fechaCell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFECF0F1' }
+  };
+  fechaCell.alignment = { vertical: 'middle', horizontal: 'center' };
+  worksheet.getRow(2).height = 20;
+  
+  // Encabezados
+  const encabezados = ['ID', 'Cliente', 'Teléfono', 'Servicios', 'Profesional', 'Fecha', 'Hora', 'Duración (min)', 'Total', 'Estado'];
+  const headerRow = worksheet.getRow(4);
+  headerRow.values = encabezados;
+  headerRow.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2ECC71' }
+  };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+  headerRow.height = 25;
+  headerRow.eachCell((cell) => {
+    cell.border = {
+      top: { style: 'medium' },
+      bottom: { style: 'medium' },
+      left: { style: 'thin' },
+      right: { style: 'thin' }
+    };
+  });
+  
+  // Datos
+  let rowIndex = 5;
+  let totalIngresos = 0;
+  let duracionTotal = 0;
+  
+  citas.forEach(cita => {
+    totalIngresos += Number(cita.total || 0);
+    duracionTotal += Number(cita.duracionTotal || 0);
+    
+    const servicios = Array.isArray(cita.Servicios) && cita.Servicios.length > 0 
+      ? cita.Servicios.map(s => s.nombre).join(', ') 
+      : '-';
+    
+    const row = worksheet.getRow(rowIndex);
+    row.values = [
+      cita.id,
+      cita.cliente?.nombre || '',
+      cita.cliente?.telefono || '',
+      servicios,
+      cita.profesional?.nombre || '',
+      cita.fecha || '',
+      cita.hora || '',
+      cita.duracionTotal || 0,
+      Number(cita.total || 0),
+      cita.estado || ''
+    ];
+    row.alignment = { vertical: 'middle', wrapText: true };
+    row.eachCell((cell, colNumber) => {
+      if (colNumber === 9) {
+        cell.numFmt = '$#,##0';
+      }
+      if (colNumber === 10) {
+        const estado = (cita.estado || '').toLowerCase();
+        if (estado === 'completada') {
+          cell.font = { bold: true, color: { argb: 'FF27AE60' } };
+        } else if (estado === 'cancelada') {
+          cell.font = { bold: true, color: { argb: 'FFE74C3C' } };
+        } else if (estado === 'confirmada') {
+          cell.font = { bold: true, color: { argb: 'FF2980B9' } };
+        } else if (estado === 'pendiente') {
+          cell.font = { bold: true, color: { argb: 'FFF39C12' } };
+        }
+      }
+    });
+    rowIndex++;
+  });
+  
+  // Resumen
+  rowIndex++;
+  const resumenRow = worksheet.getRow(rowIndex);
+  resumenRow.getCell(1).value = '📊 RESUMEN';
+  resumenRow.getCell(1).font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+  resumenRow.getCell(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF27AE60' }
+  };
+  resumenRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  resumenRow.height = 25;
+  
+  rowIndex++;
+  worksheet.getRow(rowIndex).values = ['Total de citas:', citas.length];
+  worksheet.getRow(rowIndex).font = { bold: true };
+  
+  rowIndex++;
+  worksheet.getRow(rowIndex).values = ['🕒 Pendientes:', citas.filter(c => (c.estado || '').toLowerCase() === 'pendiente').length];
+  worksheet.getRow(rowIndex).getCell(1).font = { color: { argb: 'FFF39C12' } };
+  
+  rowIndex++;
+  worksheet.getRow(rowIndex).values = ['✓ Confirmadas:', citas.filter(c => (c.estado || '').toLowerCase() === 'confirmada').length];
+  worksheet.getRow(rowIndex).getCell(1).font = { color: { argb: 'FF2980B9' } };
+  
+  rowIndex++;
+  worksheet.getRow(rowIndex).values = ['✅ Completadas:', citas.filter(c => (c.estado || '').toLowerCase() === 'completada').length];
+  worksheet.getRow(rowIndex).getCell(1).font = { color: { argb: 'FF27AE60' } };
+  
+  rowIndex++;
+  worksheet.getRow(rowIndex).values = ['❌ Canceladas:', citas.filter(c => (c.estado || '').toLowerCase() === 'cancelada').length];
+  worksheet.getRow(rowIndex).getCell(1).font = { color: { argb: 'FFE74C3C' } };
+  
+  rowIndex++;
+  worksheet.getRow(rowIndex).values = ['⏱️ Duración total:', duracionTotal + ' minutos'];
+  worksheet.getRow(rowIndex).font = { bold: true };
+  
+  rowIndex++;
+  const ingresosRow = worksheet.getRow(rowIndex);
+  ingresosRow.values = ['💵 Total ingresos:', totalIngresos];
+  ingresosRow.font = { bold: true };
+  ingresosRow.getCell(2).numFmt = '$#,##0';
+  
+  // Anchos de columna
+  worksheet.columns = [
+    { width: 8 },
+    { width: 25 },
+    { width: 18 },
+    { width: 35 },
+    { width: 25 },
+    { width: 15 },
+    { width: 12 },
+    { width: 15 },
+    { width: 15 },
+    { width: 15 }
+  ];
+  
+  // Descargar archivo
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `citas_${Date.now()}.xlsx`;
   a.click();
   window.URL.revokeObjectURL(url);
 };

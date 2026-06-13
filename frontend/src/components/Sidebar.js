@@ -18,15 +18,8 @@ export default function Sidebar({ userRole, onToggle }) {
   const adminLinks = [
     { icon: 'cart', label: 'Carrito', href: '/admin/carrito' },
     { icon: 'calendar', label: 'Mis Citas', href: '/admin/mis-citas' },
-    { icon: 'box', label: 'Productos', href: '/admin/productos' },
-    { icon: 'bell', label: 'Servicios', href: '/admin/servicios' },
-    { icon: 'folder', label: 'Categorías', href: '/admin/categorias' },
-    { icon: 'folder', label: 'Subcategorías', href: '/admin/subcategorias' },
     { icon: 'specialties', label: 'Especialidades', href: '/admin/especialidades' },
     { icon: 'professionals', label: 'Profesionales', href: '/admin/profesionales' },
-    { icon: 'profile', label: 'Usuarios', href: '/admin/usuarios' },
-    { icon: 'calendar', label: 'Citas', href: '/admin/citas' },
-    { icon: 'box', label: 'Pedidos', href: '/admin/pedidos' },
   ];
 
   const clienteLinks = [

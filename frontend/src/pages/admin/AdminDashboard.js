@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCalendar,
@@ -123,14 +124,17 @@ export default function AdminDashboard() {
       {error && <div className="alert alert-error">{error}</div>}
       
       <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faBox} /></div>
-          <div className="stat-info">
-            <h3>Productos</h3>
-            <p className="stat-number">{stats.totalProductos}</p>
+        <Link to="/admin/productos" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="stat-card">
+            <div className="stat-icon"><FontAwesomeIcon icon={faBox} /></div>
+            <div className="stat-info">
+              <h3>Productos</h3>
+              <p className="stat-number">{stats.totalProductos}</p>
+            </div>
           </div>
-        </div>
+        </Link>
 
+        <Link to="/admin/servicios" style={{ textDecoration: "none", color: "inherit" }}>
         <div className="stat-card">
           <div className="stat-icon"><FontAwesomeIcon icon={faBell} /></div>
           <div className="stat-info">
@@ -138,7 +142,9 @@ export default function AdminDashboard() {
             <p className="stat-number">{stats.totalServicios}</p>
           </div>
         </div>
+        </Link>
 
+        <Link to="/admin/citas" style={{ textDecoration: "none", color: "inherit" }}>
         <div className="stat-card">
           <div className="stat-icon"><FontAwesomeIcon icon={faCalendar} /></div>
           <div className="stat-info">
@@ -146,7 +152,9 @@ export default function AdminDashboard() {
             <p className="stat-number">{stats.totalCitas}</p>
           </div>
         </div>
+        </Link>
 
+        <Link to="/admin/usuarios" style={{ textDecoration: "none", color: "inherit" }}>
         <div className="stat-card">
           <div className="stat-icon">👥</div>
           <div className="stat-info">
@@ -154,6 +162,9 @@ export default function AdminDashboard() {
             <p className="stat-number">{stats.totalUsuarios}</p>
           </div>
         </div>
+        </Link>
+
+        <Link to="/admin/pedidos" style={{ textDecoration: "none", color: "inherit" }}>
         <div className="stat-card">
           <div className="stat-icon"><FontAwesomeIcon icon={faShoppingCart} /></div>
           <div className="stat-info">
@@ -161,6 +172,9 @@ export default function AdminDashboard() {
             <p className="stat-number">{stats.totalPedidos}</p>
           </div>
         </div>
+        </Link>
+
+        <Link to="/admin/categorias" style={{ textDecoration: "none", color: "inherit" }}>
         <div className="stat-card">
           <div className="stat-icon"><FontAwesomeIcon icon={faTags} /></div>
           <div className="stat-info">
@@ -168,6 +182,9 @@ export default function AdminDashboard() {
             <p className="stat-number">{stats.totalCategorias}</p>
           </div>
         </div>
+        </Link>
+
+        <Link to="/admin/subcategorias" style={{ textDecoration: "none", color: "inherit" }}>
         <div className="stat-card">
           <div className="stat-icon"><FontAwesomeIcon icon={faSitemap} /></div>
           <div className="stat-info">
@@ -175,6 +192,7 @@ export default function AdminDashboard() {
             <p className="stat-number">{stats.totalSubcategorias}</p>
           </div>
         </div>
+        </Link>
       </div>
 
       <div className="admin-section">
