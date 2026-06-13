@@ -4,15 +4,52 @@ import { apiRequest } from '../../api/client.js';
 
 export default function AdminCitas() {
   const [citas, setCitas] = useState([]);
+  const [servicios, setServicios] = useState([]);
+  const [profesionales, setProfesionales] = useState([]);
   const [error, setError] = useState('');
   const [busqueda, setBusqueda] = useState('');
 
   const [filtro, setFiltro] = useState('Todos');
 
+  // Mapa de profesionales por ID
+  const profesionalesPorId = profesionales.reduce((map, prof) => {
+    map[prof.id] = prof.nombre;
+    return map;
+  }, {});
+
   const loadCitas = async () => {
     try {
-      const response = await apiRequest('/admin/citas');
-      setCitas(response?.data?.citas || []);
+      const [citasRes, profesionalesRes] = await Promise.all([
+        apiRequest('/admin/citas'),
+        apiRequest('/profesionales')
+      ]);
+      
+      const citasIniciales = citasRes?.data?.citas || [];
+      const profesionalesData = profesionalesRes?.data?.profesionales || [];
+      setProfesionales(profesionalesData);
+      
+      console.log('Citas iniciales:', citasIniciales);
+      
+      // Cargar servicios para cada cita usando el endpoint /cliente/citas/:id
+      const citasConServicios = await Promise.all(
+        citasIniciales.map(async (cita) => {
+          try {
+            console.log(`Cargando detalles de cita ${cita.id}`);
+            const citaCompleta = await apiRequest(`/cliente/citas/${cita.id}`);
+            console.log(`Cita ${cita.id} completa:`, citaCompleta);
+            return {
+              ...cita,
+              Servicios: citaCompleta?.data?.cita?.Servicios || []
+            };
+          } catch (err) {
+            console.warn(`No se pudieron cargar servicios para cita ${cita.id}:`, err.message);
+            return cita;
+          }
+        })
+      );
+      
+      console.log('Citas con servicios:', citasConServicios);
+      setCitas(citasConServicios);
     } catch (err) {
       setError(err.message || 'No se pudieron cargar citas');
     }
@@ -40,6 +77,29 @@ export default function AdminCitas() {
 
   return coincideBusqueda && coincideEstado;
 });
+
+  // Función para obtener todos los profesionales únicos de una cita
+  const getProfesionalesUnicos = (cita) => {
+    const profesionalesSet = new Set();
+    
+    // Agregar profesional principal si existe
+    if (cita?.profesional?.nombre) {
+      profesionalesSet.add(cita.profesional.nombre);
+    }
+    
+    // Agregar profesionales de cada servicio
+    if (Array.isArray(cita.Servicios)) {
+      cita.Servicios.forEach(servicio => {
+        const profesionalId = servicio?.profesionalId || servicio?.CitaServicio?.profesionalId;
+        if (profesionalId && profesionalesPorId[profesionalId]) {
+          profesionalesSet.add(profesionalesPorId[profesionalId]);
+        }
+      });
+    }
+    
+    const profesionalesArray = Array.from(profesionalesSet);
+    return profesionalesArray.length > 0 ? profesionalesArray.join(', ') : 'Profesional';
+  };
 
   const handleActualizarEstado = async (id, nuevoEstado) => {
     try {
@@ -132,10 +192,9 @@ export default function AdminCitas() {
               {cita.estado}
               </span>
                 </div>
-
                 <div className="cita-info-prof">
-                  <p><strong>Servicio:</strong> {(cita.Servicios || []).map((servicio) => servicio.nombre).join(', ') || 'Servicio'}</p>
-                  <p><strong>Profesional:</strong> {cita?.profesional?.nombre || 'Profesional'}</p>
+                  <p><strong>Servicio:</strong> {Array.isArray(cita.Servicios) && cita.Servicios.length > 0 ? cita.Servicios.map((s) => s.nombre).join(', ') : 'Sin servicios especificados'}</p>
+                  <p><strong>Profesional:</strong> {getProfesionalesUnicos(cita)}</p>
                   <p><strong>Fecha:</strong> {cita.fecha}</p>
                   <p><strong>Hora:</strong> {cita.hora}</p>
                   <p><strong>Duración:</strong> {Number(cita.duracionTotal || 0)} min</p>

@@ -5,6 +5,7 @@ import { apiRequest } from '../../api/client.js';
 export default function AdminSubcategorias() {
   const [subcategorias, setSubcategorias] = useState([]);
   const [filteredSubcategorias, setFilteredSubcategorias] = useState([]);
+  const [filtro, setFiltro] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [categorias, setCategorias] = useState([]);
   const [error, setError] = useState('');
@@ -31,15 +32,23 @@ export default function AdminSubcategorias() {
   }, []);
 
   useEffect(() => {
-    const lowercasedFilter = searchTerm.toLowerCase();
-    const filtered = subcategorias.filter(
-      (sub) =>
-        (sub.nombre && sub.nombre.toLowerCase().includes(lowercasedFilter)) ||
-        (sub.descripcion && sub.descripcion.toLowerCase().includes(lowercasedFilter)) ||
-        (sub.categoria?.nombre && sub.categoria.nombre.toLowerCase().includes(lowercasedFilter))
-    );
-    setFilteredSubcategorias(filtered);
-  }, [searchTerm, subcategorias]);
+  const lowercasedFilter = searchTerm.toLowerCase();
+
+  const filtered = subcategorias.filter((sub) => {
+    const coincideBusqueda =
+      (sub.nombre && sub.nombre.toLowerCase().includes(lowercasedFilter)) ||
+      (sub.descripcion && sub.descripcion.toLowerCase().includes(lowercasedFilter));
+
+    const coincideEstado =
+      filtro === 'Todos' ||
+      (filtro === 'True' && sub.activo) ||
+      (filtro === 'False' && !sub.activo);
+
+    return coincideBusqueda && coincideEstado;
+  });
+
+  setFilteredSubcategorias(filtered);
+}, [searchTerm, subcategorias, filtro]);
 
   const handleCrear = async (e) => {
     e.preventDefault();
@@ -115,6 +124,26 @@ export default function AdminSubcategorias() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
         />
+
+        <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todas ({subcategorias.length})
+        </button>
+         <button
+          className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
+          onClick={() => setFiltro('True')}
+        >
+          Activas ({subcategorias.filter((s) => s.activo === true).length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
+          onClick={() => setFiltro('False')}
+        >
+          Inactivas ({subcategorias.filter((s) => s.activo === false).length})
+        </button>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}

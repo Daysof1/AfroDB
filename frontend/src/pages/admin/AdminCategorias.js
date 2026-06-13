@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
+import { exportarCategoriasAPDF, exportarCategoriasAExcel } from '../../utils/exportUtils.js';
 
 export default function AdminCategorias() {
   const [categorias, setCategorias] = useState([]);
@@ -8,7 +9,8 @@ export default function AdminCategorias() {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
+  const [filtro, setFiltro] = useState('Todos');
+  const [showExportOptions, setShowExportOptions] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategoriaId, setEditingCategoriaId] = useState(null);
   const [newCategoria, setNewCategoria] = useState({ nombre: '', descripcion: '', tipo: 'producto' });
@@ -27,14 +29,23 @@ export default function AdminCategorias() {
   }, []);
 
   useEffect(() => {
-    const lowercasedFilter = searchTerm.toLowerCase();
-    const filtered = categorias.filter(
-      (cat) =>
-        (cat.nombre && cat.nombre.toLowerCase().includes(lowercasedFilter)) ||
-        (cat.descripcion && cat.descripcion.toLowerCase().includes(lowercasedFilter))
-    );
-    setFilteredCategorias(filtered);
-  }, [searchTerm, categorias]);
+  const lowercasedFilter = searchTerm.toLowerCase();
+
+  const filtered = categorias.filter((cat) => {
+    const coincideBusqueda =
+      (cat.nombre && cat.nombre.toLowerCase().includes(lowercasedFilter)) ||
+      (cat.descripcion && cat.descripcion.toLowerCase().includes(lowercasedFilter));
+
+    const coincideEstado =
+      filtro === 'Todos' ||
+      (filtro === 'True' && cat.activo) ||
+      (filtro === 'False' && !cat.activo);
+
+    return coincideBusqueda && coincideEstado;
+  });
+
+  setFilteredCategorias(filtered);
+}, [searchTerm, categorias, filtro]);
 
   const handleCrearCategoria = async (e) => {
     e.preventDefault();
@@ -97,16 +108,84 @@ export default function AdminCategorias() {
     setEditingCategoriaId(null);
     setNewCategoria({ nombre: '', descripcion: '', tipo: 'producto' });
   };
+  
 
   return (
     <div className="admin-page">
       <div className="page-header">
         <h1>Gestión de Categorías</h1>
+
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative' }}>
+          <button 
+            className="btn btn-primary"
+            onClick={() => setShowExportOptions(!showExportOptions)}
+          >
+            📊 Exportar
+          </button>
+          {showExportOptions && (
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              backgroundColor: '#fff',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              zIndex: 10,
+              minWidth: '150px',
+              marginTop: '5px'
+            }}>
+              <button 
+                className="btn btn-sm"
+                onClick={() => {
+                  exportarCategoriasAPDF(categorias);
+                  setShowExportOptions(false);
+                }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '10px 15px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
+                  borderBottom: '1px solid #eee'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                📄 Exportar a PDF
+              </button>
+              <button 
+                className="btn btn-sm"
+                onClick={async () => {
+                  await exportarCategoriasAExcel(categorias);
+                  setShowExportOptions(false);
+                }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '10px 15px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                📊 Exportar a Excel
+              </button>
+            </div>
+          )}
+        </div>
+
         <button className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
           {isFormOpen ? 'Cancelar' : '➕ Nueva Categoría'}
         </button>
       </div>
-
+      </div>
       <div className="search-container">
         <input
           type="text"
@@ -115,6 +194,26 @@ export default function AdminCategorias() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
         />
+
+        <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todas ({categorias.length})
+        </button>
+         <button
+          className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
+          onClick={() => setFiltro('True')}
+        >
+          Activas ({categorias.filter((c) => c.activo === true).length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
+          onClick={() => setFiltro('False')}
+        >
+          Inactivas ({categorias.filter((c) => c.activo === false).length})
+        </button>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -182,4 +281,3 @@ export default function AdminCategorias() {
     </div>
   );
 }
-

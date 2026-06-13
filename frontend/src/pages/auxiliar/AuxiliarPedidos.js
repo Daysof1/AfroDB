@@ -157,7 +157,6 @@ export default function AuxiliarPedidos() {
             <p><strong>Método de Pago:</strong> {pedido.metodoPago || 'efectivo'}</p>
             <p><strong>Total:</strong> ${Number(pedido.total || 0).toLocaleString()}</p>
             <p><strong>Notas:</strong> {pedido.notas || 'Sin notas'}</p>
-            <p><strong>Pago:</strong> {pedido.fechaPago ? new Date(pedido.fechaPago).toLocaleString() : 'Pendiente'}</p>
             <p><strong>Envío:</strong> {pedido.fechaEnvio ? new Date(pedido.fechaEnvio).toLocaleString() : 'Pendiente'}</p>
             <p><strong>Entrega:</strong> {pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toLocaleString() : 'Pendiente'}</p>
             <p><strong>Fecha:</strong> {pedido.createdAt ? new Date(pedido.createdAt).toLocaleDateString() : 'N/A'}</p>

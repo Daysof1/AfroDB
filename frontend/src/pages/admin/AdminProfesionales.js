@@ -8,6 +8,7 @@ export default function AdminProfesionales() {
   const [success, setSuccess] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [busqueda, setBusqueda] = useState('');
+  const [filtro, setFiltro] = useState('Todos');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState({
     tipo_documento: 'C.C.',
@@ -35,15 +36,22 @@ export default function AdminProfesionales() {
 
   const profesionalesFiltrados = profesionales.filter((profesional) => {
     const textoBusqueda = busqueda.toLowerCase().trim();
-    return (
+    const coincideBusqueda =
+    !textoBusqueda ||
       !textoBusqueda ||
       (profesional.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (profesional.apellido || '').toLowerCase().includes(textoBusqueda) ||
       (profesional.documento || '').toLowerCase().includes(textoBusqueda) ||
       (profesional.email || '').toLowerCase().includes(textoBusqueda) ||
-      (profesional.telefono || '').toLowerCase().includes(textoBusqueda)
-    );
-  });
+      (profesional.telefono || '').toLowerCase().includes(textoBusqueda);
+
+   const coincideEstado =
+    filtro === 'Todos' ||
+    (filtro === 'True' && profesional.activo) ||
+    (filtro === 'False' && !profesional.activo);
+
+  return coincideBusqueda && coincideEstado;
+});
 
   const handleEdit = (profesional) => {
     setEditingId(profesional.id);
@@ -125,6 +133,26 @@ export default function AdminProfesionales() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
+
+        <button
+                className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+                onClick={() => setFiltro('Todos')}
+              >
+                Todas ({profesionales.length})
+              </button>
+              <button
+                className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
+                onClick={() => setFiltro('True')}
+              >
+                Activas ({profesionales.filter((p) => p.activo === true).length})
+              </button>
+
+              <button
+                className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
+                onClick={() => setFiltro('False')}
+              >
+                Inactivas ({profesionales.filter((p) => p.activo === false).length})
+              </button>
       </div>
 
       {isFormOpen && (

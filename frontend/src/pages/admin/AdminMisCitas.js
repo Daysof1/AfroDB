@@ -25,6 +25,9 @@ export default function AdminMisCitas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+  
+  const [filtro, setFiltro] = useState('Todos');
 
   const servicioPreseleccionadoId = useMemo(() => {
     const servicioIdDesdeState = location?.state?.servicioId;
@@ -127,6 +130,25 @@ export default function AdminMisCitas() {
   useEffect(() => {
     loadData();
   }, []);
+
+   const citasFiltradas = citas.filter((cita) => {
+  const textoBusqueda = busqueda.toLowerCase().trim();
+
+  const coincideBusqueda =
+    !textoBusqueda ||
+    (cita?.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+    (cita?.profesional?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+    (cita?.estado || '').toLowerCase().includes(textoBusqueda) ||
+    (cita.fecha || '').toLowerCase().includes(textoBusqueda) ||
+    (cita.hora || '').toLowerCase().includes(textoBusqueda) ||
+    (cita.notas || '').toLowerCase().includes(textoBusqueda);
+
+  const coincideEstado =
+    filtro === 'Todos' ||
+    (cita.estado || '').toLowerCase() === filtro.toLowerCase();
+
+  return coincideBusqueda && coincideEstado;
+});
 
   useEffect(() => {
     const hasServicioPrefill = Number.isFinite(servicioPreseleccionadoId)
@@ -396,32 +418,76 @@ export default function AdminMisCitas() {
         </div>
       )}
 
+      <div className="filtros">
+        <input
+          type="text"
+          placeholder="Buscar citas..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+        
+      <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todas ({citas.length})
+        </button>
+         <button
+          className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
+          onClick={() => setFiltro('Pendiente')}
+        >
+          Pendientes ({citas.filter((c) => (c.estado || '').toLowerCase() === 'pendiente').length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'Confirmada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Confirmada')}
+        >
+          Confirmadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'confirmada').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Completada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Completada')}
+        >
+          Completadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'completada').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Cancelada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Cancelada')}
+        >
+          Canceladas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'cancelada').length})
+        </button>
+      </div>
+
       <div className="citas-container">
         {citas.length === 0 ? (
           <div className="empty-state">
             <p>No tienes citas agendadas</p>
           </div>
         ) : (
-          <div className="citas-grid">
-            {citas.map((cita) => (
-              <div key={cita.id} className="cita-card">
-                <div className="cita-header">
+       <div className="citas-grid">
+            {citasFiltradas.map((cita) => (
+              <div key={cita.id} className="cita-card-prof">
+                <div className="cita-header-prof">
                   <h3>{(cita.Servicios || []).map((s) => s.nombre).join(', ') || 'Cita'}</h3>
                   <span
-                    className={`badge ${
-                      (cita.estado || '').toLowerCase() === 'pendiente'
-                      ? 'badge-warning'
-                      : (cita.estado || '').toLowerCase() === 'confirmada'
-                      ? 'badge-info'
-                      : (cita.estado || '').toLowerCase() === 'completada'
-                      ? 'badge-success'
-                      : (cita.estado || '').toLowerCase() === 'cancelada'
-                      ? 'badge-danger'
-                      : 'badge-secondary'
-                    }`}
-                  >
-                    {cita.estado}
-                  </span>
+                className={`badge ${
+                  (cita.estado || '').toLowerCase() === 'pendiente'
+                  ? 'badge-warning'
+                  : (cita.estado || '').toLowerCase() === 'confirmada'
+                  ? 'badge-info'
+                  : (cita.estado || '').toLowerCase() === 'completada'
+                  ? 'badge-success'
+                  : (cita.estado || '').toLowerCase() === 'cancelada'
+                  ? 'badge-danger'
+                  : 'badge-secondary'
+                }`}
+              >
+              {cita.estado}
+              </span>
                 </div>
 
                 <div className="cita-info">

@@ -9,6 +9,8 @@ export default function AdminPedidos() {
   const [estado, setEstado] = useState('');
   const [busqueda, setBusqueda] = useState('');
 
+  const [filtro, setFiltro] = useState('Todos');
+
   const loadPedidos = async () => {
     try {
       const response = await apiRequest('/admin/pedidos');
@@ -24,7 +26,7 @@ export default function AdminPedidos() {
 
   const pedidosFiltrados = pedidos.filter((pedido) => {
     const textoBusqueda = busqueda.toLowerCase().trim();
-    return (
+      const coincideBusqueda =
       !textoBusqueda ||
       String(pedido.id).includes(textoBusqueda) ||
       (pedido?.usuario?.nombre || '').toLowerCase().includes(textoBusqueda) ||
@@ -32,9 +34,14 @@ export default function AdminPedidos() {
       (pedido.direccionEnvio || '').toLowerCase().includes(textoBusqueda) ||
       (pedido.telefono || '').toLowerCase().includes(textoBusqueda) ||
       (pedido.metodoPago || '').toLowerCase().includes(textoBusqueda) ||
-      (pedido.estado || '').toLowerCase().includes(textoBusqueda)
-    );
-  });
+      (pedido.estado || '').toLowerCase().includes(textoBusqueda);
+
+    const coincideEstado =
+    filtro === 'Todos' ||
+    (pedido.estado || '').toLowerCase() === filtro.toLowerCase();
+
+  return coincideBusqueda && coincideEstado;
+});
 
   const handleEdit = (pedido) => {
     setEditingId(pedido.id);
@@ -74,24 +81,54 @@ export default function AdminPedidos() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
+
+        <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todas ({pedidos.length})
+        </button>
+         <button
+          className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
+          onClick={() => setFiltro('Pendiente')}
+        >
+          Pendientes ({pedidos.filter((p) => (p.estado || '').toLowerCase() === 'pendiente').length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'Enviado' ? 'active' : ''}`}
+          onClick={() => setFiltro('Enviado')}
+        >
+          Enviados ({pedidos.filter((p) => (p.estado || '').toLowerCase() === 'enviado').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Entregado' ? 'active' : ''}`}
+          onClick={() => setFiltro('Entregado')}
+        >
+          Entregados ({pedidos.filter((p) => (p.estado || '').toLowerCase() === 'entregado').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Cancelado' ? 'active' : ''}`}
+          onClick={() => setFiltro('Cancelado')}
+        >
+          Cancelados ({pedidos.filter((p) => (p.estado || '').toLowerCase() === 'cancelado').length})
+        </button>
       </div>
 
+      <div className="citas-container">
+        {pedidosFiltrados.length === 0 ? (
+          <div className="empty-state">
+            <p>No hay pedidos en esta categoría</p>
+          </div>
+        ) : (
       <div className="cards-grid">
         {pedidosFiltrados.map((pedido) => (
-          <div key={pedido.id} className="service-card">
-            <h3>Pedido #{pedido.id}</h3>
-            <p><strong>Cliente:</strong> {pedido?.usuario?.nombre || 'Cliente'}</p>
-            <p><strong>Dirección:</strong> {pedido.direccionEnvio || 'Sin dirección'}</p>
-            <p><strong>Teléfono:</strong> {pedido.telefono || 'Sin teléfono'}</p>
-            <p><strong>Método de Pago:</strong> {pedido.metodoPago || 'efectivo'}</p>
-            <p><strong>Total:</strong> ${Number(pedido.total || 0).toLocaleString()}</p>
-            <p><strong>Notas:</strong> {pedido.notas || 'Sin notas'}</p>
-            <p><strong>Pago:</strong> {pedido.fechaPago ? new Date(pedido.fechaPago).toLocaleString() : 'Pendiente'}</p>
-            <p><strong>Envío:</strong> {pedido.fechaEnvio ? new Date(pedido.fechaEnvio).toLocaleString() : 'Pendiente'}</p>
-            <p><strong>Entrega:</strong> {pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toLocaleString() : 'Pendiente'}</p>
-            <p><strong>Fecha:</strong> {pedido.createdAt ? new Date(pedido.createdAt).toLocaleDateString() : 'N/A'}</p>
-            <p>
-              <span
+          <div key={pedido.id} className="cita-card-prof">
+            <div className="cita-header-prof">
+            <h3>{pedido?.usuario?.nombre || 'Cliente'}</h3>
+            <span
                 className={`badge ${
                   (pedido.estado || '').toLowerCase() === 'pendiente'
                   ? 'badge-warning'
@@ -106,7 +143,17 @@ export default function AdminPedidos() {
               >
               {pedido.estado}
               </span>
-            </p>
+              </div>
+              <div className="cita-info-prof">
+            <p><strong>Dirección:</strong> {pedido.direccionEnvio || 'Sin dirección'}</p>
+            <p><strong>Teléfono:</strong> {pedido.telefono || 'Sin teléfono'}</p>
+            <p><strong>Método de Pago:</strong> {pedido.metodoPago || 'efectivo'}</p>
+            <p><strong>Total:</strong> ${Number(pedido.total || 0).toLocaleString()}</p>
+            <p><strong>Notas:</strong> {pedido.notas || 'Sin notas'}</p>
+            <p><strong>Envío:</strong> {pedido.fechaEnvio ? new Date(pedido.fechaEnvio).toLocaleString() : 'Pendiente'}</p>
+            <p><strong>Entrega:</strong> {pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toLocaleString() : 'Pendiente'}</p>
+            <p><strong>Fecha:</strong> {pedido.createdAt ? new Date(pedido.createdAt).toLocaleDateString() : 'N/A'}</p>
+
             {editingId === pedido.id ? (
               <div className="form-container">
                 <div className="form-group">
@@ -129,8 +176,11 @@ export default function AdminPedidos() {
               </div>
             )}
           </div>
+          </div>
         ))}
       </div>
+    )}
+    </div>
     </div>
   );
-}
+};

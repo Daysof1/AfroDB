@@ -7,6 +7,7 @@ export default function AdminUsuarios() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [busqueda, setBusqueda] = useState('');
+  const [filtro, setFiltro] = useState('Todos');
   const limite = 100;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -38,16 +39,24 @@ export default function AdminUsuarios() {
 
   const usuariosFiltrados = usuarios.filter((usuario) => {
     const textoBusqueda = busqueda.toLowerCase().trim();
-    return (
+    const coincideBusqueda =
+    !textoBusqueda ||
+      !textoBusqueda ||
       !textoBusqueda ||
       (usuario.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (usuario.apellido || '').toLowerCase().includes(textoBusqueda) ||
       (usuario.documento || '').toLowerCase().includes(textoBusqueda) ||
       (usuario.email || '').toLowerCase().includes(textoBusqueda) ||
       (usuario.telefono || '').toLowerCase().includes(textoBusqueda) ||
-      (usuario.direccion || '').toLowerCase().includes(textoBusqueda)
-    );
-  });
+      (usuario.direccion || '').toLowerCase().includes(textoBusqueda);
+
+      const coincideEstado =
+    filtro === 'Todos' ||
+    (filtro === 'True' && usuario.activo) ||
+    (filtro === 'False' && !usuario.activo);
+
+  return coincideBusqueda && coincideEstado;
+});
 
   const handleCrearUsuario = async (e) => {
     e.preventDefault();
@@ -156,6 +165,25 @@ export default function AdminUsuarios() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
+        <button
+                className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+                onClick={() => setFiltro('Todos')}
+              >
+                Todos ({usuarios.length})
+              </button>
+              <button
+                className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
+                onClick={() => setFiltro('True')}
+              >
+                Activos ({usuarios.filter((u) => u.activo === true).length})
+              </button>
+
+              <button
+                className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
+                onClick={() => setFiltro('False')}
+              >
+                Inactivos ({usuarios.filter((u) => u.activo === false).length})
+              </button>
       </div>
 
       {isFormOpen && (

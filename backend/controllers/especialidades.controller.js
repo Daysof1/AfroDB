@@ -27,9 +27,8 @@ const Usuario = require('../models/Usuario');
  */
 const getEspecialidades = async (req, res) => {
   try {
-    const especialidades = await Especialidad.findAll({
-      where: { activo: true },
-      order: [['nombre', 'ASC']]
+    const especialidades = await Especialidad.scope('withInactive').findAll({
+    order: [['nombre', 'ASC']]
     });
 
     res.json({

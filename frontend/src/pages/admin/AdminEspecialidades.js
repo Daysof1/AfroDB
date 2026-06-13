@@ -7,6 +7,7 @@ export default function AdminEspecialidades() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [busqueda, setBusqueda] = useState('');
+  const [filtro, setFiltro] = useState('Todos');
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const limite = 100;
@@ -17,6 +18,7 @@ export default function AdminEspecialidades() {
   const loadEspecialidades = async () => {
     try {
       const response = await apiRequest('/admin/especialidades');
+      console.log(response.data.especialidades);
       setEspecialidades(response?.data?.especialidades || []);
     } catch (err) {
       setError(err.message || 'No se pudieron cargar especialidades');
@@ -28,13 +30,20 @@ export default function AdminEspecialidades() {
   }, []);
 
   const especialidadesFiltradas = especialidades.filter((especialidad) => {
-    const textoBusqueda = busqueda.toLowerCase().trim();
-    return (
-      !textoBusqueda ||
-      (especialidad.nombre || '').toLowerCase().includes(textoBusqueda) ||
-      (especialidad.descripcion || '').toLowerCase().includes(textoBusqueda)
-    );
-  });
+  const textoBusqueda = busqueda.toLowerCase().trim();
+
+  const coincideBusqueda =
+    !textoBusqueda ||
+    (especialidad.nombre || '').toLowerCase().includes(textoBusqueda) ||
+    (especialidad.descripcion || '').toLowerCase().includes(textoBusqueda);
+
+  const coincideEstado =
+    filtro === 'Todos' ||
+    (filtro === 'True' && especialidad.activo) ||
+    (filtro === 'False' && !especialidad.activo);
+
+  return coincideBusqueda && coincideEstado;
+});
 
   const handleCrear = async (e) => {
     e.preventDefault();
@@ -123,6 +132,27 @@ export default function AdminEspecialidades() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
+
+        <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todas ({especialidades.length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
+          onClick={() => setFiltro('True')}
+        >
+          Activas ({especialidades.filter(e => e.activo).length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
+          onClick={() => setFiltro('False')}
+        >
+          Inactivas ({especialidades.filter(e => !e.activo).length})
+        </button>
       </div>
 
       <div className="cards-grid">
