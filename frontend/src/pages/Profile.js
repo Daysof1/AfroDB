@@ -275,7 +275,7 @@ export default function Profile() {
                       id="email"
                       name="email"
                       value={editData.email || ''}
-                      disabled
+                      onChange={handleEditChange}
                     />
                   </div>
                   <div className="form-group">

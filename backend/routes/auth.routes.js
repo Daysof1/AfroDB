@@ -39,10 +39,7 @@ const {
   login,             // Función que autentica al usuario y retorna un token JWT
   getMe,             // Función que retorna los datos del usuario autenticado
   updateMe,          // Función que actualiza el perfil del usuario autenticado
-  changePassword,    // Función que permite cambiar la contraseña
-  forgotPassword,    // Función para iniciar recuperación de contraseña
-  validateResetToken,// Función para validar token de recuperación
-  resetPassword,     // Función para restablecer contraseña con token
+  changePassword    // Función que permite cambiar la contraseña
 } = require('../controllers/auth.controller');
 
 // ==========================================
@@ -139,9 +136,6 @@ router.put('/me', verificarAuth, upload.single('foto'), updateMe);
 // Respuesta exitosa (200 OK):
 //   { success: true, message: "Contraseña actualizada exitosamente" }
 router.put('/change-password', verificarAuth, changePassword);
-router.post('/forgot-password', forgotPassword);
-router.get('/reset-password/:token', validateResetToken);
-router.post('/reset-password/:token', resetPassword);
 
 // ==========================================
 // EXPORTAR ROUTER
