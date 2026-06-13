@@ -186,6 +186,7 @@ export default function AdminCategorias() {
         </button>
       </div>
       </div>
+      
       <div className="search-container">
         <input
           type="text"

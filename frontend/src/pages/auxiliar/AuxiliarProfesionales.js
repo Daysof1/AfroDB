@@ -5,19 +5,8 @@ import { apiRequest } from '../../api/client.js';
 export default function AuxiliarProfesionales() {
   const [profesionales, setProfesionales] = useState([]);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [editingId, setEditingId] = useState(null);
   const [busqueda, setBusqueda] = useState('');
-  const [formData, setFormData] = useState({
-    tipo_documento: 'C.C.',
-    documento: '',
-    nombre: '',
-    apellido: '',
-    email: '',
-    telefono: '',
-    direccion: '',
-    activo: true,
-  });
+  const [filtro, setFiltro] = useState('Todos');
 
   const loadProfesionales = async () => {
     try {
@@ -34,60 +23,22 @@ export default function AuxiliarProfesionales() {
 
   const profesionalesFiltrados = profesionales.filter((profesional) => {
     const textoBusqueda = busqueda.toLowerCase().trim();
-    return (
+    const coincideBusqueda =
+    !textoBusqueda ||
       !textoBusqueda ||
       (profesional.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (profesional.apellido || '').toLowerCase().includes(textoBusqueda) ||
       (profesional.documento || '').toLowerCase().includes(textoBusqueda) ||
       (profesional.email || '').toLowerCase().includes(textoBusqueda) ||
-      (profesional.telefono || '').toLowerCase().includes(textoBusqueda)
-    );
-  });
+      (profesional.telefono || '').toLowerCase().includes(textoBusqueda);
 
-  const handleEdit = (profesional) => {
-    setEditingId(profesional.id);
-    setFormData({
-      tipo_documento: profesional.tipo_documento || 'C.C.',
-      documento: profesional.documento || '',
-      nombre: profesional.nombre || '',
-      apellido: profesional.apellido || '',
-      email: profesional.email || '',
-      telefono: profesional.telefono || '',
-      direccion: profesional.direccion || '',
-      activo: profesional.activo,
-    });
-  };
+   const coincideEstado =
+    filtro === 'Todos' ||
+    (filtro === 'True' && profesional.activo) ||
+    (filtro === 'False' && !profesional.activo);
 
-  const handleSave = async (id) => {
-    try {
-      setError('');
-      setSuccess('');
-      await apiRequest(`/admin/profesionales/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(formData),
-      });
-      setSuccess('Profesional actualizado correctamente');
-      setEditingId(null);
-      await loadProfesionales();
-    } catch (err) {
-      setError(err.message || 'No se pudo actualizar el profesional');
-    }
-  };
-
-  const handleToggleActivo = async (profesional) => {
-    try {
-      setError('');
-      setSuccess('');
-      await apiRequest(`/admin/profesionales/${profesional.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ activo: !profesional.activo }),
-      });
-      setSuccess(`Profesional ${profesional.activo ? 'desactivado' : 'activado'} correctamente`);
-      await loadProfesionales();
-    } catch (err) {
-      setError(err.message || 'No se pudo cambiar el estado del profesional');
-    }
-  };
+  return coincideBusqueda && coincideEstado;
+});
 
   return (
     <div className="admin-page">
@@ -96,7 +47,6 @@ export default function AuxiliarProfesionales() {
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
       <div className="filtros">
         <input
           type="text"
@@ -105,39 +55,39 @@ export default function AuxiliarProfesionales() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
+        <button
+            className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+            onClick={() => setFiltro('Todos')}
+          >
+            Todas ({profesionales.length})
+          </button>
+          <button
+            className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
+            onClick={() => setFiltro('True')}
+          >
+            Activas ({profesionales.filter((p) => p.activo === true).length})
+          </button>
+
+          <button
+            className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
+            onClick={() => setFiltro('False')}
+          >
+            Inactivas ({profesionales.filter((p) => p.activo === false).length})
+          </button>
       </div>
+
 
       <div className="cards-grid">
         {profesionalesFiltrados.map((profesional) => (
           <div key={profesional.id} className="service-card">
             <h3>{profesional.nombre} {profesional.apellido || ''}</h3>
-            <p><strong>Tipo Doc:</strong> {editingId === profesional.id ? (
-              <select value={formData.tipo_documento} onChange={(e) => setFormData({ ...formData, tipo_documento: e.target.value })}>
-                <option value="C.C.">C.C.</option>
-                <option value="T.I.">T.I.</option>
-                <option value="C.E.">C.E.</option>
-                <option value="P.A.">P.A.</option>
-                <option value="otro">Otro</option>
-              </select>
-            ) : (profesional.tipo_documento || 'N/A')}</p>
-            <p><strong>Documento:</strong> {editingId === profesional.id ? (
-              <input value={formData.documento} onChange={(e) => setFormData({ ...formData, documento: e.target.value })} />
-            ) : (profesional.documento || 'N/A')}</p>
-            <p><strong>Nombre:</strong> {editingId === profesional.id ? (
-              <input value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} />
-            ) : profesional.nombre}</p>
-            <p><strong>Apellido:</strong> {editingId === profesional.id ? (
-              <input value={formData.apellido} onChange={(e) => setFormData({ ...formData, apellido: e.target.value })} />
-            ) : (profesional.apellido || 'N/A')}</p>
-            <p><strong>Email:</strong> {editingId === profesional.id ? (
-              <input value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-            ) : profesional.email}</p>
-            <p><strong>Teléfono:</strong> {editingId === profesional.id ? (
-              <input value={formData.telefono} onChange={(e) => setFormData({ ...formData, telefono: e.target.value })} />
-            ) : (profesional.telefono || 'N/A')}</p>
-            <p><strong>Dirección:</strong> {editingId === profesional.id ? (
-              <input value={formData.direccion} onChange={(e) => setFormData({ ...formData, direccion: e.target.value })} />
-            ) : (profesional.direccion || 'N/A')}</p>
+            <p><strong>Tipo Doc:</strong> {profesional.tipo_documento || 'N/A'}</p>
+            <p><strong>Documento:</strong> {profesional.documento || 'N/A'}</p>
+            <p><strong>Nombre:</strong> {profesional.nombre}</p>
+            <p><strong>Apellido:</strong> {profesional.apellido || 'N/A'}</p>
+            <p><strong>Email:</strong> {profesional.email}</p>
+            <p><strong>Teléfono:</strong> {profesional.telefono || 'N/A'}</p>
+            <p><strong>Dirección:</strong> {profesional.direccion || 'N/A'}</p>
             <p><strong>Rol:</strong> {profesional.rol || 'profesional'}</p>
             <p><strong>Especialidades:</strong> {(profesional.especialidades || []).map((e) => e.nombre).join(', ') || 'Sin especialidades'}</p>
             <p>

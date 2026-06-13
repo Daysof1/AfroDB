@@ -7,6 +7,8 @@ export default function AuxiliarEspecialidades() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [busqueda, setBusqueda] = useState('');
+  const [filtro, setFiltro] = useState('Todos');
+  const limite = 100;
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEspecialidadId, setEditingEspecialidadId] = useState(null);
   const [newEspecialidad, setNewEspecialidad] = useState({ nombre: '', descripcion: '' });
@@ -26,12 +28,19 @@ export default function AuxiliarEspecialidades() {
 
   const especialidadesFiltradas = especialidades.filter((especialidad) => {
     const textoBusqueda = busqueda.toLowerCase().trim();
-    return (
-      !textoBusqueda ||
-      (especialidad.nombre || '').toLowerCase().includes(textoBusqueda) ||
-      (especialidad.descripcion || '').toLowerCase().includes(textoBusqueda)
-    );
-  });
+
+    const coincideBusqueda =
+    !textoBusqueda ||
+    (especialidad.nombre || '').toLowerCase().includes(textoBusqueda) ||
+    (especialidad.descripcion || '').toLowerCase().includes(textoBusqueda);
+
+  const coincideEstado =
+    filtro === 'Todos' ||
+    (filtro === 'True' && especialidad.activo) ||
+    (filtro === 'False' && !especialidad.activo);
+
+  return coincideBusqueda && coincideEstado;
+});
 
   const handleCrear = async (e) => {
     e.preventDefault();
@@ -111,6 +120,26 @@ export default function AuxiliarEspecialidades() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
+      <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todas ({especialidades.length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
+          onClick={() => setFiltro('True')}
+        >
+          Activas ({especialidades.filter(e => e.activo).length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
+          onClick={() => setFiltro('False')}
+        >
+          Inactivas ({especialidades.filter(e => !e.activo).length})
+        </button>
       </div>
 
       <div className="cards-grid">
@@ -124,8 +153,8 @@ export default function AuxiliarEspecialidades() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(especialidad)}>Editar</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => handleToggle(especialidad.id)}>{especialidad.activo ? 'Desactivar' : 'Activar'}</button>
+              <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(especialidad)}>✏️ Editar</button>
+              <button className="btn btn-sm btn-secondary" onClick={() => handleToggle(especialidad.id)}>{especialidad.activo ? '⊘ Desactivar' : '✓ Activar'}</button>
             </div>
           </div>
         ))}

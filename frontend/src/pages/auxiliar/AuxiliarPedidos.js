@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye } from '@fortawesome/free-solid-svg-icons';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
+import { exportarPedidosAPDF, exportarPedidosAExcel } from '../../utils/exportUtils.js';
 
 export default function AuxiliarPedidos() {
   const [pedidos, setPedidos] = useState([]);
@@ -8,8 +11,10 @@ export default function AuxiliarPedidos() {
   const [editingId, setEditingId] = useState(null);
   const [estado, setEstado] = useState('');
   const [busqueda, setBusqueda] = useState('');
+  const [pedidoExpandidoId, setPedidoExpandidoId] = useState(null);
 
   const [filtro, setFiltro] = useState('Todos');
+  const [showExportOptions, setShowExportOptions] = useState(false);
 
   const loadPedidos = async () => {
     try {
@@ -70,6 +75,73 @@ export default function AuxiliarPedidos() {
     <div className="admin-page">
       <div className="page-header">
         <h1>Auxiliar - Pedidos</h1>
+
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative' }}>
+            <button 
+              className="btn btn-primary"
+              onClick={() => setShowExportOptions(!showExportOptions)}
+            >
+              📊 Exportar
+            </button>
+            {showExportOptions && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                backgroundColor: '#fff',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                zIndex: 10,
+                minWidth: '150px',
+                marginTop: '5px'
+              }}>
+                <button 
+                  className="btn btn-sm"
+                  onClick={() => {
+                    exportarPedidosAPDF(pedidos);
+                    setShowExportOptions(false);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 15px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #eee'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  📄 Exportar a PDF
+                </button>
+                <button 
+                  className="btn btn-sm"
+                  onClick={async () => {
+                    await exportarPedidosAExcel(pedidos);
+                    setShowExportOptions(false);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 15px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  📊 Exportar a Excel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -82,7 +154,6 @@ export default function AuxiliarPedidos() {
           className="search-input"
         />
       
-
       <button
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
@@ -97,27 +168,26 @@ export default function AuxiliarPedidos() {
         </button>
 
         <button
-          className={`filter-btn ${filtro === 'Confirmada' ? 'active' : ''}`}
+          className={`filter-btn ${filtro === 'Enviado' ? 'active' : ''}`}
           onClick={() => setFiltro('Enviado')}
         >
-          Confirmadas ({pedidos.filter((c) => (c.estado || '').toLowerCase() === 'enviado').length})
+          Enviados ({pedidos.filter((c) => (c.estado || '').toLowerCase() === 'enviado').length})
         </button>
 
          <button
-          className={`filter-btn ${filtro === 'Completada' ? 'active' : ''}`}
-          onClick={() => setFiltro('Completada')}
+          className={`filter-btn ${filtro === 'Entregado' ? 'active' : ''}`}
+          onClick={() => setFiltro('Entregado')}
         >
-          Completadas ({pedidos.filter((c) => (c.estado || '').toLowerCase() === 'entregado').length})
+          Entregados ({pedidos.filter((c) => (c.estado || '').toLowerCase() === 'entregado').length})
         </button>
 
          <button
-          className={`filter-btn ${filtro === 'Cancelada' ? 'active' : ''}`}
-          onClick={() => setFiltro('Cancelada')}
+          className={`filter-btn ${filtro === 'Cancelado' ? 'active' : ''}`}
+          onClick={() => setFiltro('Cancelado')}
         >
-          Canceladas ({pedidos.filter((c) => (c.estado || '').toLowerCase() === 'cancelada').length})
+          Cancelados ({pedidos.filter((c) => (c.estado || '').toLowerCase() === 'cancelado').length})
         </button>
         </div>
-
 
         <div className="pedidos-container">
         {pedidosFiltrados.length === 0 ? (
@@ -125,18 +195,19 @@ export default function AuxiliarPedidos() {
             <p>No hay pedidos en esta categoría</p>
           </div>
         ) : (
-          <div className="pedidos-grid">
+          <div className="cards-grid">
             {pedidosFiltrados.map((pedido) => (
-              <div key={pedido.id} className="pedido-card">
-                <div className="pedido-header">
-                  <h3>Pedido #{pedido.id}</h3>
+              <div key={pedido.id} className="cita-card-prof">
+                <div className="cita-header-prof">
+                  {/** Resumen corto por defecto */}
+                  <h3>{pedido?.usuario?.nombre || 'Cliente'}</h3>
                   <span
                 className={`badge ${
                   (pedido.estado || '').toLowerCase() === 'pendiente'
                   ? 'badge-warning'
-                  : (pedido.estado || '').toLowerCase() === 'confirmado'
+                  : (pedido.estado || '').toLowerCase() === 'enviado'
                   ? 'badge-info'
-                  : (pedido.estado || '').toLowerCase() === 'completado'
+                  : (pedido.estado || '').toLowerCase() === 'entregado'
                   ? 'badge-success'
                   : (pedido.estado || '').toLowerCase() === 'cancelado'
                   ? 'badge-danger'
@@ -145,26 +216,35 @@ export default function AuxiliarPedidos() {
               >
               {pedido.estado}
               </span>
-                </div>
-      <div className="cards-grid">
-        {pedidosFiltrados.map((pedido) => (
-          <div key={pedido.id} className="service-card">
-            <h3>Pedido #{pedido.id}</h3>
-            <p><strong>Pedido:</strong> {(pedido.Servicios || []).map((servicio) => servicio.nombre).join(', ') || 'Servicio'}</p>
-            <p><strong>Cliente:</strong> {pedido?.usuario?.nombre || 'Cliente'}</p>
-            <p><strong>Dirección:</strong> {pedido.direccionEnvio || 'Sin dirección'}</p>
-            <p><strong>Teléfono:</strong> {pedido.telefono || 'Sin teléfono'}</p>
-            <p><strong>Método de Pago:</strong> {pedido.metodoPago || 'efectivo'}</p>
-            <p><strong>Total:</strong> ${Number(pedido.total || 0).toLocaleString()}</p>
-            <p><strong>Notas:</strong> {pedido.notas || 'Sin notas'}</p>
-            <p><strong>Envío:</strong> {pedido.fechaEnvio ? new Date(pedido.fechaEnvio).toLocaleString() : 'Pendiente'}</p>
-            <p><strong>Entrega:</strong> {pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toLocaleString() : 'Pendiente'}</p>
-            <p><strong>Fecha:</strong> {pedido.createdAt ? new Date(pedido.createdAt).toLocaleDateString() : 'N/A'}</p>
-            <p>
-              <span className={`badge ${pedido.estado === 'entregado' ? 'badge-success' : 'badge-danger'}`}>
-                {pedido.estado || 'Sin estado'}
-              </span>
-            </p>
+              </div>
+
+               <div className="cita-info-prof">
+                <p><strong>Fecha:</strong> {pedido.createdAt ? new Date(pedido.createdAt).toLocaleDateString() : 'N/A'}</p>
+                <p><strong>Total:</strong> ${Number(pedido.total || 0).toLocaleString()}</p>
+                <p><strong>Productos:</strong> {(pedido.detalles || []).length}</p>
+              </div>
+
+              {pedidoExpandidoId === pedido.id && (
+                <>
+                <div className="cita-info-prof">
+                <p><strong>Dirección:</strong> {pedido.direccionEnvio || 'Sin dirección'}</p>
+                <p><strong>Teléfono:</strong> {pedido.telefono || 'Sin teléfono'}</p>
+                <p><strong>Método de Pago:</strong> {pedido.metodoPago || 'efectivo'}</p>
+                <p><strong>Notas:</strong> {pedido.notas || 'Sin notas'}</p>
+                <p><strong>Envío:</strong> {pedido.fechaEnvio ? new Date(pedido.fechaEnvio).toLocaleString() : 'Pendiente'}</p>
+                <p><strong>Entrega:</strong> {pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toLocaleString() : 'Pendiente'}</p>
+              </div>
+
+              <div className="pedido-items">
+                      <h4>Productos:</h4>
+                      <ul>
+                        {(pedido.detalles || []).map((detalle) => (
+                          <li key={detalle.id}>✓ {detalle?.producto?.nombre || 'Producto'}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
 
             {editingId === pedido.id ? (
               <div className="form-container">
@@ -184,17 +264,20 @@ export default function AuxiliarPedidos() {
               </div>
             ) : (
               <div className="card-actions">
+                <button
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setPedidoExpandidoId(pedidoExpandidoId === pedido.id ? null : pedido.id)}
+                >
+                  <FontAwesomeIcon icon={faEye} /> {pedidoExpandidoId === pedido.id ? 'Ocultar Detalles' : 'Ver Detalles'}
+                </button>
                 <button className="btn btn-secondary" onClick={() => handleEdit(pedido)}>Editar Estado</button>
               </div>
             )}
           </div>
         ))}
       </div>
+    )}
     </div>
-  ))}
-</div>
-        )}
-      </div>
     </div>
   );
-}
+};

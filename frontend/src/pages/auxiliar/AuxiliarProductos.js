@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../Admin.css';
 import { apiRequest, getAssetUrl } from '../../api/client.js';
+import { exportarProductosAPDF, exportarProductosAExcel } from '../../utils/exportUtils.js';
 
 export default function AuxiliarProductos() {
   const [productos, setProductos] = useState([]);
@@ -16,6 +17,7 @@ export default function AuxiliarProductos() {
   const [editingOriginal, setEditingOriginal] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState('Todos');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState('Todas');
+  const [showExportOptions, setShowExportOptions] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [newProduct, setNewProduct] = useState({
     nombre: '',
@@ -217,6 +219,73 @@ export default function AuxiliarProductos() {
     <div className="admin-page">
       <div className="page-header">
         <h1>Auxiliar - Productos</h1>
+
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative' }}>
+            <button 
+              className="btn btn-primary"
+              onClick={() => setShowExportOptions(!showExportOptions)}
+            >
+              📊 Exportar
+            </button>
+            {showExportOptions && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                backgroundColor: '#fff',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                zIndex: 10,
+                minWidth: '150px',
+                marginTop: '5px'
+              }}>
+                <button 
+                  className="btn btn-sm"
+                  onClick={() => {
+                    exportarProductosAPDF(productos);
+                    setShowExportOptions(false);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 15px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #eee'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  📄 Exportar a PDF
+                </button>
+                <button 
+                  className="btn btn-sm"
+                  onClick={async () => {
+                    await exportarProductosAExcel(productos);
+                    setShowExportOptions(false);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 15px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  📊 Exportar a Excel
+                </button>
+              </div>
+            )}
+          </div>
+
         <button
           className="btn btn-primary"
           onClick={() => {
@@ -228,6 +297,7 @@ export default function AuxiliarProductos() {
         >
           {isFormOpen ? 'Cancelar' : '➕ Nuevo Producto'}
         </button>
+      </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}

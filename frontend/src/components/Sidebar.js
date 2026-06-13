@@ -43,15 +43,9 @@ export default function Sidebar({ userRole, onToggle }) {
   const auxiliarLinks = [
     { icon: 'cart', label: 'Carrito', href: '/auxiliar/carrito' },
     { icon: 'calendar', label: 'Mis Citas', href: '/auxiliar/mis-citas' },
-    { icon: 'box', label: 'Productos', href: '/auxiliar/productos' },
-    { icon: 'bell', label: 'Servicios', href: '/auxiliar/servicios' },
-    { icon: 'folder', label: 'Categorías', href: '/auxiliar/categorias' },
-    { icon: 'folder', label: 'Subcategorías', href: '/auxiliar/subcategorias' },
     { icon: 'specialties', label: 'Especialidades', href: '/auxiliar/especialidades' },
     { icon: 'professionals', label: 'Profesionales', href: '/auxiliar/profesionales' },
     { icon: 'profile', label: 'Usuarios', href: '/auxiliar/usuarios' },
-    { icon: 'calendar', label: 'Citas', href: '/auxiliar/citas' },
-    { icon: 'box', label: 'Pedidos', href: '/auxiliar/pedidos' },
   ];
 
   let links = [];

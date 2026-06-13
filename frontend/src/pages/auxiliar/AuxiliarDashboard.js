@@ -122,51 +122,65 @@ export default function AuxiliarDashboard() {
       {error && <div className="alert alert-error">{error}</div>}
 
       <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faBox} /></div>
-          <div className="stat-info">
-            <h3>Productos</h3>
-            <p className="stat-number">{stats.totalProductos}</p>
+        <Link to="/auxiliar/productos" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="stat-card">
+            <div className="stat-icon"><FontAwesomeIcon icon={faBox} /></div>
+            <div className="stat-info">
+              <h3>Productos</h3>
+              <p className="stat-number">{stats.totalProductos}</p>
+            </div>
           </div>
-        </div>
+        </Link>
 
-        <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faBell} /></div>
-          <div className="stat-info">
-            <h3>Servicios</h3>
-            <p className="stat-number">{stats.totalServicios}</p>
+        <Link to="/auxiliar/servicios" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="stat-card">
+            <div className="stat-icon"><FontAwesomeIcon icon={faBell} /></div>
+            <div className="stat-info">
+              <h3>Servicios</h3>
+              <p className="stat-number">{stats.totalServicios}</p>
+            </div>
           </div>
-        </div>
+        </Link>
 
-        <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faCalendar} /></div>
-          <div className="stat-info">
-            <h3>Citas</h3>
-            <p className="stat-number">{stats.totalCitas}</p>
+        <Link to="/auxiliar/citas" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="stat-card">
+            <div className="stat-icon"><FontAwesomeIcon icon={faCalendar} /></div>
+            <div className="stat-info">
+              <h3>Citas</h3>
+              <p className="stat-number">{stats.totalCitas}</p>
+            </div>
           </div>
-        </div>
+        </Link>
 
-        <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faClipboardList} /></div>
-          <div className="stat-info">
-            <h3>Pedidos</h3>
-            <p className="stat-number">{stats.totalPedidos}</p>
+        <Link to="/auxiliar/pedidos" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="stat-card">
+            <div className="stat-icon"><FontAwesomeIcon icon={faClipboardList} /></div>
+            <div className="stat-info">
+              <h3>Pedidos</h3>
+              <p className="stat-number">{stats.totalPedidos}</p>
+            </div>
           </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faTags} /></div>
-          <div className="stat-info">
-            <h3>Categorías</h3>
-            <p className="stat-number">{stats.totalCategorias}</p>
+        </Link>
+
+        <Link to="/auxiliar/categorias" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="stat-card">
+            <div className="stat-icon"><FontAwesomeIcon icon={faTags} /></div>
+            <div className="stat-info">
+              <h3>Categorías</h3>
+              <p className="stat-number">{stats.totalCategorias}</p>
+            </div>
           </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faSitemap} /></div>
-          <div className="stat-info">
-            <h3>Subcategorías</h3>
-            <p className="stat-number">{stats.totalSubcategorias}</p>
+        </Link>
+        
+        <Link to="/auxiliar/subcategorias" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="stat-card">
+            <div className="stat-icon"><FontAwesomeIcon icon={faSitemap} /></div>
+            <div className="stat-info">
+              <h3>Subcategorías</h3>
+              <p className="stat-number">{stats.totalSubcategorias}</p>
+            </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       <div className="admin-section">

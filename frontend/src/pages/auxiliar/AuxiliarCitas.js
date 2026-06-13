@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
+import { exportarCitasAPDF, exportarCitasAExcel } from '../../utils/exportUtils.js';
 
 export default function AuxiliarCitas() {
   const [citas, setCitas] = useState([]);
@@ -8,6 +9,7 @@ export default function AuxiliarCitas() {
   const [busqueda, setBusqueda] = useState('');
 
   const [filtro, setFiltro] = useState('Todos');
+  const [showExportOptions, setShowExportOptions] = useState(false);
 
   const loadCitas = async () => {
     try {
@@ -57,6 +59,71 @@ export default function AuxiliarCitas() {
     <div className="admin-page">
       <div className="page-header">
         <h1>Auxiliar - Citas</h1>
+
+        <div style={{ position: 'relative' }}>
+          <button 
+            className="btn btn-primary"
+            onClick={() => setShowExportOptions(!showExportOptions)}
+          >
+            📊 Exportar
+          </button>
+          {showExportOptions && (
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              backgroundColor: '#fff',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              zIndex: 10,
+              minWidth: '150px',
+              marginTop: '5px'
+            }}>
+              <button 
+                className="btn btn-sm"
+                onClick={() => {
+                  exportarCitasAPDF(citas);
+                  setShowExportOptions(false);
+                }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '10px 15px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
+                  borderBottom: '1px solid #eee'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                📄 Exportar a PDF
+              </button>
+              <button 
+                className="btn btn-sm"
+                onClick={async () => {
+                  await exportarCitasAExcel(citas);
+                  setShowExportOptions(false);
+                }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '10px 15px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                📊 Exportar a Excel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     
       {error && <div className="alert alert-error">{error}</div>}

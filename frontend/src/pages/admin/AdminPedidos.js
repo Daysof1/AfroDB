@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye } from '@fortawesome/free-solid-svg-icons';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 import { exportarPedidosAPDF, exportarPedidosAExcel } from '../../utils/exportUtils.js';
@@ -9,6 +11,7 @@ export default function AdminPedidos() {
   const [editingId, setEditingId] = useState(null);
   const [estado, setEstado] = useState('');
   const [busqueda, setBusqueda] = useState('');
+  const [pedidoExpandidoId, setPedidoExpandidoId] = useState(null);
 
   const [filtro, setFiltro] = useState('Todos');
   const [showExportOptions, setShowExportOptions] = useState(false);
@@ -196,6 +199,7 @@ export default function AdminPedidos() {
         {pedidosFiltrados.map((pedido) => (
           <div key={pedido.id} className="cita-card-prof">
             <div className="cita-header-prof">
+            {/** Resumen corto por defecto */}
             <h3>{pedido?.usuario?.nombre || 'Cliente'}</h3>
             <span
                 className={`badge ${
@@ -213,15 +217,34 @@ export default function AdminPedidos() {
               {pedido.estado}
               </span>
               </div>
+
               <div className="cita-info-prof">
-            <p><strong>Dirección:</strong> {pedido.direccionEnvio || 'Sin dirección'}</p>
-            <p><strong>Teléfono:</strong> {pedido.telefono || 'Sin teléfono'}</p>
-            <p><strong>Método de Pago:</strong> {pedido.metodoPago || 'efectivo'}</p>
-            <p><strong>Total:</strong> ${Number(pedido.total || 0).toLocaleString()}</p>
-            <p><strong>Notas:</strong> {pedido.notas || 'Sin notas'}</p>
-            <p><strong>Envío:</strong> {pedido.fechaEnvio ? new Date(pedido.fechaEnvio).toLocaleString() : 'Pendiente'}</p>
-            <p><strong>Entrega:</strong> {pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toLocaleString() : 'Pendiente'}</p>
-            <p><strong>Fecha:</strong> {pedido.createdAt ? new Date(pedido.createdAt).toLocaleDateString() : 'N/A'}</p>
+                <p><strong>Fecha:</strong> {pedido.createdAt ? new Date(pedido.createdAt).toLocaleDateString() : 'N/A'}</p>
+                <p><strong>Total:</strong> ${Number(pedido.total || 0).toLocaleString()}</p>
+                <p><strong>Productos:</strong> {(pedido.detalles || []).length}</p>
+              </div>
+
+              {pedidoExpandidoId === pedido.id && (
+                <>
+                <div className="cita-info-prof">
+                <p><strong>Dirección:</strong> {pedido.direccionEnvio || 'Sin dirección'}</p>
+                <p><strong>Teléfono:</strong> {pedido.telefono || 'Sin teléfono'}</p>
+                <p><strong>Método de Pago:</strong> {pedido.metodoPago || 'efectivo'}</p>
+                <p><strong>Notas:</strong> {pedido.notas || 'Sin notas'}</p>
+                <p><strong>Envío:</strong> {pedido.fechaEnvio ? new Date(pedido.fechaEnvio).toLocaleString() : 'Pendiente'}</p>
+                <p><strong>Entrega:</strong> {pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toLocaleString() : 'Pendiente'}</p>
+              </div>
+
+              <div className="pedido-items">
+                      <h4>Productos:</h4>
+                      <ul>
+                        {(pedido.detalles || []).map((detalle) => (
+                          <li key={detalle.id}>✓ {detalle?.producto?.nombre || 'Producto'}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
 
             {editingId === pedido.id ? (
               <div className="form-container">
@@ -241,10 +264,15 @@ export default function AdminPedidos() {
               </div>
             ) : (
               <div className="card-actions">
+                <button
+                    className="btn btn-sm btn-secondary"
+                    onClick={() => setPedidoExpandidoId(pedidoExpandidoId === pedido.id ? null : pedido.id)}
+                  >
+                    <FontAwesomeIcon icon={faEye} /> {pedidoExpandidoId === pedido.id ? 'Ocultar Detalles' : 'Ver Detalles'}
+                  </button>
                 <button className="btn btn-secondary" onClick={() => handleEdit(pedido)}>Editar Estado</button>
               </div>
             )}
-          </div>
           </div>
         ))}
       </div>

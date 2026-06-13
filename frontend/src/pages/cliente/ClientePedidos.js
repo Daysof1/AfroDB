@@ -56,14 +56,26 @@ export default function ClientePedidos() {
               <div key={pedido.id} className="pedido-card">
                 {/** Resumen corto por defecto */}
                 <div className="pedido-header">
-                  <h3>Pedido #{pedido.id}</h3>
-                  <span className={`badge ${(pedido.estado || '').toLowerCase() === 'entregado' ? 'badge-success' : 'badge-warning'}`}>
-                    {formatEstado(pedido.estado)}
-                  </span>
+                <h3>Pedido #{pedido.id}</h3>
+                <span
+                  className={`badge ${
+                    (pedido.estado || '').toLowerCase() === 'pendiente'
+                    ? 'badge-warning'
+                    : (pedido.estado || '').toLowerCase() === 'enviado'
+                    ? 'badge-info'
+                    : (pedido.estado || '').toLowerCase() === 'entregado'
+                    ? 'badge-success'
+                    : (pedido.estado || '').toLowerCase() === 'cancelado'
+                    ? 'badge-danger'
+                    : 'badge-secondary'
+                  }`}
+                >
+                {pedido.estado}
+                </span>
                 </div>
 
                 <div className="pedido-info">
-                  <p><strong>Fecha:</strong> {String(pedido.createdAt || '').slice(0, 10)}</p>
+                  <p><strong>Fecha:</strong> {pedido.createdAt ? new Date(pedido.createdAt).toLocaleDateString() : 'N/A'}</p>
                   <p><strong>Total:</strong> ${Number(pedido.total || 0).toLocaleString()}</p>
                   <p><strong>Productos:</strong> {(pedido.detalles || []).length}</p>
                 </div>
@@ -75,7 +87,6 @@ export default function ClientePedidos() {
                       <p><strong>Teléfono:</strong> {pedido.telefono || 'Sin teléfono'}</p>
                       <p><strong>Método de pago:</strong> {pedido.metodoPago || 'efectivo'}</p>
                       <p><strong>Notas:</strong> {pedido.notas || 'Sin notas'}</p>
-                      <p><strong>Pago:</strong> {pedido.fechaPago ? new Date(pedido.fechaPago).toLocaleString() : 'Pendiente'}</p>
                       <p><strong>Envío:</strong> {pedido.fechaEnvio ? new Date(pedido.fechaEnvio).toLocaleString() : 'Pendiente'}</p>
                       <p><strong>Entrega:</strong> {pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toLocaleString() : 'Pendiente'}</p>
                     </div>

@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
+import { exportarUsuariosAPDF, exportarUsuariosAExcel } from '../../utils/exportUtils.js';
 
 export default function AuxiliarUsuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [error, setError] = useState('');
   const [busqueda, setBusqueda] = useState('');
+  const [filtro, setFiltro] = useState('Todos');
+  const [showExportOptions, setShowExportOptions] = useState(false);
   const limite = 100;
 
   const loadUsuarios = async () => {
@@ -23,21 +26,95 @@ export default function AuxiliarUsuarios() {
 
   const usuariosFiltrados = usuarios.filter((usuario) => {
     const textoBusqueda = busqueda.toLowerCase().trim();
-    return (
+    const coincideBusqueda =
+    !textoBusqueda ||
+      !textoBusqueda ||
       !textoBusqueda ||
       (usuario.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (usuario.apellido || '').toLowerCase().includes(textoBusqueda) ||
       (usuario.documento || '').toLowerCase().includes(textoBusqueda) ||
       (usuario.email || '').toLowerCase().includes(textoBusqueda) ||
       (usuario.telefono || '').toLowerCase().includes(textoBusqueda) ||
-      (usuario.direccion || '').toLowerCase().includes(textoBusqueda)
-    );
-  });
+      (usuario.direccion || '').toLowerCase().includes(textoBusqueda);
+
+      const coincideEstado =
+    filtro === 'Todos' ||
+    (filtro === 'True' && usuario.activo) ||
+    (filtro === 'False' && !usuario.activo);
+
+  return coincideBusqueda && coincideEstado;
+});
 
   return (
     <div className="admin-page">
       <div className="page-header">
         <h1>Auxiliar - Usuarios (solo lectura)</h1>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative' }}>
+            <button 
+              className="btn btn-primary"
+              onClick={() => setShowExportOptions(!showExportOptions)}
+            >
+              📊 Exportar
+            </button>
+            {showExportOptions && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                backgroundColor: '#fff',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                zIndex: 10,
+                minWidth: '150px',
+                marginTop: '5px'
+              }}>
+                <button 
+                  className="btn btn-sm"
+                  onClick={() => {
+                    exportarUsuariosAPDF(usuarios);
+                    setShowExportOptions(false);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 15px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #eee'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  📄 Exportar a PDF
+                </button>
+                <button 
+                  className="btn btn-sm"
+                  onClick={async () => {
+                    await exportarUsuariosAExcel(usuarios);
+                    setShowExportOptions(false);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 15px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  📊 Exportar a Excel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -49,6 +126,26 @@ export default function AuxiliarUsuarios() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
+
+        <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todos ({usuarios.length})
+        </button>
+        <button
+          className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
+          onClick={() => setFiltro('True')}
+        >
+          Activos ({usuarios.filter((u) => u.activo === true).length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
+          onClick={() => setFiltro('False')}
+        >
+          Inactivos ({usuarios.filter((u) => u.activo === false).length})
+        </button>
       </div>
 
       <div className="cards-grid">
