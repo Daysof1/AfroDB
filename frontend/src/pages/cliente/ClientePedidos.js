@@ -9,6 +9,8 @@ export default function ClientePedidos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [pedidoExpandidoId, setPedidoExpandidoId] = useState(null);
+  const [busqueda, setBusqueda] = useState('');
+  const [filtro, setFiltro] = useState('Todos');
 
   useEffect(() => {
     const loadPedidos = async () => {
@@ -25,6 +27,26 @@ export default function ClientePedidos() {
 
     loadPedidos();
   }, []);
+
+  const pedidosFiltrados = pedidos.filter((pedido) => {
+    const textoBusqueda = busqueda.toLowerCase().trim();
+      const coincideBusqueda =
+      !textoBusqueda ||
+      String(pedido.id).includes(textoBusqueda) ||
+      (pedido.detalles || []).some((detalle) =>
+        (detalle?.producto?.nombre || '').toLowerCase().includes(textoBusqueda)
+      ) ||
+      (pedido.direccionEnvio || '').toLowerCase().includes(textoBusqueda) ||
+      (pedido.telefono || '').toLowerCase().includes(textoBusqueda) ||
+      (pedido.metodoPago || '').toLowerCase().includes(textoBusqueda) ||
+      (pedido.estado || '').toLowerCase().includes(textoBusqueda);
+
+    const coincideEstado =
+    filtro === 'Todos' ||
+    (pedido.estado || '').toLowerCase() === filtro.toLowerCase();
+
+  return coincideBusqueda && coincideEstado;
+});
 
   const formatEstado = (estado) => {
     const value = (estado || '').toLowerCase();
@@ -44,20 +66,64 @@ export default function ClientePedidos() {
       {loading && <p>Cargando pedidos...</p>}
       {error && <div className="alert alert-error">{error}</div>}
 
+      <div className="filtros">
+        <input
+          type="text"
+          placeholder="Buscar pedidos..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+
+        <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todas ({pedidos.length})
+        </button>
+         <button
+          className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
+          onClick={() => setFiltro('Pendiente')}
+        >
+          Pendientes ({pedidos.filter((p) => (p.estado || '').toLowerCase() === 'pendiente').length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'Enviado' ? 'active' : ''}`}
+          onClick={() => setFiltro('Enviado')}
+        >
+          Enviados ({pedidos.filter((p) => (p.estado || '').toLowerCase() === 'enviado').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Entregado' ? 'active' : ''}`}
+          onClick={() => setFiltro('Entregado')}
+        >
+          Entregados ({pedidos.filter((p) => (p.estado || '').toLowerCase() === 'entregado').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Cancelado' ? 'active' : ''}`}
+          onClick={() => setFiltro('Cancelado')}
+        >
+          Cancelados ({pedidos.filter((p) => (p.estado || '').toLowerCase() === 'cancelado').length})
+        </button>
+        </div>
+
       <div className="pedidos-container">
-        {pedidos.length === 0 ? (
+        {pedidosFiltrados.length === 0 ? (
           <div className="empty-state">
-            <p>No tienes pedidos aún</p>
-            <a href="/cliente/catalogo" className="btn btn-primary">Hacer mi Primer Compra</a>
+            <p>{pedidos.length === 0 ? 'No tienes pedidos aún' : 'No hay pedidos que coincidan con tu búsqueda'}</p>
+            {pedidos.length === 0 && <a href="/cliente/catalogo" className="btn btn-primary">Hacer mi Primer Compra</a>}
           </div>
         ) : (
           <div className="pedidos-grid">
-            {pedidos.map((pedido) => (
+            {pedidosFiltrados.map((pedido) => (
               <div key={pedido.id} className="pedido-card">
                 {/** Resumen corto por defecto */}
                 <div className="pedido-header">
-                <h3>Pedido #{pedido.id}</h3>
-                <span
+                  <h3>{(pedido.detalles || []).map((detalle) => ` ${detalle?.producto?.nombre || 'Producto'}`).join(', ')}</h3>
+                  <span
                   className={`badge ${
                     (pedido.estado || '').toLowerCase() === 'pendiente'
                     ? 'badge-warning'
@@ -91,14 +157,6 @@ export default function ClientePedidos() {
                       <p><strong>Entrega:</strong> {pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toLocaleString() : 'Pendiente'}</p>
                     </div>
 
-                    <div className="pedido-items">
-                      <h4>Productos:</h4>
-                      <ul>
-                        {(pedido.detalles || []).map((detalle) => (
-                          <li key={detalle.id}>✓ {detalle?.producto?.nombre || 'Producto'}</li>
-                        ))}
-                      </ul>
-                    </div>
                   </>
                 )}
 

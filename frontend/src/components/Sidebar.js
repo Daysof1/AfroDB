@@ -35,7 +35,6 @@ export default function Sidebar({ userRole, onToggle }) {
     { icon: 'cart', label: 'Carrito', href: '/profesional/carrito' },
     { icon: 'calendar', label: 'Mis Citas', href: '/profesional/mis-citas' },
     { icon: 'box', label: 'Mis Pedidos', href: '/profesional/pedidos' },
-    { icon: 'bell', label: 'Servicios', href: '/profesional/servicios' },
     { icon: 'calendar', label: 'Citas', href: '/profesional/citas' },
     { icon: 'specialties', label: 'Especialidades', href: '/profesional/especialidades' },
   ];
