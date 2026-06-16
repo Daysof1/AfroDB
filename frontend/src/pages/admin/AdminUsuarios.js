@@ -70,6 +70,19 @@ export default function AdminUsuarios() {
         ? (({ tipo_documento, documento, nombre, apellido, rol, telefono, direccion }) => ({ tipo_documento, documento, nombre, apellido, rol, telefono, direccion }))(newUsuario)
         : newUsuario;
 
+      // Normalizar el tipo de documento al formato que espera el backend (ENUM exacto)
+      const normalizeTipoDocumento = (raw) => {
+        if (!raw) return 'C.C.';
+        const v = String(raw).toUpperCase().replace(/\s+/g, '');
+        if (v.includes('CC')) return 'C.C.';
+        if (v.includes('TI')) return 'T.I.';
+        if (v.includes('CE')) return 'C.E.';
+        if (v.includes('PA')) return 'P.A.';
+        return 'otro';
+      };
+
+      if (payload.tipo_documento !== undefined) payload.tipo_documento = normalizeTipoDocumento(payload.tipo_documento);
+
       await apiRequest(isEditing ? `/admin/usuarios/${editingUsuarioId}` : '/admin/usuarios', {
         method: isEditing ? 'PUT' : 'POST',
         body: JSON.stringify(payload),
@@ -77,7 +90,7 @@ export default function AdminUsuarios() {
       setSuccess(isEditing ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente');
       setEditingUsuarioId(null);
       setNewUsuario({
-        tipo_documento: '',
+        tipo_documento: 'C.C.',
         documento: '',
         nombre: '',
         apellido: '',
