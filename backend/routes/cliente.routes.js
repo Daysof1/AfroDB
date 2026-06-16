@@ -43,10 +43,10 @@ router.get('/servicios/:id', servicioController.getServicioById);
 // ============================================
 
 // GET /api/profesionales → listar profesionales disponibles
-router.get('/profesionales', profesionalController.getProfesionales);
+router.get('/profesionales', verificarAuth, profesionalController.getProfesionales);
 
 // GET /api/profesionales/:id → detalle de un profesional
-router.get('/profesionales/:id', profesionalController.getProfesionalById);
+router.get('/profesionales/:id', verificarAuth, profesionalController.getProfesionalById);
 
 // GET /api/especialidades → listar especialidades
 router.get('/especialidades', especialidadController.getEspecialidades);
