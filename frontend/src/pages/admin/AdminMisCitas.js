@@ -136,6 +136,9 @@ export default function AdminMisCitas() {
 
   const coincideBusqueda =
     !textoBusqueda ||
+      (cita.Servicios || []).some((s) =>
+    (s.nombre || '').toLowerCase().includes(textoBusqueda)
+  ) ||
     (cita?.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
     (cita?.profesional?.nombre || '').toLowerCase().includes(textoBusqueda) ||
     (cita?.estado || '').toLowerCase().includes(textoBusqueda) ||
