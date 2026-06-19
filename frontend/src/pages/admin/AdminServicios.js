@@ -231,7 +231,7 @@ export default function AdminServicios() {
                   <button 
                     className="btn btn-sm"
                     onClick={() => {
-                      exportarServiciosAPDF(servicios);
+                      exportarServiciosAPDF(serviciosFiltrados);
                       setShowExportOptions(false);
                     }}
                     style={{
@@ -252,7 +252,7 @@ export default function AdminServicios() {
                   <button 
                     className="btn btn-sm"
                     onClick={async () => {
-                      await exportarServiciosAExcel(servicios);
+                      await exportarServiciosAExcel(serviciosFiltrados);
                       setShowExportOptions(false);
                     }}
                     style={{

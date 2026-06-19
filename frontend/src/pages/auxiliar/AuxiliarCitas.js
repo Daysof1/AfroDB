@@ -83,7 +83,7 @@ export default function AuxiliarCitas() {
               <button 
                 className="btn btn-sm"
                 onClick={() => {
-                  exportarCitasAPDF(citas);
+                  exportarCitasAPDF(citasFiltradas);
                   setShowExportOptions(false);
                 }}
                 style={{
@@ -104,7 +104,7 @@ export default function AuxiliarCitas() {
               <button 
                 className="btn btn-sm"
                 onClick={async () => {
-                  await exportarCitasAExcel(citas);
+                  await exportarCitasAExcel(citasFiltradas);
                   setShowExportOptions(false);
                 }}
                 style={{

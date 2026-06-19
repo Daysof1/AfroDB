@@ -100,7 +100,7 @@ export default function AuxiliarPedidos() {
                 <button 
                   className="btn btn-sm"
                   onClick={() => {
-                    exportarPedidosAPDF(pedidos);
+                    exportarPedidosAPDF(pedidosFiltrados);
                     setShowExportOptions(false);
                   }}
                   style={{
@@ -121,7 +121,7 @@ export default function AuxiliarPedidos() {
                 <button 
                   className="btn btn-sm"
                   onClick={async () => {
-                    await exportarPedidosAExcel(pedidos);
+                    await exportarPedidosAExcel(pedidosFiltrados);
                     setShowExportOptions(false);
                   }}
                   style={{

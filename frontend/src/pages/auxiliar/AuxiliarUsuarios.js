@@ -73,7 +73,7 @@ export default function AuxiliarUsuarios() {
                 <button 
                   className="btn btn-sm"
                   onClick={() => {
-                    exportarUsuariosAPDF(usuarios);
+                    exportarUsuariosAPDF(usuariosFiltrados);
                     setShowExportOptions(false);
                   }}
                   style={{
@@ -94,7 +94,7 @@ export default function AuxiliarUsuarios() {
                 <button 
                   className="btn btn-sm"
                   onClick={async () => {
-                    await exportarUsuariosAExcel(usuarios);
+                    await exportarUsuariosAExcel(usuariosFiltrados);
                     setShowExportOptions(false);
                   }}
                   style={{

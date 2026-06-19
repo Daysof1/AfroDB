@@ -255,7 +255,7 @@ export default function AdminProductos() {
                   <button 
                     className="btn btn-sm"
                     onClick={() => {
-                      exportarProductosAPDF(productos);
+                      exportarProductosAPDF(productosFiltrados);
                       setShowExportOptions(false);
                     }}
                     style={{
@@ -276,7 +276,7 @@ export default function AdminProductos() {
                   <button 
                     className="btn btn-sm"
                     onClick={async () => {
-                      await exportarProductosAExcel(productos);
+                      await exportarProductosAExcel(productosFiltrados);
                       setShowExportOptions(false);
                     }}
                     style={{

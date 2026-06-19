@@ -139,7 +139,7 @@ export default function AdminSubcategorias() {
                 <button 
                   className="btn btn-sm"
                   onClick={() => {
-                    exportarSubcategoriasAPDF(subcategorias, categorias);
+                    exportarSubcategoriasAPDF(filteredSubcategorias, categorias);
                     setShowExportOptions(false);
                   }}
                   style={{
@@ -160,7 +160,7 @@ export default function AdminSubcategorias() {
                 <button 
                   className="btn btn-sm"
                   onClick={async () => {
-                    await exportarSubcategoriasAExcel(subcategorias, categorias);
+                    await exportarSubcategoriasAExcel(filteredSubcategorias, categorias);
                     setShowExportOptions(false);
                   }}
                   style={{
