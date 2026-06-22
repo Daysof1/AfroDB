@@ -76,6 +76,7 @@ export default function Profile() {
       formData.append('apellido', editData.apellido || '');
       formData.append('telefono', editData.telefono || '');
       formData.append('direccion', editData.direccion || '');
+      formData.append('email', editData.email || '');
       if (editData.tipo_documento) {
         formData.append('tipo_documento', editData.tipo_documento);
       }

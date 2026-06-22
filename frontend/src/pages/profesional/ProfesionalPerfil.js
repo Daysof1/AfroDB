@@ -120,23 +120,6 @@ export default function ProfesionalPerfil() {
             </div>
           </div>
 
-          <div className="estadisticas-perfil">
-            <h3>Mis Estadísticas</h3>
-            <div className="stats-mini">
-              <div className="stat-mini">
-                <p className="stat-number">156</p>
-                <p>Clientes Totales</p>
-              </div>
-              <div className="stat-mini">
-                <p className="stat-number">4.8</p>
-                <p>Calificación Promedio</p>
-              </div>
-              <div className="stat-mini">
-                <p className="stat-number">89%</p>
-                <p>Tasa de Satisfacción</p>
-              </div>
-            </div>
-          </div>
         </div>
       ) : (
         <div className="form-container">
