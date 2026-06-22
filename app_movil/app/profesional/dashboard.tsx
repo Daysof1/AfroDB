@@ -393,22 +393,60 @@ export default function ProfesionalDashboardScreen() {
             <Text style={styles.detailText}>Servicios: {cita.Servicios?.map((servicio) => servicio.nombre).filter(Boolean).join(', ') || 'Sin detalle'}</Text>
 
             <View style={styles.statusActions}>
-              {['confirmada', 'completada', 'cancelada'].map((estado) => (
+              {cita.estado === 'pendiente' && (
+                <>
+                  <Pressable
+                    key="confirmada"
+                    style={[
+                      styles.statusBtn,
+                      styles.statusBtnIdle,
+                      busyCitaId === cita.id && styles.statusBtnDisabled,
+                    ]}
+                    onPress={() => handleActualizarEstado(cita.id, 'confirmada')}
+                    disabled={busyCitaId === cita.id}
+                  >
+                    <Text style={styles.statusBtnIdleText}>Confirmada</Text>
+                  </Pressable>
+                  <Pressable
+                    key="completada"
+                    style={[
+                      styles.statusBtn,
+                      styles.statusBtnIdle,
+                      busyCitaId === cita.id && styles.statusBtnDisabled,
+                    ]}
+                    onPress={() => handleActualizarEstado(cita.id, 'completada')}
+                    disabled={busyCitaId === cita.id}
+                  >
+                    <Text style={styles.statusBtnIdleText}>Completada</Text>
+                  </Pressable>
+                  <Pressable
+                    key="cancelada"
+                    style={[
+                      styles.statusBtn,
+                      styles.statusBtnIdle,
+                      busyCitaId === cita.id && styles.statusBtnDisabled,
+                    ]}
+                    onPress={() => handleActualizarEstado(cita.id, 'cancelada')}
+                    disabled={busyCitaId === cita.id}
+                  >
+                    <Text style={styles.statusBtnIdleText}>Cancelada</Text>
+                  </Pressable>
+                </>
+              )}
+              {cita.estado === 'confirmada' && (
                 <Pressable
-                  key={estado}
+                  key="completar"
                   style={[
                     styles.statusBtn,
-                    cita.estado === estado ? styles.statusBtnActive : styles.statusBtnIdle,
+                    styles.statusBtnIdle,
                     busyCitaId === cita.id && styles.statusBtnDisabled,
                   ]}
-                  onPress={() => handleActualizarEstado(cita.id, estado)}
-                  disabled={busyCitaId === cita.id || cita.estado === estado}
+                  onPress={() => handleActualizarEstado(cita.id, 'completada')}
+                  disabled={busyCitaId === cita.id}
                 >
-                  <Text style={cita.estado === estado ? styles.statusBtnActiveText : styles.statusBtnIdleText}>
-                    {estadoLabel(estado)}
-                  </Text>
+                  <Text style={styles.statusBtnIdleText}>Completar</Text>
                 </Pressable>
-              ))}
+              )}
             </View>
           </View>
         ))}

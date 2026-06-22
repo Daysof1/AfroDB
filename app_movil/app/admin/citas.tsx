@@ -167,26 +167,26 @@ const confirmarCita = (id: string | number) => {
 };
 
   const cancelarCita = (id: string | number) => {
-    Alert.alert('Confirmar cancelación', '¿Estás seguro de que deseas cancelar esta cita?', [
+    Alert.alert('Confirmar completado', '¿Estás seguro de que deseas completar esta cita?', [
       { text: 'No', style: 'cancel' },
       {
-        text: 'Sí, cancelar',
+        text: 'Sí, completar',
         onPress: async () => {
           setCancellingId(id);
           try {
             if (isAdmin || isAux) {
               // Los admins/auxiliares usan la ruta admin para actualizar estado
-              const res = await apiClient.put(`/admin/citas/${id}/estado`, { estado: 'cancelada' });
+              const res = await apiClient.put(`/admin/citas/${id}/estado`, { estado: 'completada' });
               const updated = res.data?.data?.cita ?? res.data?.data ?? res.data ?? {};
-              setCitas((prev) => prev.map((c) => (String(c.id) === String(id) ? { ...c, ...(updated || {}), estado: 'cancelada' } : c)));
-              setDetalleCitas((prev) => ({ ...prev, [String(id)]: { ...(prev[String(id)] || {}), ...(updated || {}), estado: 'cancelada' } }));
+              setCitas((prev) => prev.map((c) => (String(c.id) === String(id) ? { ...c, ...(updated || {}), estado: 'completada' } : c)));
+              setDetalleCitas((prev) => ({ ...prev, [String(id)]: { ...(prev[String(id)] || {}), ...(updated || {}), estado: 'completada' } }));
             } else {
-              const res = await apiClient.put(`/cliente/citas/${id}/cancelar`);
-              setCitas((prev) => prev.map((c) => (String(c.id) === String(id) ? { ...c, estado: 'cancelada' } : c)));
-              setDetalleCitas((prev) => ({ ...prev, [String(id)]: { ...(prev[String(id)] || {}), estado: 'cancelada' } }));
+              const res = await apiClient.put(`/cliente/citas/${id}/completar`);
+              setCitas((prev) => prev.map((c) => (String(c.id) === String(id) ? { ...c, estado: 'completada' } : c)));
+              setDetalleCitas((prev) => ({ ...prev, [String(id)]: { ...(prev[String(id)] || {}), estado: 'completada' } }));
             }
           } catch (error: any) {
-            const msg = error?.response?.data?.message || error?.message || 'No se pudo cancelar la cita. Intenta nuevamente.';
+            const msg = error?.response?.data?.message || error?.message || 'No se pudo completar la cita. Intenta nuevamente.';
             Alert.alert('Error', msg);
           } finally {
             setCancellingId(null);
@@ -371,15 +371,15 @@ const confirmarCita = (id: string | number) => {
                   ) : null}
                   {item.estado?.toLowerCase() === 'confirmada' ? (
                     <ThemedText>La cita ya fue confirmada.</ThemedText>
-                  ) : item.estado?.toLowerCase() !== 'cancelada' ? (
+                  ) : item.estado?.toLowerCase() !== 'completada' ? (
                     <Pressable
-                      style={[styles.cancelButton, cancellingId === item.id ? { opacity: 0.7 } : undefined]}
+                      style={[styles.completeButton, cancellingId === item.id ? { opacity: 0.7 } : undefined]}
                       onPress={() => cancelarCita(item.id ?? '')}
                     >
-                      <ThemedText style={styles.cancelText}>{cancellingId === item.id ? 'Cancelando...' : 'Cancelar cita'}</ThemedText>
+                      <ThemedText style={styles.completeText}>{cancellingId === item.id ? 'Completando...' : 'Completar cita'}</ThemedText>
                     </Pressable>
                   ) : (
-                    <ThemedText>La cita ya fue cancelada.</ThemedText>
+                    <ThemedText>La cita ya fue completada.</ThemedText>
                   )}
                 </View>
               ) : null}
@@ -403,8 +403,8 @@ const styles = StyleSheet.create({
   serviceLabel: { fontWeight: '600' },
   serviceInfo: { marginTop: 2, color: '#5b4b40', fontSize: 13 },
   hint: { marginTop: 10, color: '#7b6758', fontSize: 12 },
-  cancelButton: { marginTop: 8, backgroundColor: '#a94442', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center' },
-  cancelText: { color: '#fff', fontWeight: '600' },
+  completeButton: { marginTop: 8, backgroundColor: '#5295b4', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center' },
+  completeText: { color: '#fff', fontWeight: '600' },
   input: { flex: 1, borderWidth: 1, borderColor: '#d6c7ae', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff' },
   searchBtn: { backgroundColor: '#3e2f25', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
   clearBtn: { backgroundColor: '#3f2d25', borderRadius: 14, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },

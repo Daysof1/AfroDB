@@ -37,6 +37,17 @@ export async function desactivarProducto(id) {
     const res = await api.patch(`/admin/productos/${id}/toggle`);
     return res.data;
 }
+//categorias
+export async function updateCategoria(id, data) {
+    const res = await api.put(`/admin/categorias/${id}`, data);
+    return res.data;
+}
+
+//subcategorias
+export async function updateSubcategoria(id, data) {
+    const res = await api.put(`/admin/subcategorias/${id}`, data);
+    return res.data;
+}
 
 //servicios
 

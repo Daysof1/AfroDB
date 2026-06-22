@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ThemedText } from '../../components/themed-text';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import apiClient from '../../src/api/apiClient';
 import { useAuth } from '../../src/context/AuthContext';
 
@@ -202,25 +203,38 @@ export default function AdminCategoriasScreen() {
           <Text style={styles.loadingText}>Cargando categorías...</Text>
         </View>
       ) : (
-        categorias.map((categoria) => (
-          <View key={categoria.id} style={styles.itemCard}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.itemTitle}>{categoria.nombre}</Text>
-              <Text style={styles.itemDesc}>{categoria.descripcion || 'Sin descripción'}</Text>
-              <Text style={styles.itemType}>{categoria.tipo ? `Tipo: ${categoria.tipo}` : 'Tipo: producto'}</Text>
-              <Text style={[styles.badge, categoria.activo ? styles.badgeActive : styles.badgeInactive]}>
-                {categoria.activo ? 'Activa' : 'Inactiva'}
-              </Text>
-            </View>
+        categorias.map((categoria) => {
+          const payload = encodeURIComponent(JSON.stringify(categoria));
+          return (
             <Pressable
-              style={[styles.toggleBtn, categoria.activo ? styles.toggleBtnOff : styles.toggleBtnOn]}
-              onPress={() => handleToggle(categoria)}
+              key={categoria.id}
+              style={styles.itemCard}
+              onPress={() =>
+                (router as unknown as { push: (p: string) => void }).push(
+                  `/admin/categoria-form?categoria=${payload}`
+                )
+              }
             >
-              <Text style={styles.toggleBtnText}>{categoria.activo ? 'Desactivar' : 'Activar'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.itemTitle}>{categoria.nombre}</Text>
+                <Text style={styles.itemDesc}>{categoria.descripcion || 'Sin descripción'}</Text>
+                <Text style={styles.itemType}>{categoria.tipo ? `Tipo: ${categoria.tipo}` : 'Tipo: producto'}</Text>
+                <Text style={[styles.badge, categoria.activo ? styles.badgeActive : styles.badgeInactive]}>
+                  {categoria.activo ? 'Activa' : 'Inactiva'}
+                </Text>
+              </View>
+              <Pressable
+                style={[styles.toggleBtn, categoria.activo ? styles.toggleBtnOff : styles.toggleBtnOn]}
+                onPress={(event) => {
+                  event.stopPropagation?.();
+                  handleToggle(categoria);
+                }}
+              >
+                <Text style={styles.toggleBtnText}>{categoria.activo ? 'Desactivar' : 'Activar'}</Text>
+              </Pressable>
             </Pressable>
-          </View>
-          
-        ))
+          );
+        })
       )}
     </ScrollView>
   );

@@ -68,7 +68,6 @@ export default function AdminDashboardScreen() {
         usuarios: 0, // numero de usuarios registrados solo el admin
         pedidos: 0,
         citas: 0,
-        ventas: 0,
     });
     const [loading, setLoading] = useState(false);
 
@@ -161,7 +160,7 @@ export default function AdminDashboardScreen() {
                 usuarios: userStats?.data?.data?.total || 0,
                 pedidos: ordStats.totalPedidos || 0,
                 citas: totalCitas,
-                ventas: Number(ordStats.ventasTotales) || 0,
+                
             });
         } catch (_) {
             // Si alguna petición falla por error inesperado, mantenemos los valores en 0.
@@ -268,19 +267,6 @@ export default function AdminDashboardScreen() {
               </View>
             </Pressable>
           ))}
-        </View>
-      )}
-
-      {/* ── BANNER DE VENTAS TOTALES ─────────────────────────────────────── */}
-      {/* Solo se muestra cuando ya terminó de cargar (evita mostrar $0 mientras carga). */}
-      {!loading && (
-        <View style={styles.salesBanner}>
-          <Ionicons name="trending-up-outline" size={22} color="#aa6924" />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.salesLabel}>Ventas Totales</Text>
-            {/* Total de ventas formateado en COP */}
-            <Text style={styles.salesValue}>{fmt(stats.ventas)}</Text>
-          </View>
         </View>
       )}
 

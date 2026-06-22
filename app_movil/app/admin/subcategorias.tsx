@@ -1,16 +1,17 @@
-    import { useEffect, useRef, useState } from 'react';
-    import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-    import { Ionicons } from '@expo/vector-icons';
-    import apiClient from '../../src/api/apiClient';
-    import { useAuth } from '../../src/context/AuthContext';
-    import { ThemedText } from '../../components/themed-text';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useAuth } from '../../src/context/AuthContext';
+import apiClient from '../../src/api/apiClient';
+import { ThemedText } from '../../components/themed-text';
 
-    type Categoria = {
-    id: number;
-    nombre: string;
-    activo: boolean;
-    tipo?: 'producto' | 'servicio';
-    };
+type Categoria = {
+  id: number;
+  nombre: string;
+  activo: boolean;
+  tipo?: 'producto' | 'servicio';
+};
 
     type Subcategoria = {
     id: number;
@@ -276,27 +277,40 @@
             keyExtractor={(item) => String(item.id)}
             contentContainerStyle={styles.container}
             ListHeaderComponent={renderHeader}
-            renderItem={({ item }) => (
-                <View style={styles.itemCard}>
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.itemTitle}>{item.nombre}</Text>
-                    <Text style={styles.itemDesc}>{item.descripcion || 'Sin descripción'}</Text>
-                    <Text style={styles.meta}>Categoría: {item.categoria?.nombre || 'N/A'}</Text>
-                    <Text style={styles.meta}>Tipo: {item.tipo || 'producto'}</Text>
-                    <Text style={[styles.badge, item.activo ? styles.badgeActive : styles.badgeInactive]}>
-                    {item.activo ? 'Activa' : 'Inactiva'}
-                    </Text>
-                </View>
-                {(isAdmin || isAuxiliar) && (
+            renderItem={({ item }) => {
+                const payload = encodeURIComponent(JSON.stringify(item));
+                return (
                     <Pressable
-                    style={[styles.toggleBtn, item.activo ? styles.toggleBtnOff : styles.toggleBtnOn]}
-                    onPress={() => handleToggle(item)}
+                      style={styles.itemCard}
+                      onPress={() =>
+                        (router as unknown as { push: (p: string) => void }).push(
+                          `/admin/subcategoria-form?subcategoria=${payload}`
+                        )
+                      }
                     >
-                    <Text style={styles.toggleBtnText}>{item.activo ? 'Desactivar' : 'Activar'}</Text>
+                      <View style={{ flex: 1 }}>
+                          <Text style={styles.itemTitle}>{item.nombre}</Text>
+                          <Text style={styles.itemDesc}>{item.descripcion || 'Sin descripción'}</Text>
+                          <Text style={styles.meta}>Categoría: {item.categoria?.nombre || 'N/A'}</Text>
+                          <Text style={styles.meta}>Tipo: {item.tipo || 'producto'}</Text>
+                          <Text style={[styles.badge, item.activo ? styles.badgeActive : styles.badgeInactive]}>
+                            {item.activo ? 'Activa' : 'Inactiva'}
+                          </Text>
+                      </View>
+                      {(isAdmin || isAuxiliar) && (
+                        <Pressable
+                          style={[styles.toggleBtn, item.activo ? styles.toggleBtnOff : styles.toggleBtnOn]}
+                          onPress={(event) => {
+                            event.stopPropagation?.();
+                            handleToggle(item);
+                          }}
+                        >
+                          <Text style={styles.toggleBtnText}>{item.activo ? 'Desactivar' : 'Activar'}</Text>
+                        </Pressable>
+                      )}
                     </Pressable>
-                )}
-                </View>
-            )}
+                );
+            }}
             ListEmptyComponent={
                 !loading ? <Text style={styles.emptyText}>No hay subcategorías registradas.</Text> : null
             }
