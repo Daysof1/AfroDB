@@ -179,10 +179,16 @@ export default function TabTwoScreen() {
             if (isRegisterMode) {
                 //llama a resgister() del contexto con os datos del formulario 
                 //el operador spread condicional ... solo incluye telefono/direcion si no estan vacios
-                await register({ nombre, apellido, email, password,
-                    ...(telefono ? { telefono } : {}),
-                    ...(direccion ? { direccion } : {}),
-                });
+                await register({
+                  nombre,
+                  apellido,
+                  email,
+                  password,
+                  tipo_documento: tipoDocumento,
+                  documento,
+                  ...(telefono ? { telefono } : {}),
+                  ...(direccion ? { direccion } : {}),
+                } as any);
                 setSuccessMessage('Registro exitoso! Ahora inicia sesion');
                 setIsRegisterMode(false); //Vuelve al logi tras el regisstro exitoso
                 // limpia los campos del formulario de registro
@@ -222,6 +228,16 @@ export default function TabTwoScreen() {
             setPerfilError('Modifica al menos un campo');
             return;
         }
+        
+        // Validar email si se está editando
+        if (editEmail.trim() && editEmail.trim() !== user?.email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(editEmail.trim())) {
+                setPerfilError('Formato de email inválido');
+                return;
+            }
+        }
+        
         setSavingPerfil(true);
         try {
             //solo envia los campos que tiene valor; los vacios se omiten
@@ -490,7 +506,15 @@ export default function TabTwoScreen() {
             style={styles.input}
           />
 
-          {/* Campo de email: teclado email, sin mayúsculas automáticas, sólo lectura */}
+          {/* Campo de email: editable */}
+          <TextInput
+            placeholder={`Email actual: ${user?.email || ''}`}
+            value={editEmail}
+            onChangeText={setEditEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            style={styles.input}
+          />
 
           {/* Campo de teléfono */}
           <TextInput
