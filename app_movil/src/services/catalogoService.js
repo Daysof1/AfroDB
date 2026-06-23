@@ -18,6 +18,13 @@ const catalogoService = {
         return payload.categorias || [];
     },
 
+    //obtiene las subcategorías de una categoría específica
+    getSubcategoriasPorCategoria: async (categoriaId) => {
+        const response = await apiClient.get(`/catalogo/categorias/${categoriaId}/subcategorias`);
+        const payload = response.data?.data || response.data || {};
+        return payload.subcategorias || [];
+    },
+
     //consulta productos del catalogo y acepta filtros de busqueda
     getProductos: async (params = {}) => {
         const response = await apiClient.get('/catalogo/productos', { params });

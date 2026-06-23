@@ -59,11 +59,12 @@ const authService = {
     //Actualiza el perfil del usuario autenticado
     updatePerfil: async (data) => {
         const response = await apiClient.put('/auth/me', data);
-        const usuario = response.data?.data || response.data.usuario || null;
+        const payload = response.data?.data || response.data;
+        const usuario = payload?.usuario || null;
         if (usuario) {
             await storageSetItem(STORAGE_KEYS.user, JSON.stringify(usuario));
         }
-        return response.data;
+        return usuario;
     },
 
 };

@@ -29,11 +29,18 @@ export default function ServiciosScreen() {
 
   const [servicios, setServicios] = useState<any[]>([]);
   const [categorias, setCategorias] = useState<any[]>([]);
+  const [subcategorias, setSubcategorias] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState<any>('all');
+  const [subcategoriaActiva, setSubcategoriaActiva] = useState<any>('all');
+  const [loadingSubcategorias, setLoadingSubcategorias] = useState(false);
+  const [showSubcatModal, setShowSubcatModal] = useState(false);
+  const [showCatModal, setShowCatModal] = useState(false);
+  const [searchCatTerm, setSearchCatTerm] = useState('');
+  const [searchSubcatTerm, setSearchSubcatTerm] = useState('');
   const [servicioDetalle, setServicioDetalle] = useState<any>(null);
   const [paginaActual, setPaginaActual] = useState(1);
   const [pagina, setPagina] = useState(1);
@@ -136,15 +143,51 @@ const fetchServicios = async (page = 1, search = '') => {
     console.log('servicios.tsx categorias state:', categorias);
   }, [categorias]);
 
+  // Cargar subcategorías cuando cambia la categoría activa
+  useEffect(() => {
+    const loadSubcategorias = async () => {
+      if (categoriaActiva === 'all') {
+        setSubcategorias([]);
+        setSubcategoriaActiva('all');
+        return;
+      }
+      
+      setLoadingSubcategorias(true);
+      try {
+        const subcat = await catalogoService.getSubcategoriasPorCategoria(categoriaActiva);
+        setSubcategorias(Array.isArray(subcat) ? subcat : []);
+        setSubcategoriaActiva('all');
+      } catch (error: unknown) {
+        console.error('Error cargando subcategorías:', error);
+        setSubcategorias([]);
+      } finally {
+        setLoadingSubcategorias(false);
+      }
+    };
+    
+    loadSubcategorias();
+  }, [categoriaActiva]);
+
   useEffect(() => {
     setPaginaActual(1);
-  }, [busqueda, categoriaActiva]);
+  }, [busqueda, categoriaActiva, subcategoriaActiva]);
+
+  const categoriasFiltradas = useMemo(() => {
+    const termino = searchCatTerm.trim().toLowerCase();
+    if (!termino) return categorias;
+    return categorias.filter((cat: any) => cat.nombre.toLowerCase().includes(termino));
+  }, [categorias, searchCatTerm]);
+
+  const subcategoriasFiltradas = useMemo(() => {
+    const termino = searchSubcatTerm.trim().toLowerCase();
+    if (!termino) return subcategorias;
+    return subcategorias.filter((subcat: any) => subcat.nombre.toLowerCase().includes(termino));
+  }, [subcategorias, searchSubcatTerm]);
 
   const serviciosFiltrados = useMemo(() => {
     const termino = busqueda.trim().toLowerCase();
     
     return servicios.filter((p: any) => {
-      // Filtro por búsqueda: nombre, descripción, categoría, duración
       const coincideTexto = termino === '' || [
         p.nombre?.toLowerCase(),
         p.descripcion?.toLowerCase(),
@@ -154,14 +197,17 @@ const fetchServicios = async (page = 1, search = '') => {
         p.duracion?.toString(),
       ].some(field => field?.includes(termino));
 
-      // Filtro por categoría
       const coincideCategoria =
         categoriaActiva === 'all' ||
         String(p.categoriaId || p.categoria?.id) === categoriaActiva;
 
-      return coincideTexto && coincideCategoria;
+      const coincideSubcategoria =
+        subcategoriaActiva === 'all' ||
+        String(p.subcategoriaId || p.subcategoria?.id) === subcategoriaActiva;
+
+      return coincideTexto && coincideCategoria && coincideSubcategoria;
     });
-  }, [busqueda, categoriaActiva, servicios]);
+  }, [busqueda, categoriaActiva, subcategoriaActiva, servicios]);
   
     const hasServicios = useMemo(() => serviciosFiltrados.length > 0, [serviciosFiltrados]);
     const totalPaginasFiltrados = useMemo(
@@ -223,29 +269,85 @@ const fetchServicios = async (page = 1, search = '') => {
           )}
         </View>
 
-            {/* CHIPS DE CATEGORÍAS */}
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsRow}>
-                <Pressable
-                    onPress={() => setCategoriaActiva('all')}
-                    style={[styles.chip, categoriaActiva === 'all' && styles.chipActive]}>
-                    <ThemedText style={[styles.chipText, categoriaActiva === 'all' && styles.chipTextActive]}>
-                        Todos
-                    </ThemedText>
+            {/* CATEGORÍAS: dropdown */}
+            {categorias.length > 0 && (
+              <>
+                <Pressable style={styles.selectButton} onPress={() => setShowCatModal(true)}>
+                  <ThemedText style={styles.selectText}>
+                    {categoriaActiva === 'all' ? 'Todos' : (categorias.find(c => String(c.id) === String(categoriaActiva))?.nombre || 'Seleccione')}
+                  </ThemedText>
+                  <Ionicons name="chevron-down" size={18} color="#6b5344" />
                 </Pressable>
-                {categorias.map((cat: any) => (
-                    <Pressable
-                    key={cat.id}
-                    onPress={() => setCategoriaActiva(String(cat.id))}
-                    style={[styles.chip, categoriaActiva === String(cat.id) && styles.chipActive]}>
-                    <ThemedText style={[styles.chipText, categoriaActiva === String(cat.id) && styles.chipTextActive]}>
-                        {cat.nombre}
-                    </ThemedText>
+
+                <Modal visible={showCatModal} transparent animationType="fade" onRequestClose={() => { setShowCatModal(false); setSearchCatTerm(''); }}>
+                  <View style={styles.modalBackdrop}>
+                    <View style={styles.modalPanel}>
+                      <TextInput
+                        placeholder="Buscar categoría..."
+                        value={searchCatTerm}
+                        onChangeText={setSearchCatTerm}
+                        style={styles.modalSearchInput}
+                        placeholderTextColor="#999"
+                      />
+                      <ScrollView>
+                        <Pressable style={styles.modalOption} onPress={() => { setCategoriaActiva('all'); setShowCatModal(false); setSearchCatTerm(''); }}>
+                          <ThemedText style={styles.modalOptionText}>Todos</ThemedText>
+                        </Pressable>
+                        {categoriasFiltradas.map((cat: any) => (
+                          <Pressable key={cat.id} style={styles.modalOption} onPress={() => { setCategoriaActiva(String(cat.id)); setShowCatModal(false); setSearchCatTerm(''); }}>
+                            <ThemedText style={styles.modalOptionText}>{cat.nombre}</ThemedText>
+                          </Pressable>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  </View>
+                </Modal>
+              </>
+            )}
+
+            {/* SUBCATEGORÍAS: dropdown */}
+            {categoriaActiva !== 'all' && subcategorias.length > 0 && (
+              <>
+                {loadingSubcategorias ? (
+                  <View style={{ paddingVertical: 8, alignItems: 'center' }}>
+                    <ActivityIndicator size="small" color="#a57c63" />
+                  </View>
+                ) : (
+                  <>
+                    <Pressable style={styles.selectButton} onPress={() => setShowSubcatModal(true)}>
+                      <ThemedText style={styles.selectText}>
+                        {subcategoriaActiva === 'all' ? 'Todas' : (subcategorias.find(s => String(s.id) === String(subcategoriaActiva))?.nombre || 'Seleccione')}
+                      </ThemedText>
+                      <Ionicons name="chevron-down" size={18} color="#6b5344" />
                     </Pressable>
-                ))}
-                </ScrollView>
+
+                    <Modal visible={showSubcatModal} transparent animationType="fade" onRequestClose={() => { setShowSubcatModal(false); setSearchSubcatTerm(''); }}>
+                      <View style={styles.modalBackdrop}>
+                        <View style={styles.modalPanel}>
+                          <TextInput
+                            placeholder="Buscar subcategoría..."
+                            value={searchSubcatTerm}
+                            onChangeText={setSearchSubcatTerm}
+                            style={styles.modalSearchInput}
+                            placeholderTextColor="#999"
+                          />
+                          <ScrollView>
+                            <Pressable style={styles.modalOption} onPress={() => { setSubcategoriaActiva('all'); setShowSubcatModal(false); setSearchSubcatTerm(''); }}>
+                              <ThemedText style={styles.modalOptionText}>Todas</ThemedText>
+                            </Pressable>
+                            {subcategoriasFiltradas.map((subcat: any) => (
+                              <Pressable key={subcat.id} style={styles.modalOption} onPress={() => { setSubcategoriaActiva(String(subcat.id)); setShowSubcatModal(false); setSearchSubcatTerm(''); }}>
+                                <ThemedText style={styles.modalOptionText}>{subcat.nombre}</ThemedText>
+                              </Pressable>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      </View>
+                    </Modal>
+                  </>
+                )}
+              </>
+            )}
 
         {/* ENCABEZADO */}
         <View style={styles.sectionHeader}>
@@ -419,6 +521,14 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: '#a57c63', borderColor: '#a57c63' },
   chipText: { color: '#5f4638', fontWeight: '600', fontSize: 13 },
   chipTextActive: { color: '#fff' },
+  chipSubcategoria: { borderColor: '#c8a27a', backgroundColor: '#faf6f0' },
+  chipTextSubcategoria: { color: '#6b5344' },
+  selectButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#e4d8cb', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: '#fff', marginBottom: 16 },
+  selectText: { color: '#5f4638', fontWeight: '600' },
+  modalPanel: { marginHorizontal: 20, marginTop: 100, backgroundColor: '#fff', borderRadius: 12, maxHeight: '60%', overflow: 'hidden' },
+  modalSearchInput: { borderBottomWidth: 1, borderBottomColor: '#e4d8cb', paddingVertical: 12, paddingHorizontal: 14, fontSize: 14, color: '#333', backgroundColor: '#fafafa' },
+  modalOption: { paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#f3f2f0' },
+  modalOptionText: { color: '#3e2f25' },
   featuresRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingBottom: 4, marginBottom: 16 },
   featureCard: { borderRadius: 16, padding: 14, backgroundColor: '#fff', borderWidth: 1, borderColor: '#efe6dc', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2, gap: 6 },
   featureIconCircle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },

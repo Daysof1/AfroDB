@@ -286,7 +286,7 @@ const updateMe = async (req, res) => {
   try {
     // Solo extrae los campos que el usuario tiene PERMITIDO cambiar.
     // No extrae 'rol' ni 'activo' por seguridad.
-    const { tipo_documento, nombre, apellido, telefono, direccion } = req.body;
+    const { tipo_documento, nombre, apellido, email, telefono, direccion } = req.body;
     
     // Busca el usuario en la BD por su ID (viene del token via middleware)
     const usuario = await Usuario.findByPk(req.usuario.id);
@@ -298,11 +298,29 @@ const updateMe = async (req, res) => {
       });
     }
     
+    // VALIDACIÓN: Si se intenta cambiar el email, verificar que no esté registrado por otro usuario
+    if (email !== undefined && email !== usuario.email) {
+      const emailExistente = await Usuario.findOne({
+        where: { 
+          email: email,
+          id: { [require('sequelize').Op.ne]: req.usuario.id } // Excluir al usuario actual
+        }
+      });
+      
+      if (emailExistente) {
+        return res.status(400).json({
+          success: false,
+          message: 'El email ya está registrado por otro usuario'
+        });
+      }
+    }
+    
     // ACTUALIZAR CAMPOS: solo actualiza si el campo viene definido en el body.
     // La condición !== undefined permite enviar valores vacíos o null intencionalmente.
     // Si el campo no viene en el body, no lo modifica (mantiene el valor actual).
     if (nombre !== undefined) usuario.nombre = nombre;
     if (apellido !== undefined) usuario.apellido = apellido;
+    if (email !== undefined) usuario.email = email;
     if (telefono !== undefined) usuario.telefono = telefono;
     if (direccion !== undefined) usuario.direccion = direccion;
     if (tipo_documento !== undefined) usuario.tipo_documento = tipo_documento;
