@@ -101,6 +101,7 @@ const carritoService = {
                 id: Date.now(),
                 productoId: producto.id,
                 nombre: producto.nombre,
+                imagen: producto.imagen || '',
                 precio: Number(producto.precio || 0),
                 cantidad,
             });
