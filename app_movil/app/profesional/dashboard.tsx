@@ -118,7 +118,8 @@ export default function ProfesionalDashboardScreen() {
       .filter((cita) => {
         const matchesEstado = citaEstadoFilter === 'todos' || cita.estado === citaEstadoFilter;
         const serviciosTexto = (cita.Servicios || []).map((servicio) => servicio.nombre?.toLowerCase() || '').join(' ');
-        const matchesSearch = !search || serviciosTexto.includes(search);
+        const clienteTexto = cita.cliente?.nombre?.toLowerCase() || '';
+        const matchesSearch = !search || serviciosTexto.includes(search) || clienteTexto.includes(search);
         return matchesEstado && matchesSearch;
       })
       .sort((a, b) => {
