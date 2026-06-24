@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ThemedText } from '../../components/themed-text';
 import { updateSubcategoria } from '../../src/services/adminService';
+import apiClient from '../../src/api/apiClient';
 
 type Categoria = {
   id?: number;
@@ -40,6 +42,38 @@ export default function AdminSubcategoriaForm() {
   const [categoriaId, setCategoriaId] = useState(subcategoria?.categoriaId?.toString() ?? '');
   const [tipo, setTipo] = useState<'producto' | 'servicio'>(subcategoria?.tipo === 'servicio' ? 'servicio' : 'producto');
   const [loading, setLoading] = useState(false);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [showCategoriaModal, setShowCategoriaModal] = useState(false);
+  const [searchCategoriaTerm, setSearchCategoriaTerm] = useState('');
+
+  useEffect(() => {
+    const fetchCategorias = async () => {
+      try {
+        const res = await apiClient.get('/admin/categorias');
+        const categoriasData: Categoria[] = res.data?.data?.categorias || [];
+        setCategorias(Array.isArray(categoriasData) ? categoriasData : []);
+      } catch (error: unknown) {
+        console.error('Error al cargar categorías:', error);
+      }
+    };
+
+    fetchCategorias();
+  }, []);
+
+  useEffect(() => {
+    if (categoriaId) {
+      const categoriaSeleccionada = categorias.find((cat) => String(cat.id) === categoriaId);
+      if (!categoriaSeleccionada || categoriaSeleccionada.tipo !== tipo) {
+        setCategoriaId('');
+      }
+    }
+  }, [tipo, categorias, categoriaId]);
+
+  const categoriasFiltradas = categorias
+    .filter((categoria) => categoria.tipo === tipo)
+    .filter((categoria) =>
+      String(categoria.nombre ?? '').toLowerCase().includes(searchCategoriaTerm.toLowerCase().trim())
+    );
 
   const handleSubmit = async () => {
     if (!editing || !subcategoria?.id) {
@@ -86,14 +120,55 @@ export default function AdminSubcategoriaForm() {
             multiline
           />
 
-          <Text style={styles.label}>Categoría ID</Text>
-          <TextInput
-            style={styles.input}
-            value={categoriaId}
-            onChangeText={setCategoriaId}
-            placeholder="ID de la categoría"
-            keyboardType="numeric"
-          />
+          <Text style={styles.label}>Categoría</Text>
+          <Pressable style={styles.selectButton} onPress={() => setShowCategoriaModal(true)}>
+            <Text style={styles.selectText}>
+              {categoriaId
+                ? categorias.find((categoria) => String(categoria.id) === categoriaId)?.nombre
+                : 'Selecciona una categoría'}
+            </Text>
+            <Ionicons name="chevron-down" size={18} color="#6b5344" />
+          </Pressable>
+          <Modal
+            visible={showCategoriaModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => {
+              setShowCategoriaModal(false);
+              setSearchCategoriaTerm('');
+            }}
+          >
+            <View style={styles.modalBackdrop}>
+              <View style={styles.modalPanel}>
+                <TextInput
+                  placeholder="Buscar categoría..."
+                  value={searchCategoriaTerm}
+                  onChangeText={setSearchCategoriaTerm}
+                  style={styles.modalSearchInput}
+                  placeholderTextColor="#999"
+                />
+                <ScrollView>
+                  {categoriasFiltradas.length === 0 ? (
+                    <Text style={styles.modalEmptyText}>No hay categorías para este tipo.</Text>
+                  ) : (
+                    categoriasFiltradas.map((categoria) => (
+                      <Pressable
+                        key={categoria.id}
+                        style={styles.modalOption}
+                        onPress={() => {
+                          setCategoriaId(String(categoria.id));
+                          setShowCategoriaModal(false);
+                          setSearchCategoriaTerm('');
+                        }}
+                      >
+                        <Text style={styles.modalOptionText}>{categoria.nombre}</Text>
+                      </Pressable>
+                    ))
+                  )}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
 
           <Text style={styles.label}>Tipo</Text>
           <View style={styles.optionList}>
@@ -140,6 +215,14 @@ const styles = StyleSheet.create({
   optionButtonSelected: { backgroundColor: '#8b6f47', borderColor: '#8b6f47' },
   optionText: { color: '#3e2f25', fontWeight: '700' },
   optionTextSelected: { color: '#fff', fontWeight: '700' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  modalPanel: { backgroundColor: '#fff', borderRadius: 18, padding: 16, maxHeight: '70%' },
+  modalSearchInput: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12, color: '#111827' },
+  modalOption: { paddingVertical: 14, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: '#f3e6d8' },
+  modalOptionText: { color: '#3e2f25', fontWeight: '700' },
+  modalEmptyText: { color: '#7b6758', textAlign: 'center', paddingVertical: 14 },
+  selectButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#e4d8cb', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff', marginBottom: 12 },
+  selectText: { color: '#5f4638', fontWeight: '600' },
   messageBox: { backgroundColor: '#fff', borderRadius: 16, padding: 18, borderWidth: 1, borderColor: '#d4b483' },
   messageText: { color: '#7b6758', marginBottom: 12 },
   secondaryBtn: { backgroundColor: '#e6d3b3', borderRadius: 12, paddingVertical: 12, alignItems: 'center' },

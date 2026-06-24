@@ -85,7 +85,7 @@ export default function AdminDashboardScreen() {
                 apiClient.get('/admin/servicios?limite=1'),
                 apiClient.get('/admin/productos?limite=1'),
                 apiClient.get('/admin/pedidos/estadisticas'),
-                apiClient.get('/admin/citas/estadisticas'),
+                apiClient.get('/admin/citas'),
             ]);
 
             const [catsRes, subsRes, serRes, prodsRes, ordersRes, citasRes] = results;
@@ -127,30 +127,14 @@ export default function AdminDashboardScreen() {
 
             const canReadCount = (payload: any): number => {
                 if (!payload) return 0;
+                if (Array.isArray(payload)) return payload.length;
                 if (typeof payload.totalCitas === 'number') return payload.totalCitas;
                 if (typeof payload.total === 'number') return payload.total;
                 if (Array.isArray(payload.citas)) return payload.citas.length;
                 return 0;
             };
 
-            let totalCitas = canReadCount(citaPayload);
-
-            if (citasRes.status !== 'fulfilled' || (
-                totalCitas === 0 &&
-                citaPayload.totalCitas === undefined &&
-                citaPayload.total === undefined &&
-                !Array.isArray(citaPayload.citas)
-            )) {
-                try {
-                    const backupCitas = await apiClient.get('/admin/citas');
-                    const backupPayload = normalizePayload(backupCitas);
-                    if (Array.isArray(backupPayload.citas)) {
-                        totalCitas = backupPayload.citas.length;
-                    }
-                } catch (error) {
-                    console.error('Error al obtener backup de citas:', error);
-                }
-            }
+            const totalCitas = canReadCount(citaPayload);
 
             setStats({
                 categorias,

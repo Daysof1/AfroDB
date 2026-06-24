@@ -15,7 +15,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Image } from "react-native";
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Image } from "react-native";
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { router, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -54,6 +55,7 @@ export default function AgendarScreen() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [expandirServicios, setExpandirServicios] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const getPeriodRange = (period: 'mañana' | 'tarde' | 'noche') => {
     switch (period) {
@@ -99,6 +101,29 @@ export default function AgendarScreen() {
     setSelectedPeriod(period);
     setHora('');
     setHoraError('');
+  };
+
+  const formatDateValue = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleDateChange = (_event: any, selectedDate?: Date) => {
+    const currentDate = selectedDate || new Date();
+    if (Platform.OS !== 'ios') {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setFecha(formatDateValue(currentDate));
+    }
+  };
+
+  const handleFechaPress = () => {
+    if (Platform.OS !== 'web') {
+      setShowDatePicker(true);
+    }
   };
 
   // Cargar servicios disponibles
@@ -181,13 +206,6 @@ export default function AgendarScreen() {
       servicios: selectedIds 
     };
 
-    console.log('=== PAYLOAD ENVIADO ===');
-    console.log('Fecha:', fecha);
-    console.log('Hora formateada:', horaFormateada);
-    console.log('Servicios:', selectedIds);
-    console.log('Payload completo:', payload);
-    console.log('=======================');
-
     setSubmitting(true);
     try {
       await crearCita(payload);
@@ -200,17 +218,6 @@ export default function AgendarScreen() {
       setSelectedPeriod('mañana');
       router.replace('/');
     } catch (err: unknown) {
-      console.log('=== ERROR AL AGENDAR ===');
-      console.log('Error completo:', err);
-      console.log('Error type:', typeof err);
-      if (err && typeof err === 'object') {
-        console.log('Error keys:', Object.keys(err));
-        console.log('Error.message:', (err as any).message);
-        console.log('Error.response:', (err as any).response);
-        console.log('Error.response.data:', (err as any).response?.data);
-      }
-      console.log('========================');
-      
       let errorMsg = 'No se pudo agendar la cita';
       if (err && typeof err === 'object') {
         const anyErr = err as any;
@@ -376,13 +383,30 @@ export default function AgendarScreen() {
           <ThemedText style={styles.formLabel}>
             <Ionicons name="calendar" size={14} color="#a57c63" /> Fecha (YYYY-MM-DD)
           </ThemedText>
-          <TextInput
-            value={fecha}
-            onChangeText={setFecha}
-            placeholder="2026-06-30"
-            style={styles.input}
-            placeholderTextColor="#9ca3af"
-          />
+          {Platform.OS === 'web' ? (
+            <TextInput
+              value={fecha}
+              onChangeText={setFecha}
+              placeholder="2026-06-30"
+              style={styles.input}
+              placeholderTextColor="#9ca3af"
+            />
+          ) : (
+            <Pressable onPress={handleFechaPress} style={styles.datePickerButton}>
+              <ThemedText style={[styles.inputText, !fecha && styles.placeholderText]}>
+                {fecha || 'Seleccionar fecha'}
+              </ThemedText>
+            </Pressable>
+          )}
+          {Platform.OS !== 'web' && showDatePicker && (
+            <DateTimePicker
+              value={fecha ? new Date(fecha) : new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+              minimumDate={new Date()}
+              onChange={handleDateChange}
+            />
+          )}
         </View>
 
         {/* SECCIÓN HORA */}
@@ -651,6 +675,21 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
     color: '#111',
+    backgroundColor: '#fafafa',
+  },
+  inputText: {
+    color: '#111',
+    fontSize: 14,
+  },
+  placeholderText: {
+    color: '#9ca3af',
+  },
+  datePickerButton: {
+    borderWidth: 1,
+    borderColor: '#e4d8cb',
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     backgroundColor: '#fafafa',
   },
   inputError: {

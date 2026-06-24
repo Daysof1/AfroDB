@@ -114,13 +114,42 @@ export default function CarritoScreen() {
                 'Vaciar carrito',
                 '¿Estás seguro de que quieres vaciar el carrito?',
                 [
-                    //boto n cancelar cierra dalogo sin hacer nada
+                    //boton cancelar cierra dialogo sin hacer nada
                     { text: 'Cancelar', style:'cancel' },
-                    //boton iniciar sesion lleva a pestaña cuenta explore.tsx
-                    { text: 'Vaciar', style: 'destructive', onPress: () => vaciarCarrito() },
+                    //boton va a vaciar el carrito y captura errores
+                    {
+                      text: 'Vaciar',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await vaciarCarrito();
+                        } catch (error: unknown) {
+                          const msg = (error as { message?: string })?.message || 'No se pudo vaciar el carrito';
+                          Alert.alert('Error', msg);
+                        }
+                      },
+                    },
                 ]
             );
         };
+
+    const handleActualizarCantidad = async (itemId: string, cantidad: number) => {
+        try {
+            await cambiarCantidad(itemId, cantidad);
+        } catch (error: unknown) {
+            const msg = (error as { message?: string })?.message || 'No fue posible actualizar la cantidad';
+            Alert.alert('Error', msg);
+        }
+    };
+
+    const handleEliminarItem = async (itemId: string) => {
+        try {
+            await eliminarItem(itemId);
+        } catch (error: unknown) {
+            const msg = (error as { message?: string })?.message || 'No fue posible eliminar el item';
+            Alert.alert('Error', msg);
+        }
+    };
 
         /**
          * Renderizado principal del carrito
@@ -213,19 +242,19 @@ export default function CarritoScreen() {
                     {/* Fila de controles de cantidad */}
                     <View style={styles.qtyRow}>
                       {/* Botón "-": reduce 1 unidad, mínimo 1 (Math.max evita llegar a 0) */}
-                      <Pressable style={styles.qtyBtn} onPress={() => cambiarCantidad(item.id, Math.max(1, item.cantidad - 1))}>
+                      <Pressable style={styles.qtyBtn} onPress={() => handleActualizarCantidad(item.id, Math.max(1, item.cantidad - 1))}>
                         <Ionicons name="remove" size={14} color="#555" />
                       </Pressable>
                       {/* Cantidad actual del ítem */}
                       <Text style={styles.qtyText}>{item.cantidad}</Text>
                       {/* Botón "+": aumenta 1 unidad */}
-                      <Pressable style={styles.qtyBtn} onPress={() => cambiarCantidad(item.id, item.cantidad + 1)}>
+                      <Pressable style={styles.qtyBtn} onPress={() => handleActualizarCantidad(item.id, item.cantidad + 1)}>
                         <Ionicons name="add" size={14} color="#555" />
                       </Pressable>
                       {/* Subtotal del ítem: precio × cantidad formateado */}
                       <Text style={styles.subtotalItem}>{fmt((item.precio || 0) * item.cantidad)}</Text>
                       {/* Botón de papelera: elimina el ítem del carrito */}
-                      <Pressable onPress={() => eliminarItem(item.id)} style={styles.trashBtn}>
+                      <Pressable onPress={() => handleEliminarItem(item.id)} style={styles.trashBtn}>
                         <Ionicons name="trash-outline" size={18} color="#b93a32" />
                       </Pressable>
                     </View>

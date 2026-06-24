@@ -32,6 +32,8 @@ type Detalle = {
     producto?: { nombre?: string };//solo del los productos comprados
     cantidad?: number;
     precio?: number;//precio unitario del producto
+    precioUnitario?: number; // nombre alternativo que puede venir del backend
+    subtotal?: number; // valor total del producto (precio * cantidad)
 };
 
 // representa el pedido completo tal como lo devuelve el backend
@@ -213,15 +215,22 @@ export default function AdminPedidoDetalleScreen() {
       <ThemedText style={styles.sectionTitle}>Productos:</ThemedText>
 
       {/* Lista de ítems del pedido. Cada ítem muestra nombre, cantidad y precio. */}
-      {pedido.detalles?.map((det: Detalle, idx: number) => (
-        // key={idx} usa el índice porque los detalles no siempre tienen ID propio.
-        <View key={idx} style={styles.detalleRow}>
-          {/* Nombre del producto y cantidad comprada */}
-          <ThemedText>{det.producto?.nombre} x{det.cantidad}</ThemedText>
-          {/* Precio del ítem formateado en COP */}
-          <ThemedText>${Number(det.precio || 0).toLocaleString('es-CO')}</ThemedText>
-        </View>
-      ))}
+      {pedido.detalles?.map((det: Detalle, idx: number) => {
+        const cantidad = Number(det.cantidad ?? 0);
+        const precioUnitario = Number(det.precio ?? det.precioUnitario ?? 0);
+        const subtotal = Number(det.subtotal ?? precioUnitario * cantidad);
+
+        return (
+          // key={idx} usa el índice porque los detalles no siempre tienen ID propio.
+          <View key={idx} style={styles.detalleRow}>
+            <View style={styles.detalleInfo}>
+              <ThemedText>{det.producto?.nombre || 'Producto'} x{cantidad}</ThemedText>
+              <ThemedText style={styles.meta}>Precio unitario: ${precioUnitario.toLocaleString('es-CO')}</ThemedText>
+            </View>
+            <ThemedText style={styles.valorText}>Valor: ${subtotal.toLocaleString('es-CO')}</ThemedText>
+          </View>
+        );
+      })}
 
       {/* ── BOTONES DE ACCIÓN ─────────────────────────────────────────────── */}
       {/* Los botones se muestran condicionalmente según el estado actual del pedido. */}
@@ -280,7 +289,10 @@ const styles = StyleSheet.create({
   sectionTitle: { marginTop: 10, fontWeight: 'bold' },
 
   // Fila de un ítem de detalle: nombre a la izquierda, precio a la derecha.
-  detalleRow: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 2 },
+  detalleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 2, gap: 12 },
+  detalleInfo: { flex: 1, gap: 2 },
+  meta: { color: '#666', fontSize: 12 },
+  valorText: { fontWeight: '700' },
 
   // Columna de botones de acción con separación entre ellos.
   actionsRow: { flexDirection: 'column', gap: 10, marginTop: 20 },

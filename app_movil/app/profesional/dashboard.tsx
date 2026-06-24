@@ -94,6 +94,39 @@ export default function ProfesionalDashboardScreen() {
   });
   const [busyEspecialidadId, setBusyEspecialidadId] = useState<number | null>(null);
   const [busyCitaId, setBusyCitaId] = useState<number | null>(null);
+  const [activeSection, setActiveSection] = useState<'none' | 'especialidades' | 'citas'>('none');
+  const [especialidadFilter, setEspecialidadFilter] = useState('');
+  const [citaServicioFilter, setCitaServicioFilter] = useState('');
+  const [citaEstadoFilter, setCitaEstadoFilter] = useState<'todos' | 'pendiente' | 'confirmada' | 'completada' | 'cancelada'>('todos');
+
+  const especialidadesDisponiblesFiltradas = useMemo(() => {
+    const term = especialidadFilter.trim().toLowerCase();
+    return especialidadesDisponibles
+      .filter((especialidad) => !misEspecialidades.some((actual) => actual.id === especialidad.id))
+      .filter((especialidad) => !term || especialidad.nombre?.toLowerCase().includes(term));
+  }, [especialidadFilter, especialidadesDisponibles, misEspecialidades]);
+
+  const misEspecialidadesFiltradas = useMemo(() => {
+    const term = especialidadFilter.trim().toLowerCase();
+    return misEspecialidades.filter((especialidad) => !term || especialidad.nombre?.toLowerCase().includes(term));
+  }, [especialidadFilter, misEspecialidades]);
+
+  const citasFiltradas = useMemo(() => {
+    const search = citaServicioFilter.trim().toLowerCase();
+
+    return citas
+      .filter((cita) => {
+        const matchesEstado = citaEstadoFilter === 'todos' || cita.estado === citaEstadoFilter;
+        const serviciosTexto = (cita.Servicios || []).map((servicio) => servicio.nombre?.toLowerCase() || '').join(' ');
+        const matchesSearch = !search || serviciosTexto.includes(search);
+        return matchesEstado && matchesSearch;
+      })
+      .sort((a, b) => {
+        const dateA = a.fecha ? new Date(a.fecha).getTime() : Number.POSITIVE_INFINITY;
+        const dateB = b.fecha ? new Date(b.fecha).getTime() : Number.POSITIVE_INFINITY;
+        return dateA - dateB;
+      });
+  }, [citas, citaServicioFilter, citaEstadoFilter]);
 
   const loadDashboard = async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -125,6 +158,19 @@ export default function ProfesionalDashboardScreen() {
       loadDashboard();
     }
   }, [isAuthenticated, user?.rol]);
+
+  const toggleSection = (section: 'especialidades' | 'citas') => {
+    if (activeSection === section) {
+      setActiveSection('none');
+      return;
+    }
+
+    // reset filters when opening a section
+    setEspecialidadFilter('');
+    setCitaServicioFilter('');
+    setCitaEstadoFilter('todos');
+    setActiveSection(section);
+  };
 
   const stats = useMemo(() => {
     const pendientes = citas.filter((cita) => cita.estado === 'pendiente').length;
@@ -196,6 +242,8 @@ export default function ProfesionalDashboardScreen() {
       const siguiente = especialidadesDisponibles.find((item) => item.id === especialidadId);
       if (siguiente) {
         setMisEspecialidades((actual) => [...actual, siguiente]);
+        // refresh available list from server
+        loadDashboard({ silent: true });
       }
     } catch (error: unknown) {
       Alert.alert('Especialidades', (error as { message?: string })?.message || 'No se pudo agregar la especialidad');
@@ -209,6 +257,8 @@ export default function ProfesionalDashboardScreen() {
     try {
       await profesionalService.removerEspecialidad(especialidadId);
       setMisEspecialidades((actual) => actual.filter((item) => item.id !== especialidadId));
+      // refresh available list from server
+      loadDashboard({ silent: true });
     } catch (error: unknown) {
       Alert.alert('Especialidades', (error as { message?: string })?.message || 'No se pudo remover la especialidad');
     } finally {
@@ -277,6 +327,26 @@ export default function ProfesionalDashboardScreen() {
         </View>
       </View>
 
+      <View style={styles.quickAccessSection}>
+        <Text style={styles.quickAccessHeading}>Accesos rápidos</Text>
+        <View style={styles.categoriesRow}>
+          <Pressable style={styles.categoryCard} onPress={() => toggleSection('especialidades')}>
+            <View style={[styles.categoryCardIcon, { backgroundColor: '#ffffff' }]}> 
+              <Ionicons name="sparkles-outline" size={32} color="#553e30" />
+            </View>
+            <Text style={styles.categoryCardTitle}>Especialidades</Text>
+            <Text style={styles.categoryCardDesc}>Gestiona tus especialidades asignadas.</Text>
+          </Pressable>
+          <Pressable style={styles.categoryCard} onPress={() => toggleSection('citas')}>
+            <View style={[styles.categoryCardIcon, { backgroundColor: '#ffffff' }]}> 
+              <Ionicons name="calendar-outline" size={32} color="#553e30" />
+            </View>
+            <Text style={styles.categoryCardTitle}>Citas</Text>
+            <Text style={styles.categoryCardDesc}>Revisa y administra tus citas.</Text>
+          </Pressable>
+        </View>
+      </View>
+
       {loading ? (
         <View style={styles.loadingBox}>
           <ActivityIndicator size="large" color="#a57c63" />
@@ -331,27 +401,43 @@ export default function ProfesionalDashboardScreen() {
         )}
       </View>
 
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="sparkles-outline" size={18} color="#a57c63" />
-          <Text style={styles.sectionTitle}>Mis especialidades</Text>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.chipsRow}>
-            {misEspecialidades.length > 0 ? misEspecialidades.map((especialidad) => (
-              <Pressable key={especialidad.id} style={styles.chip} onPress={() => handleRemoveSpecialidad(especialidad.id)} disabled={busyEspecialidadId === especialidad.id}>
-                <Text style={styles.chipText}>{especialidad.nombre}</Text>
-                <Ionicons name="close" size={14} color="#a57c63" />
-              </Pressable>
-            )) : <Text style={styles.detailText}>Todavía no tienes especialidades asignadas.</Text>}
+      {activeSection === 'especialidades' ? (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="sparkles-outline" size={18} color="#a57c63" />
+            <Text style={styles.sectionTitle}>Especialidades</Text>
+            <Pressable style={{ marginLeft: 'auto' }} onPress={() => setActiveSection('none')}>
+              <Ionicons name="close" size={20} color="#3e2f25" />
+            </Pressable>
           </View>
 
-          <Text style={styles.subsectionTitle}>Agregar especialidades</Text>
-          <View style={styles.availableGrid}>
-            {especialidadesDisponibles
-              .filter((especialidad) => !misEspecialidades.some((actual) => actual.id === especialidad.id))
-              .map((especialidad) => (
+          <View style={styles.card}>
+            <TextInput
+              placeholder="Buscar especialidades"
+              value={especialidadFilter}
+              onChangeText={setEspecialidadFilter}
+              style={styles.input}
+              autoCapitalize="none"
+            />
+
+            <Text style={styles.subsectionTitle}>Especialidades asignadas</Text>
+            <View style={styles.chipsRow}>
+              {misEspecialidadesFiltradas.length > 0 ? misEspecialidadesFiltradas.map((especialidad) => (
+                <Pressable
+                  key={especialidad.id}
+                  style={styles.chip}
+                  onPress={() => handleRemoveSpecialidad(especialidad.id)}
+                  disabled={busyEspecialidadId === especialidad.id}
+                >
+                  <Text style={styles.chipText}>{especialidad.nombre}</Text>
+                  <Ionicons name="close" size={14} color="#a57c63" />
+                </Pressable>
+              )) : <Text style={styles.detailText}>No se encontraron especialidades asignadas.</Text>}
+            </View>
+
+            <Text style={styles.subsectionTitle}>Especialidades disponibles</Text>
+            <View style={styles.availableGrid}>
+              {especialidadesDisponiblesFiltradas.length > 0 ? especialidadesDisponiblesFiltradas.map((especialidad) => (
                 <Pressable
                   key={especialidad.id}
                   style={styles.availableChip}
@@ -361,96 +447,131 @@ export default function ProfesionalDashboardScreen() {
                   <Text style={styles.availableChipText}>{especialidad.nombre}</Text>
                   <Ionicons name="add" size={14} color="#a57c63" />
                 </Pressable>
-              ))}
+              )) : <Text style={styles.detailText}>No hay especialidades disponibles con ese filtro.</Text>}
+            </View>
           </View>
         </View>
-      </View>
+      ) : null}
 
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="calendar-outline" size={18} color="#a57c63" />
-          <Text style={styles.sectionTitle}>Mis citas</Text>
-        </View>
+      {activeSection === 'citas' && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="calendar-outline" size={18} color="#a57c63" />
+            <Text style={styles.sectionTitle}>Mis citas</Text>
+            <Pressable style={{ marginLeft: 'auto' }} onPress={() => setActiveSection('none')}>
+              <Ionicons name="close" size={20} color="#3e2f25" />
+            </Pressable>
+          </View>
 
-        {citas.length === 0 ? (
           <View style={styles.card}>
-            <Text style={styles.detailText}>No tienes citas asignadas.</Text>
-          </View>
-        ) : citas.map((cita) => (
-          <View key={cita.id} style={styles.card}>
-            <View style={styles.cardTopRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>Cita #{cita.id}</Text>
-                <Text style={styles.detailText}>Cliente: {cita.cliente?.nombre || '-'}</Text>
-                <Text style={styles.detailText}>Fecha: {formatDate(cita.fecha)} · {cita.hora || '-'}</Text>
-              </View>
-              <View style={[styles.stateBadge, { backgroundColor: estadoColor(cita.estado) }]}>
-                <Text style={styles.stateBadgeText}>{estadoLabel(cita.estado)}</Text>
-              </View>
-            </View>
+            <TextInput
+              placeholder="Buscar por servicio"
+              value={citaServicioFilter}
+              onChangeText={setCitaServicioFilter}
+              style={styles.input}
+              autoCapitalize="none"
+            />
 
-            <Text style={styles.detailText}>Total: {formatCurrency(cita.total)}</Text>
-            <Text style={styles.detailText}>Servicios: {cita.Servicios?.map((servicio) => servicio.nombre).filter(Boolean).join(', ') || 'Sin detalle'}</Text>
-
-            <View style={styles.statusActions}>
-              {cita.estado === 'pendiente' && (
-                <>
-                  <Pressable
-                    key="confirmada"
-                    style={[
-                      styles.statusBtn,
-                      styles.statusBtnIdle,
-                      busyCitaId === cita.id && styles.statusBtnDisabled,
-                    ]}
-                    onPress={() => handleActualizarEstado(cita.id, 'confirmada')}
-                    disabled={busyCitaId === cita.id}
-                  >
-                    <Text style={styles.statusBtnIdleText}>Confirmada</Text>
-                  </Pressable>
-                  <Pressable
-                    key="completada"
-                    style={[
-                      styles.statusBtn,
-                      styles.statusBtnIdle,
-                      busyCitaId === cita.id && styles.statusBtnDisabled,
-                    ]}
-                    onPress={() => handleActualizarEstado(cita.id, 'completada')}
-                    disabled={busyCitaId === cita.id}
-                  >
-                    <Text style={styles.statusBtnIdleText}>Completada</Text>
-                  </Pressable>
-                  <Pressable
-                    key="cancelada"
-                    style={[
-                      styles.statusBtn,
-                      styles.statusBtnIdle,
-                      busyCitaId === cita.id && styles.statusBtnDisabled,
-                    ]}
-                    onPress={() => handleActualizarEstado(cita.id, 'cancelada')}
-                    disabled={busyCitaId === cita.id}
-                  >
-                    <Text style={styles.statusBtnIdleText}>Cancelada</Text>
-                  </Pressable>
-                </>
-              )}
-              {cita.estado === 'confirmada' && (
+            <View style={styles.filterRow}>
+              {['todos', 'pendiente', 'confirmada', 'completada', 'cancelada'].map((estado) => (
                 <Pressable
-                  key="completar"
+                  key={estado}
                   style={[
-                    styles.statusBtn,
-                    styles.statusBtnIdle,
-                    busyCitaId === cita.id && styles.statusBtnDisabled,
+                    styles.filterChip,
+                    citaEstadoFilter === estado && styles.filterChipActive,
                   ]}
-                  onPress={() => handleActualizarEstado(cita.id, 'completada')}
-                  disabled={busyCitaId === cita.id}
+                  onPress={() => setCitaEstadoFilter(estado as any)}
                 >
-                  <Text style={styles.statusBtnIdleText}>Completar</Text>
+                  <Text style={[styles.filterChipText, citaEstadoFilter === estado && styles.filterChipTextActive]}>
+                    {estado === 'todos' ? 'Todos' : estado.charAt(0).toUpperCase() + estado.slice(1)}
+                  </Text>
                 </Pressable>
-              )}
+              ))}
             </View>
           </View>
-        ))}
-      </View>
+
+          {citasFiltradas.length === 0 ? (
+            <View style={styles.card}>
+              <Text style={styles.detailText}>No se encontraron citas con los filtros aplicados.</Text>
+            </View>
+          ) : (
+            citasFiltradas.map((cita) => (
+              <View key={cita.id} style={styles.card}>
+                <View style={styles.cardTopRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cardTitle}>Cita #{cita.id}</Text>
+                    <Text style={styles.detailText}>Cliente: {cita.cliente?.nombre || '-'}</Text>
+                    <Text style={styles.detailText}>Fecha: {formatDate(cita.fecha)} · {cita.hora || '-'}</Text>
+                  </View>
+                  <View style={[styles.stateBadge, { backgroundColor: estadoColor(cita.estado) }]}>
+                    <Text style={styles.stateBadgeText}>{estadoLabel(cita.estado)}</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.detailText}>Total: {formatCurrency(cita.total)}</Text>
+                <Text style={styles.detailText}>Servicios: {cita.Servicios?.map((servicio) => servicio.nombre).filter(Boolean).join(', ') || 'Sin detalle'}</Text>
+
+                <View style={styles.statusActions}>
+                  {cita.estado === 'pendiente' && (
+                    <>
+                      <Pressable
+                        key="confirmada"
+                        style={[
+                          styles.statusBtn,
+                          styles.statusBtnIdle,
+                          busyCitaId === cita.id && styles.statusBtnDisabled,
+                        ]}
+                        onPress={() => handleActualizarEstado(cita.id, 'confirmada')}
+                        disabled={busyCitaId === cita.id}
+                      >
+                        <Text style={styles.statusBtnIdleText}>Confirmada</Text>
+                      </Pressable>
+                      <Pressable
+                        key="completada"
+                        style={[
+                          styles.statusBtn,
+                          styles.statusBtnIdle,
+                          busyCitaId === cita.id && styles.statusBtnDisabled,
+                        ]}
+                        onPress={() => handleActualizarEstado(cita.id, 'completada')}
+                        disabled={busyCitaId === cita.id}
+                      >
+                        <Text style={styles.statusBtnIdleText}>Completada</Text>
+                      </Pressable>
+                      <Pressable
+                        key="cancelada"
+                        style={[
+                          styles.statusBtn,
+                          styles.statusBtnIdle,
+                          busyCitaId === cita.id && styles.statusBtnDisabled,
+                        ]}
+                        onPress={() => handleActualizarEstado(cita.id, 'cancelada')}
+                        disabled={busyCitaId === cita.id}
+                      >
+                        <Text style={styles.statusBtnIdleText}>Cancelada</Text>
+                      </Pressable>
+                    </>
+                  )}
+                  {cita.estado === 'confirmada' && (
+                    <Pressable
+                      key="completar"
+                      style={[
+                        styles.statusBtn,
+                        styles.statusBtnIdle,
+                        busyCitaId === cita.id && styles.statusBtnDisabled,
+                      ]}
+                      onPress={() => handleActualizarEstado(cita.id, 'completada')}
+                      disabled={busyCitaId === cita.id}
+                    >
+                      <Text style={styles.statusBtnIdleText}>Completar</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -474,6 +595,13 @@ const styles = StyleSheet.create({
   loadingBox: { alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 20 },
   alertBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fef2f2', borderRadius: 14, padding: 12 },
   alertText: { color: '#b91c1c', flex: 1 },
+  categoriesRow: { flexDirection: 'row', gap: 12, marginTop: 16, marginBottom: 8 },
+  categoryCard: { flex: 1, borderRadius: 20, backgroundColor: '#f1e9e1', borderWidth: 1, borderColor: '#efe6dc', padding: 16, gap: 10, shadowColor: '#a57c63', shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  categoryCardIcon: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
+  categoryCardTitle: { fontSize: 16, fontWeight: '800', color: '#3e2f25' },
+  categoryCardDesc: { fontSize: 12, color: '#7b6758', lineHeight: 18 },
+  quickAccessSection: { marginTop: 12 },
+  quickAccessHeading: { fontSize: 15, fontWeight: '800', color: '#3e2f25', marginBottom: 10 },
   section: { gap: 10 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: '#3e2f25' },
@@ -491,6 +619,11 @@ const styles = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#f3e6d8', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
   chipText: { color: '#3e2f25', fontWeight: '700' },
   subsectionTitle: { marginTop: 4, color: '#3e2f25', fontWeight: '800' },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  filterChip: { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: '#f1e1c9', borderWidth: 1, borderColor: '#e6d3b3' },
+  filterChipActive: { backgroundColor: '#c8a27a', borderColor: '#b38a5c' },
+  filterChipText: { color: '#3e2f25', fontWeight: '700', fontSize: 13 },
+  filterChipTextActive: { color: '#fff' },
   availableGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   availableChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#c8a27a', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
   availableChipText: { color: '#3e2f25', fontWeight: '700' },

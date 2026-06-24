@@ -15,12 +15,11 @@ import { useEffect, useMemo, useState } from "react";
 //flatlist lista optimizada con virtualizacion para mostrar grandes cantidades de datos
 //modal mostrar detalles de contenido en ventanas emergentes
 
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput} from "react-native";
-
-//Lee los parametros de la url para obtener el id del pedido
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";//navegacion y parametros de ruta
 import { createProduct, updateProduct } from '../../src/services/adminService';
 import apiClient from '../../src/api/apiClient';
+import { SearchableSelect } from '../../components/ui/searchable-select';
 /**
  * tipo de producto
  * estrucura del orduto recibido como parametro cuando edita
@@ -232,35 +231,27 @@ export default function AdminProductoForm() {
         keyboardType="numeric"
       />
 
-      {/* ── CAMPO: Categoría ID ─────────────────────────────────────────── */}
-      <Text style={styles.label}>Categoría ID</Text>
-      <TextInput
-        style={styles.input}
+      <SearchableSelect
+        label="Categoría"
         value={categoriaId}
-        onChangeText={(value) => {
+        placeholder="Selecciona una categoría"
+        items={categorias.map((cat) => ({ id: cat.id, label: cat.nombre }))}
+        onSelect={(value) => {
           setCategoriaId(value);
           setSubcategoriaId('');
         }}
-        keyboardType="numeric"
-        placeholder="ID de la categoría"
+        noResultsText="No se encontró ninguna categoría."
       />
 
-      {/* ── CAMPO: Subcategoría ID ─────────────────────────────────────── */}
-      <Text style={styles.label}>Subcategoría ID</Text>
-      <TextInput
-        style={styles.input}
+      <SearchableSelect
+        label="Subcategoría"
         value={subcategoriaId}
-        onChangeText={setSubcategoriaId}
-        keyboardType="numeric"
-        placeholder="ID de la subcategoría"
+        placeholder="Selecciona una subcategoría"
+        items={subcategoriasFiltradas.map((sub) => ({ id: sub.id, label: sub.nombre }))}
+        onSelect={setSubcategoriaId}
+        disabled={!categoriaId}
+        noResultsText={categoriaId ? 'No se encontró ninguna subcategoría.' : 'Selecciona primero una categoría.'}
       />
-
-      <Text style={styles.helper}>
-        Categorías: {categorias.map((cat) => `${cat.id}: ${cat.nombre}`).join(' | ') || 'Cargando...'}
-      </Text>
-      <Text style={styles.helper}>
-        Subcategorías: {subcategoriasFiltradas.map((sub) => `${sub.id}: ${sub.nombre}`).join(' | ') || 'Seleccione una categoría'}
-      </Text>
 
       {/* ── CAMPO: URL Imagen ───────────────────────────────────────────── */}
       <Text style={styles.label}>URL Imagen</Text>

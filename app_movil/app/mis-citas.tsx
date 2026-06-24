@@ -30,6 +30,8 @@ type Cita = {
   notas?: string;
   Servicios?: Array<{ id: number; nombre: string }>;
   profesional?: { id: number; nombre: string };
+  cliente?: { id: number; nombre: string };
+  usuario?: { id: number; nombre: string };
   createdAt?: string;
 };
 
@@ -74,6 +76,7 @@ export default function MisCitasScreen() {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [reprogrammingId, setReprogrammingId] = useState<string | number | null>(null);
   const [reprogramFecha, setReprogramFecha] = useState('');
   const [reprogramHora, setReprogramHora] = useState('');
@@ -102,6 +105,20 @@ export default function MisCitasScreen() {
     setReprogramFecha('');
     setReprogramHora('');
   };
+
+  const filteredCitas = citas.filter((cita) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
+
+    const servicios = (cita.Servicios || []).map((s) => s.nombre).join(' ');
+    const estado = cita.estado || '';
+    const profesional = cita.profesional?.nombre || '';
+    const cliente = (cita as any).cliente?.nombre || (cita as any).usuario?.nombre || '';
+
+    return [servicios, estado, profesional, cliente].some((value) =>
+      value.toLowerCase().includes(query)
+    );
+  });
 
   const handleCancelarCita = (id: string | number) => {
     Alert.alert('Confirmar cancelación', '¿Estás seguro de que deseas cancelar esta cita?', [
@@ -208,26 +225,41 @@ export default function MisCitasScreen() {
         </Pressable>
       </View>
 
+      <View style={styles.searchContainer}>
+        <Ionicons name="search-outline" size={18} color="#6b7280" />
+        <TextInput
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Buscar por servicio, estado, cliente o profesional"
+          placeholderTextColor="#9ca3af"
+          style={styles.searchInput}
+        />
+      </View>
+
       {errorMessage ? <ThemedText style={styles.error}>{errorMessage}</ThemedText> : null}
 
-      {citas.length === 0 ? (
+      {filteredCitas.length === 0 ? (
         <ThemedView style={styles.emptyState}>
           <Ionicons name="calendar-outline" size={64} color="#d1d5db" style={{ marginBottom: 12 }} />
           <ThemedText type="defaultSemiBold" style={{ textAlign: 'center' }}>
-            No tienes citas agendadas
+            {citas.length === 0 ? 'No tienes citas agendadas' : 'No se encontraron citas'}
           </ThemedText>
-          <ThemedText style={[styles.subtitle, { textAlign: 'center' }]}>
-            Agenda una cita para comenzar
+          <ThemedText style={[styles.subtitle, { textAlign: 'center' }]}> 
+            {citas.length === 0
+              ? 'Agenda una cita para comenzar'
+              : 'Prueba con otro servicio, estado, cliente o profesional'}
           </ThemedText>
-          <Pressable style={styles.primaryButton} onPress={() => routerPush('/(tabs)/agendar')}>
-            <Ionicons name="add" size={18} color="#fff" />
-            <ThemedText style={styles.primaryButtonText}>Agendar Cita</ThemedText>
-          </Pressable>
+          {citas.length === 0 ? (
+            <Pressable style={styles.primaryButton} onPress={() => routerPush('/(tabs)/agendar')}>
+              <Ionicons name="add" size={18} color="#fff" />
+              <ThemedText style={styles.primaryButtonText}>Agendar Cita</ThemedText>
+            </Pressable>
+          ) : null}
         </ThemedView>
       ) : (
-        citas.map((cita) => {
+        filteredCitas.map((cita) => {
           const estadoStyle = getEstadoBadgeStyle(cita.estado);
-          const servicios = (cita.Servicios || []).map(s => s.nombre).join(', ');
+          const servicios = (cita.Servicios || []).map((s) => s.nombre).join(', ');
 
           return (
             <View key={cita.id} style={styles.card}>
@@ -376,6 +408,24 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
   centeredTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center', color: '#3e2f25' },
   subtitle: { color: '#7b6758', textAlign: 'center' },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#e6d3b3',
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#111827',
+    fontSize: 14,
+    minHeight: 40,
+  },
   error: { color: '#a56363', marginBottom: 8 },
   header: {
     flexDirection: 'row',

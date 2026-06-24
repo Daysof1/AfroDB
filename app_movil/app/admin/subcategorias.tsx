@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
@@ -43,6 +43,8 @@ type Categoria = {
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredSubcategorias, setFilteredSubcategorias] = useState<Subcategoria[]>([]);
     const [errorMessage, setErrorMessage] = useState('');
+    const [showCategoriaModal, setShowCategoriaModal] = useState(false);
+    const [searchCategoriaTerm, setSearchCategoriaTerm] = useState('');
 
     const searchTimeout = useRef<any>(null);
 
@@ -85,7 +87,13 @@ type Categoria = {
                 setCategoriaId('');
             }
         }
-    }, [tipo]);
+    }, [tipo, categorias]);
+
+    const categoriasFiltradas = categorias
+        .filter((categoria) => categoria.tipo === tipo)
+        .filter((categoria) =>
+            categoria.nombre.toLowerCase().includes(searchCategoriaTerm.toLowerCase().trim())
+        );
 
     useEffect(() => {
         const term = searchTerm.toLowerCase().trim();
@@ -212,26 +220,54 @@ type Categoria = {
             />
 
             <Text style={styles.label}>Categoría</Text>
-            <View style={styles.optionList}>
-                {categorias.length > 0 ? (
-                categorias.filter((categoria) => categoria.tipo === tipo).map((categoria) => (
-                    <Pressable
-                    key={categoria.id}
-                    onPress={() => setCategoriaId(String(categoria.id))}
-                    style={[
-                        styles.optionButton,
-                        categoriaId === String(categoria.id) && styles.optionButtonSelected,
-                    ]}
-                    >
-                    <Text style={categoriaId === String(categoria.id) ? styles.optionTextSelected : styles.optionText}>
-                        {categoria.nombre}
-                    </Text>
-                    </Pressable>
-                ))
-                ) : (
-                <Text style={styles.infoText}>Cargando categorías...</Text>
-                )}
-            </View>
+            <Pressable style={styles.selectButton} onPress={() => setShowCategoriaModal(true)}>
+                <Text style={styles.selectText}>
+                    {categoriaId
+                        ? categorias.find((categoria) => String(categoria.id) === categoriaId)?.nombre
+                        : 'Selecciona una categoría'}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color="#6b5344" />
+            </Pressable>
+            <Modal
+                visible={showCategoriaModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => {
+                    setShowCategoriaModal(false);
+                    setSearchCategoriaTerm('');
+                }}
+            >
+                <View style={styles.modalBackdrop}>
+                    <View style={styles.modalPanel}>
+                        <TextInput
+                            placeholder="Buscar categoría..."
+                            value={searchCategoriaTerm}
+                            onChangeText={setSearchCategoriaTerm}
+                            style={styles.modalSearchInput}
+                            placeholderTextColor="#999"
+                        />
+                        <ScrollView>
+                            {categoriasFiltradas.length === 0 ? (
+                                <Text style={styles.modalEmptyText}>No hay categorías para este tipo.</Text>
+                            ) : (
+                                categoriasFiltradas.map((categoria) => (
+                                    <Pressable
+                                        key={categoria.id}
+                                        style={styles.modalOption}
+                                        onPress={() => {
+                                            setCategoriaId(String(categoria.id));
+                                            setShowCategoriaModal(false);
+                                            setSearchCategoriaTerm('');
+                                        }}
+                                    >
+                                        <Text style={styles.modalOptionText}>{categoria.nombre}</Text>
+                                    </Pressable>
+                                ))
+                            )}
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
 
             <Text style={styles.label}>Tipo</Text>
             <View style={styles.optionList}>
@@ -338,6 +374,14 @@ type Categoria = {
         infoCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#8b6f47', marginBottom: 14 },
         infoTitle: { fontWeight: '800', color: '#3e2f25', marginBottom: 6 },
         infoText: { color: '#7b6758' },
+        modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+        modalPanel: { backgroundColor: '#fff', borderRadius: 18, padding: 16, maxHeight: '70%' },
+        modalSearchInput: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12, color: '#111827' },
+        modalOption: { paddingVertical: 14, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: '#f3e6d8' },
+        modalOptionText: { color: '#3e2f25', fontWeight: '700' },
+        modalEmptyText: { color: '#7b6758', textAlign: 'center', paddingVertical: 14 },
+        selectButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#e4d8cb', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff', marginBottom: 12 },
+        selectText: { color: '#5f4638', fontWeight: '600' },
         loadingBox: { alignItems: 'center', paddingVertical: 24 },
         loadingText: { color: '#7b6758' },
         error: { color: '#991b1b', fontWeight: '700' },
