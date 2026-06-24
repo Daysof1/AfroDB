@@ -24,7 +24,7 @@ import { useAuth } from "../../src/context/AuthContext";
 import { useAgendar } from "../../src/context/AgendarContext";
 import catalogoService from '../../src/services/catalogoService';
 import { ThemedText } from '../../components/themed-text';
-import { formatTimeWithPeriod, getTimePeriodLabel } from '../../src/utils/time';
+import { formatTimeWithPeriod } from '../../src/utils/time';
 
 
 // HELPERS de navegacion 
@@ -51,22 +51,16 @@ export default function AgendarScreen() {
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
   const [horaError, setHoraError] = useState('');
-  const [selectedPeriod, setSelectedPeriod] = useState<'mañana' | 'tarde' | 'noche'>('mañana');
+  
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [expandirServicios, setExpandirServicios] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const getPeriodRange = (period: 'mañana' | 'tarde' | 'noche') => {
-    switch (period) {
-      case 'mañana': return { min: 6, max: 11, label: '6:00 - 11:59' };
-      case 'tarde': return { min: 12, max: 17, label: '12:00 - 17:59' };
-      case 'noche': return { min: 18, max: 21, label: '18:00 - 21:59' };
-      default: return { min: 6, max: 11, label: '6:00 - 11:59' };
-    }
-  };
+  // Rango de agendamiento: 8:00 - 20:00
 
-  const validateHora = (horaValue: string, period: 'mañana' | 'tarde' | 'noche' = selectedPeriod) => {
+  const validateHora = (horaValue: string) => {
     if (!horaValue) {
       return { valid: true, error: '' };
     }
@@ -83,24 +77,40 @@ export default function AgendarScreen() {
       return { valid: false, error: 'Hora fuera de rango' };
     }
 
-    const range = getPeriodRange(period);
-    if (hour < range.min || hour > range.max) {
-      return { valid: false, error: `Las horas de ${period} son ${range.label}` };
+    // Validación global: solo permitir agendar entre 8:00 y 20:00 (8 PM)
+    if (hour < 8 || hour > 20) {
+      return { valid: false, error: 'Horario disponible de 8:00 a. m. a 8:00 p. m.' };
     }
+
+    // Mantener validación por periodo si es necesario (más restrictiva)
+    // Ya se validó el rango global 08:00-20:00 arriba
 
     return { valid: true, error: '' };
   };
 
-  const handleHoraChange = (value: string) => {
-    setHora(value);
-    const validation = validateHora(value, selectedPeriod);
-    setHoraError(validation.error);
+  const handleTimePickerChange = (_event: any, selected?: Date) => {
+    if (Platform.OS !== 'ios') {
+      setShowTimePicker(false);
+    }
+    if (!selected) return;
+
+    const hour = selected.getHours();
+    const minute = selected.getMinutes();
+    // Validar rango 8-20
+    if (hour < 8 || hour > 20) {
+      setHoraError('Horario disponible de 8:00 a. m. a 8:00 p. m.');
+      return;
+    }
+
+    const formatted = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    setHora(formatted);
+    setHoraError('');
   };
 
-  const handlePeriodChange = (period: 'mañana' | 'tarde' | 'noche') => {
-    setSelectedPeriod(period);
-    setHora('');
-    setHoraError('');
+  const handleHoraChange = (value: string) => {
+    setHora(value);
+    const validation = validateHora(value);
+    setHoraError(validation.error);
   };
 
   const formatDateValue = (date: Date) => {
@@ -190,7 +200,7 @@ export default function AgendarScreen() {
       return;
     }
 
-    const horaValidation = validateHora(hora, selectedPeriod);
+    const horaValidation = validateHora(hora);
     if (!horaValidation.valid) {
       Alert.alert('Hora inválida', horaValidation.error || 'Verifica la hora ingresada');
       return;
@@ -215,7 +225,7 @@ export default function AgendarScreen() {
       setSelectedIds([]);
       setFecha('');
       setHora('');
-      setSelectedPeriod('mañana');
+      // no hay selección por periodo
       router.replace('/');
     } catch (err: unknown) {
       let errorMsg = 'No se pudo agendar la cita';
@@ -234,7 +244,6 @@ export default function AgendarScreen() {
     setSelectedIds([]);
     setFecha('');
     setHora('');
-    setSelectedPeriod('mañana');
     router.back();
   };
 
@@ -415,43 +424,40 @@ export default function AgendarScreen() {
             <Ionicons name="time" size={14} color="#a57c63" /> Hora (HH:MM)
           </ThemedText>
 
-          {/* Selector de Período */}
-          <ThemedText style={styles.formSubLabel}>¿A qué hora prefiere?</ThemedText>
-          <View style={styles.periodSelector}>
-            {(['mañana', 'tarde', 'noche'] as const).map((period) => (
-              <Pressable
-                key={period}
-                onPress={() => handlePeriodChange(period)}
-                style={[
-                  styles.periodButton,
-                  selectedPeriod === period && styles.periodButtonActive,
-                ]}
-              >
-                <ThemedText
-                  style={[
-                    styles.periodButtonText,
-                    selectedPeriod === period && styles.periodButtonTextActive,
-                  ]}
-                >
-                  {period.charAt(0).toUpperCase() + period.slice(1)}
-                </ThemedText>
-              </Pressable>
-            ))}
-          </View>
+          <ThemedText style={styles.formSubLabel}>Horario disponible: 8:00 a.m. - 8:00 p.m.</ThemedText>
 
-          {/* Rango de horas */}
-          <ThemedText style={styles.periodInfo}>
-            Horario disponible: {getPeriodRange(selectedPeriod).label}
-          </ThemedText>
-
-          {/* Input de hora */}
-          <TextInput
-            value={hora}
-            onChangeText={handleHoraChange}
-            placeholder={selectedPeriod === 'mañana' ? '08:30' : selectedPeriod === 'tarde' ? '14:30' : '19:00'}
-            style={[styles.input, horaError && styles.inputError]}
-            placeholderTextColor="#9ca3af"
-          />
+          {/* Input de hora: mostrar ícono y selector de hora */}
+          {Platform.OS === 'web' ? (
+            <View style={[styles.input, styles.timeInputWeb, horaError && styles.inputError]}>
+              <Text style={{ marginRight: 8 }}>🕒</Text>
+              <TextInput
+                value={hora}
+                onChangeText={handleHoraChange}
+                placeholder={'08:30'}
+                style={{ flex: 1, padding: 0 }}
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => setShowTimePicker(true)}
+              style={[styles.datePickerButton, horaError && styles.inputError, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
+            >
+              <Text style={{ fontSize: 18 }}>🕒</Text>
+              <ThemedText style={[styles.inputText, !hora && styles.placeholderText]}>
+                {hora ? formatTimeWithPeriod(hora) : 'Seleccionar hora (08:00 - 20:00)'}
+              </ThemedText>
+            </Pressable>
+          )}
+          {Platform.OS !== 'web' && showTimePicker && (
+            <DateTimePicker
+              value={hora ? new Date(`${fecha || new Date().toISOString().slice(0,10)}T${hora}:00`) : new Date()}
+              mode="time"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              is24Hour={false}
+              onChange={handleTimePickerChange}
+            />
+          )}
           {hora && !horaError && (
             <ThemedText style={styles.horaLabel}>
               {formatTimeWithPeriod(hora)}
@@ -676,6 +682,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#111',
     backgroundColor: '#fafafa',
+  },
+  timeInputWeb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
   },
   inputText: {
     color: '#111',
