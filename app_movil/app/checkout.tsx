@@ -9,7 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── IMPORTACIONES ────────────────────────────────────────────────────────────
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView, // Evita que el teclado tape los campos en iOS.
   Platform,             // Detecta si es iOS o Android para aplicar el comportamiento correcto.
@@ -31,6 +31,10 @@ import pedidoService from '../src/services/pedidoService';
 // Tipo del contexto del carrito (necesario para que TypeScript reconozca sus propiedades).
 type CarritoCtx = { items: unknown[]; total: number; loading: boolean; refreshCarrito: () => Promise<void> };
 
+type AuthUser = { telefono?: string; direccion?: string } | null;
+
+type AuthCtx = { isAuthenticated: boolean; user: AuthUser };
+
 // router.replace tiene tipos estrictos en Expo Router; el cast permite pasar strings dinámicos.
 const routerReplace = (path: string) => (router as unknown as { replace: (p: string) => void }).replace(path);
 
@@ -47,17 +51,25 @@ const PAYMENT_METHODS = [
 export default function CheckoutScreen() {
 
   // ── CONTEXTOS ─────────────────────────────────────────────────────────────
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth() as AuthCtx;
   // El cast a CarritoCtx es necesario porque useCarrito devuelve 'unknown' en TypeScript.
   const { items, total, loading, refreshCarrito } = useCarrito() as CarritoCtx;
 
   // ── ESTADO LOCAL (campos del formulario) ──────────────────────────────────
-  const [direccionEnvio, setDireccionEnvio]     = useState('');
-  const [telefono, setTelefono]                 = useState('');
+  const [direccionEnvio, setDireccionEnvio]     = useState(user?.direccion || '');
+  const [telefono, setTelefono]                 = useState(user?.telefono || '');
   const [metodoPago, setMetodoPago]             = useState('efectivo'); // Valor por defecto: efectivo.
   const [notasAdicionales, setNotasAdicionales] = useState('');
   const [submitting, setSubmitting]             = useState(false); // true mientras se procesa el pedido.
   const [errorMessage, setErrorMessage]         = useState('');
+
+  // Si el perfil se carga después del primer render, rellenamos los campos.
+  useEffect(() => {
+    if (user) {
+      setDireccionEnvio((current) => current || user.direccion || '');
+      setTelefono((current) => current || user.telefono || '');
+    }
+  }, [user]);
 
   // ── VALIDACIÓN REACTIVA ───────────────────────────────────────────────────
   // canSubmit se recalcula solo cuando cambian sus dependencias.

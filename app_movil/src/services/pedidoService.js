@@ -14,7 +14,7 @@ const pedidoService = {
             metodoPago, 
             notasAdicionales 
         });
-        return response.data?.data?.pedidos || response.data?.pedidos || [];
+        return response.data?.data?.pedido || response.data?.pedido || null;
     },
 
     //devuelve el historial de pedidos del usuario autenticado
