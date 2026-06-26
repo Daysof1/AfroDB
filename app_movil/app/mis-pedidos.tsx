@@ -1,3 +1,4 @@
+// Página: mis-pedidos.tsx. vista de mis-pedidos del sistema.
 // ─────────────────────────────────────────────────────────────────────────────
 // ARCHIVO: app/mis-pedidos.tsx
 // PROPÓSITO: Lista todos los pedidos del cliente autenticado.
@@ -37,11 +38,13 @@ const routerPush    = (path: string) => (router as unknown as { push:    (p: str
 
 // ── HELPERS DE FORMATO ─────────────────────────────────────────────────────────
 // Formatea un valor numérico a pesos colombianos.
+// Define la l?gica espec?fica de esta funci?n.
 function formatCOP(value: unknown) {
   return `$${Number(value || 0).toLocaleString('es-CO')}`;
 }
 
 // Formatea una fecha ISO a formato legible en español colombiano.
+// Define la l?gica espec?fica de esta funci?n.
 function formatDate(value: unknown) {
   if (!value) {
     return '-';
@@ -56,6 +59,7 @@ function formatDate(value: unknown) {
 }
 
 // ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────────
+// Renderiza la vista principal de este componente.
 export default function MisPedidosScreen() {
 
   // ── CONTEXTO Y ESTADO ─────────────────────────────────────────────────────

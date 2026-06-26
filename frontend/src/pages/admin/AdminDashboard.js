@@ -1,3 +1,4 @@
+// Página: AdminDashboard.js. panel administrativo general.
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
@@ -14,6 +15,7 @@ import {
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({

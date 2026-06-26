@@ -1,7 +1,9 @@
+// Página: ProfesionalEspecialidades.js. gesti?n de especialidades del profesional.
 import { useEffect, useMemo, useState } from 'react';
 import '../Profesional.css';
 import { apiRequest } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function ProfesionalEspecialidades() {
   const [especialidades, setEspecialidades] = useState([]);
   const [catalogoEspecialidades, setCatalogoEspecialidades] = useState([]);

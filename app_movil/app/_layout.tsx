@@ -1,3 +1,4 @@
+// Página: _layout.tsx. vista de _layout del sistema.
 // ─────────────────────────────────────────────────────────────────────────────
 // ARCHIVO: app/_layout.tsx
 // PROPÓSITO: Layout raíz de la aplicación.
@@ -26,6 +27,7 @@ export const unstable_settings = {
 };
 
 // ── COMPONENTE RAÍZ ───────────────────────────────────────────────────────────
+// Renderiza la vista principal de este componente.
 export default function RootLayout() {
   // Detecta si el dispositivo usa modo oscuro ('dark') o claro ('light').
   const colorScheme = useColorScheme();

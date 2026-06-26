@@ -1,3 +1,4 @@
+// Página: Home.js. p?gina principal que presenta la propuesta de AfroDB.
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faLeaf, faShoppingBag, faBell, faScissors } from '@fortawesome/free-solid-svg-icons';
@@ -6,6 +7,7 @@ import ClienteServicios from './cliente/ClienteServicios.js';
 import { getAssetUrl } from '../api/client.js';
 import './Home.css';
 
+// Renderiza la vista principal de este componente.
 export default function Home() {
   const heroBackgroundImage = `url('${getAssetUrl('/uploads/fondo.png')}')`;
 

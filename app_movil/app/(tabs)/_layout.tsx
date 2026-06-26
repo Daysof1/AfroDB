@@ -1,3 +1,4 @@
+// Página: _layout.tsx. vista de _layout del sistema.
 /**
  * Define la barra de navegacion inferior (tab Bar) de app
  * expo Router usa este archivo como el contenedor de todas las
@@ -19,6 +20,7 @@ import { useColorScheme } from '../../hooks/use-color-scheme';
 
 //TabLayot componnete principl que configura toda la barra de navegacion
 //expo Router lo exporta como default y lo monta automaticamente
+// Renderiza la vista principal de este componente.
 export default function TabLayout() {
     //ColorShema valor 'light' o dark segun la preferencia del sistema
     const colorSheme = useColorScheme();

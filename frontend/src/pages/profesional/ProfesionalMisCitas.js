@@ -1,3 +1,4 @@
+// Página: ProfesionalMisCitas.js. historial de citas del profesional.
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -12,6 +13,7 @@ const normalizarTexto = (texto = '') =>
     .trim()
     .toLowerCase();
 
+// Renderiza la vista principal de este componente.
 export default function ProfesionalMisCitas() {
   const location = useLocation();
   const navigate = useNavigate();

@@ -1,3 +1,4 @@
+// Página: checkout.tsx. vista de checkout del sistema.
 // ─────────────────────────────────────────────────────────────────────────────
 // ARCHIVO: app/checkout.tsx
 // PROPÓSITO: Pantalla de pago (Checkout). El cliente completa los datos de envío
@@ -48,6 +49,7 @@ const PAYMENT_METHODS = [
 ];
 
 // ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────────
+// Renderiza la vista principal de este componente.
 export default function CheckoutScreen() {
 
   // ── CONTEXTOS ─────────────────────────────────────────────────────────────

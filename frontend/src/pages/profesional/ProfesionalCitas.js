@@ -1,9 +1,11 @@
+// Página: ProfesionalCitas.js. gesti?n de citas para profesionales.
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 import '../Profesional.css';
 import { apiRequest } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function ProfesionalCitas() {
   const [citas, setCitas] = useState([]);
   const [loading, setLoading] = useState(true);

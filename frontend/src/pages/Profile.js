@@ -1,8 +1,10 @@
+// Página: Profile.js. p?gina de perfil del usuario autenticado.
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiRequest, getToken, getAssetUrl } from '../api/client.js';
 import './Profile.css'; // CSS específico para el perfil
 
+// Renderiza la vista principal de este componente.
 export default function Profile() {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);

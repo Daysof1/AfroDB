@@ -1,9 +1,11 @@
+// Página: ClientePedidos.js. p?gina de pedidos del cliente.
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBox, faEye } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
 import { apiRequest } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function ClientePedidos() {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);

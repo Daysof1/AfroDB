@@ -1,8 +1,10 @@
+// Página: AuxiliarServicios.js. gesti?n de servicios por auxiliar.
 import { useEffect, useMemo, useState } from 'react';
 import '../Admin.css';
 import { apiRequest, fetchImageAsFile, getAssetUrl } from '../../api/client.js';
 import { exportarServiciosAPDF, exportarServiciosAExcel } from '../../utils/exportUtils.js';
 
+// Renderiza la vista principal de este componente.
 export default function AuxiliarServicios() {
   const [servicios, setServicios] = useState([]);
   const [categorias, setCategorias] = useState([]);

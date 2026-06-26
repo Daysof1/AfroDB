@@ -1,3 +1,4 @@
+// Página: explore.tsx. vista de explore del sistema.
 /**
  * Pantalla de cuenta pestaña 3 tiene 2 metodos
  * no autenticados muestra formulario logi y registro
@@ -58,6 +59,7 @@ const routerPush = (path: string) => (router as unknown as { push: (p: string) =
 
 // componente principal del tab de cuenta 
 
+// Renderiza la vista principal de este componente.
 export default function TabTwoScreen() {
     const { user, isAuthenticated, logout, login, register, isLoadingSession, updatePerfil } = useAuth() as AuthCtx;
     const canEditPerfil = ['administrador', 'auxiliar', 'cliente'].includes(user?.rol || '');

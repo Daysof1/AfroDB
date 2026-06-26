@@ -1,3 +1,4 @@
+// Página: index.tsx. vista de index del sistema.
 /**
  * Pantalla HOME
  * Pantalla principal con dos tarjetas grandes (Productos y Servicios) y características
@@ -30,6 +31,7 @@ const FEATURES = [
 
 const AFRODB_IMAGE = catalogoService.buildImageUrl('uploads/fondo.png');
 
+// Renderiza la vista principal de este componente.
 export default function HomeScreen() {
   const router = useRouter();
   const [productos, setProductos] = useState<any[]>([]);

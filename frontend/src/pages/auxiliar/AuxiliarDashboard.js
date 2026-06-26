@@ -1,3 +1,4 @@
+// Página: AuxiliarDashboard.js. panel del usuario auxiliar.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -12,6 +13,7 @@ import {
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function AuxiliarDashboard() {
   const [stats, setStats] = useState({
     totalProductos: 0,

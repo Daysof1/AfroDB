@@ -1,3 +1,4 @@
+// Página: subcategorias.tsx. vista de subcategorias del sistema.
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';

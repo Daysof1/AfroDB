@@ -1,8 +1,10 @@
+// Página: AuxiliarCitas.js. gesti?n de citas por auxiliar.
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 import { exportarCitasAPDF, exportarCitasAExcel } from '../../utils/exportUtils.js';
 
+// Renderiza la vista principal de este componente.
 export default function AuxiliarCitas() {
   const [citas, setCitas] = useState([]);
   const [error, setError] = useState('');

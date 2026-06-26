@@ -1,8 +1,10 @@
+// Página: AdminProductos.js. gesti?n de productos del cat?logo.
 import { useEffect, useMemo, useState } from 'react';
 import '../Admin.css';
 import { apiRequest, getAssetUrl } from '../../api/client.js';
 import { exportarProductosAPDF, exportarProductosAExcel } from '../../utils/exportUtils.js';
 
+// Renderiza la vista principal de este componente.
 export default function AdminProductos() {
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);

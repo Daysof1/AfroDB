@@ -1,3 +1,4 @@
+// Página: producto-form.tsx. vista de producto-form del sistema.
 /**
  * Este archivo es el formulario para crear o edita un productoenel panel del admin
  * modo crear: se llega desde el boton + crear productoen admin/productos
@@ -39,6 +40,7 @@ type Producto = {
 type Categoria = { id: number; nombre: string; tipo?: string };
 type Subcategoria = { id: number; nombre: string; categoriaId: number; tipo?: string };
 
+// Renderiza la vista principal de este componente.
 export default function AdminProductoForm() {
     /**
      * navegacion 

@@ -1,3 +1,4 @@
+// Página: dashboard.tsx. vista de dashboard del sistema.
 /**
  * Pantalla principal del panel del administradir y auxiliar
  * solos accesible para roles defnidos     
@@ -46,6 +47,7 @@ type StatCard = {
     show: boolean; // si es false la tarjeta no se muestra
 };
 // componente principal del dashboard 
+// Renderiza la vista principal de este componente.
 export default function AdminDashboardScreen() {
     // contexto de autenticacion
     // se usa cast a tipo explicito porque AuthContext.js es js puro y no lo reconoce TSX

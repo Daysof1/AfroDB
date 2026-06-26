@@ -1,3 +1,4 @@
+// Página: [id].tsx. vista de [id] del sistema.
 /**
  * Este archivo y pantalla de detalle de un pedido especifico para el administrador 
  * recibe el parametro dinamico id desde la url 
@@ -54,6 +55,7 @@ type Pedido = {
  * Componnete principal
  * 
  */
+// Renderiza la vista principal de este componente.
 export default function AdminPedidoDetalleScreen() {
     /**
      * parametro de ruta

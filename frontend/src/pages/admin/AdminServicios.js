@@ -1,8 +1,10 @@
+// Página: AdminServicios.js. gesti?n de servicios del sistema.
 import { useEffect, useMemo, useState } from 'react';
 import '../Admin.css';
 import { apiRequest, getAssetUrl } from '../../api/client.js';
 import { exportarServiciosAPDF, exportarServiciosAExcel } from '../../utils/exportUtils.js';
 
+// Renderiza la vista principal de este componente.
 export default function AdminServicios() {
   const [servicios, setServicios] = useState([]);
   const [categorias, setCategorias] = useState([]);

@@ -1,3 +1,4 @@
+// Página: ClienteServicios.js. p?gina de servicios disponibles para clientes.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -5,6 +6,7 @@ import { faCalendar, faBell, faClock, faSackDollar } from '@fortawesome/free-sol
 import '../Cliente.css';
 import { apiRequest, getAssetUrl, getStoredRole, isAuthenticated } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function ClienteServicios() {
   const navigate = useNavigate();
   const [servicios, setServicios] = useState([]);

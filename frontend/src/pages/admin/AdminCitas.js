@@ -1,8 +1,10 @@
+// Página: AdminCitas.js. gesti?n de citas desde administraci?n.
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 import { exportarCitasAPDF, exportarCitasAExcel } from '../../utils/exportUtils.js';
 
+// Renderiza la vista principal de este componente.
 export default function AdminCitas() {
   const [citas, setCitas] = useState([]);
   const [servicios, setServicios] = useState([]);

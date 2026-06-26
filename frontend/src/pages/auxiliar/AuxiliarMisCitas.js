@@ -1,3 +1,4 @@
+// Página: AuxiliarMisCitas.js. historial de citas del auxiliar.
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -12,6 +13,7 @@ const normalizarTexto = (texto = '') =>
     .trim()
     .toLowerCase();
 
+// Renderiza la vista principal de este componente.
 export default function AuxiliarMisCitas() {
   const location = useLocation();
   const navigate = useNavigate();

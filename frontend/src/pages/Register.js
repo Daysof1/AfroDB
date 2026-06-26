@@ -1,8 +1,10 @@
+// Página: Register.js. p?gina de registro para nuevos usuarios.
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Register.css';
 import { apiRequest, getAssetUrl } from '../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function Register() {
   const [tipoDocumento, setTipoDocumento] = useState('C.C.');
   const [email, setEmail] = useState('');

@@ -1,3 +1,4 @@
+// Página: usuarios.tsx. vista de usuarios del sistema.
 /**
  * Este archivo gestion de usuariospara el panel del administrador
  * lista de todos los usuarios del sistema con el nombre, email ro y estado
@@ -45,6 +46,7 @@ type AuthUser = {
 /**
  * Componente principal
  */
+// Renderiza la vista principal de este componente.
 export default function AdminUsuariosScreen() {
     //contexto de autenticacion
     const { user } = useAuth() as { user: AuthUser | null };

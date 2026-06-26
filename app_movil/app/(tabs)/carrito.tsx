@@ -1,3 +1,4 @@
+// Página: carrito.tsx. vista de carrito del sistema.
 /**
  * Pantalla del carrio de compras y sus respectivas gestiones no requiere que este autenticado solo para hacer compras
  */
@@ -58,6 +59,7 @@ const routerReplace = (path: string) => (router as unknown as { replace: (p: str
 const fmt = (n: number) => `$${Number(n).toLocaleString('es-CO')}`;
 
 // componente principal carito Screen 
+// Renderiza la vista principal de este componente.
 export default function CarritoScreen() {
     //Obtiene el contexto de auth solo si el usuario esa autenticado
     const { isAuthenticated } = useAuth() as { isAuthenticated: boolean };

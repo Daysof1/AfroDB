@@ -1,3 +1,4 @@
+// Página: AdminMisCitas.js. vista de citas administrativas.
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -12,6 +13,7 @@ const normalizarTexto = (texto = '') =>
     .trim()
     .toLowerCase();
 
+// Renderiza la vista principal de este componente.
 export default function AdminMisCitas() {
   const location = useLocation();
   const navigate = useNavigate();

@@ -1,3 +1,4 @@
+// Página: dashboard.tsx. vista de dashboard del sistema.
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -72,6 +73,7 @@ const formatDate = (value?: string) => {
   return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' }).format(date);
 };
 
+// Renderiza la vista principal de este componente.
 export default function ProfesionalDashboardScreen() {
   const { user, isAuthenticated, refreshSession } = useAuth() as AuthCtx;
 

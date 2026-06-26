@@ -1,3 +1,4 @@
+// Página: [id].tsx. vista de [id] del sistema.
 /**
  * Este archivo y de pedidos del cliente
  * la ruta es dinamica porque se obtiene el pedido por su id y url
@@ -55,11 +56,13 @@ type Pedido = {
  * helpers para formatear la fecha y el estado del pedido
  */
 // formatea un numero como pesos colombianos
+// Define la l?gica espec?fica de esta funci?n.
 function formatCOP(value: number | undefined): string {
     return `$${Number(value || 0).toLocaleString('es-CO')}`;
 }
 
 // convierte una fecha ISO a formato legible en español (colombia)
+// Define la l?gica espec?fica de esta funci?n.
 function formatDate(value: string | undefined): string {
     if (!value) {
         return'-';
@@ -75,6 +78,7 @@ function formatDate(value: string | undefined): string {
 }
 
 //traduce el estado tecnico del backend a tiqueta amigables para el usuario
+// Define la l?gica espec?fica de esta funci?n.
 function mapEstadoLabel(value: string | undefined): string {
     const labels: Record<string, string> = {
         pendiente: 'Pendiente',
@@ -95,6 +99,7 @@ function mapEstadoLabel(value: string | undefined): string {
  * 
  */
 
+// Renderiza la vista principal de este componente.
 export default function PedidoDetalleScreen() {
     //lee el parametro dinamico [id] desde la url
     const { id } = useLocalSearchParams();

@@ -1,8 +1,10 @@
+// Página: AuxiliarSubcategorias.js. gesti?n de subcategor?as por auxiliar.
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 import { exportarSubcategoriasAPDF, exportarSubcategoriasAExcel } from '../../utils/exportUtils.js';
 
+// Renderiza la vista principal de este componente.
 export default function AuxiliarSubcategorias() {
   const [subcategorias, setSubcategorias] = useState([]);
   const [filteredSubcategorias, setFilteredSubcategorias] = useState([]);

@@ -1,3 +1,4 @@
+// Página: citas.tsx. vista de citas del sistema.
 /**
  * Pantalla de lista de citas para el panel de administrador.
  * Navega desde el dashboard de admin cuando se presiona "Ver detalles" en la tarjeta de Citas.
@@ -52,6 +53,7 @@ type Cita = {
 
 type AuthUser = { rol?: string; nombre?: string };
 
+// Renderiza la vista principal de este componente.
 export default function AdminCitasScreen() {
   const { user, isAuthenticated } = useAuth() as { user: AuthUser | null; isAuthenticated: boolean };
   const isAdmin = user?.rol === 'administrador';

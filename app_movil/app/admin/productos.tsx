@@ -1,3 +1,4 @@
+// Página: productos.tsx. vista de productos del sistema.
 /**
  * Este archivo gestion de produtos panel de administacion
  * lista de todos los productos del sistema con iamgen descripcion y stado
@@ -53,6 +54,7 @@ const push = (path: string) =>
 const pushParams = (pathname: string, params: Record<string, string>) => 
 (router as unknown as { push : (p: {pathname: string; params: Record<string, string> }) => void }).push({ pathname, params });
 
+// Renderiza la vista principal de este componente.
 export default function AdminProductosScreen() {
     /**
      * contexto de autennticacionn

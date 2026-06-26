@@ -1,3 +1,4 @@
+// Página: mis-citas.tsx. vista de mis-citas del sistema.
 // ─────────────────────────────────────────────────────────────────────────────
 // ARCHIVO: app/mis-citas.tsx
 // PROPÓSITO: Lista todas las citas del cliente autenticado.
@@ -40,10 +41,12 @@ const routerReplace = (path: string) => (router as unknown as { replace: (p: str
 const routerPush    = (path: string) => (router as unknown as { push:    (p: string) => void }).push(path);
 
 // ── HELPERS DE FORMATO ─────────────────────────────────────────────────────────
+// Define la l?gica espec?fica de esta funci?n.
 function formatCOP(value: unknown) {
   return `$${Number(value || 0).toLocaleString('es-CO')}`;
 }
 
+// Define la l?gica espec?fica de esta funci?n.
 function formatDate(value: unknown) {
   if (!value) return '-';
   return new Date(value as string).toLocaleDateString('es-CO', {
@@ -53,6 +56,7 @@ function formatDate(value: unknown) {
   });
 }
 
+// Define la l?gica espec?fica de esta funci?n.
 function formatEstado(estado: string | undefined) {
   const value = (estado || '').toLowerCase();
   if (value === 'confirmada') return 'Confirmada';
@@ -62,6 +66,7 @@ function formatEstado(estado: string | undefined) {
   return estado || 'Sin estado';
 }
 
+// Define la l?gica espec?fica de esta funci?n.
 function getEstadoBadgeStyle(estado: string | undefined) {
   const value = (estado || '').toLowerCase();
   if (value === 'confirmada') return { backgroundColor: '#d4edda', borderColor: '#28a745', textColor: '#155724' };
@@ -71,6 +76,7 @@ function getEstadoBadgeStyle(estado: string | undefined) {
 }
 
 // ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────────
+// Renderiza la vista principal de este componente.
 export default function MisCitasScreen() {
   const { isAuthenticated } = useAuth() as { isAuthenticated: boolean };
   const [citas, setCitas] = useState<Cita[]>([]);

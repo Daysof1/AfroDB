@@ -1,8 +1,10 @@
+// Página: Login.js. p?gina de inicio de sesión para autenticar usuarios.
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
 import { apiRequest, saveSession, normalizeRole, getAssetUrl, getLocalCartItems, clearLocalCart } from '../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

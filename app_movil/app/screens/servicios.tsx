@@ -1,3 +1,4 @@
+// Página: servicios.tsx. vista de servicios del sistema.
 /**
  * Pantalla de Servicios
  * Muestra servicios disponibles en scroll horizontal con opción de agendar
@@ -22,6 +23,7 @@ const SERVICIOS_POR_PAGINA = 6;
 
 const AFRODB_IMAGE = catalogoService.buildImageUrl('uploads/fondo.png');
 
+// Renderiza la vista principal de este componente.
 export default function ServiciosScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth() as { isAuthenticated: boolean };
@@ -46,6 +48,7 @@ export default function ServiciosScreen() {
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
 
+// Gestiona la acci?n asociada a esta funci?n.
 const fetchServicios = async (page = 1, search = '') => {
   setLoading(true);
   setErrorMessage('');

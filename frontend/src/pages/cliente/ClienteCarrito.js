@@ -1,3 +1,4 @@
+// Página: ClienteCarrito.js. p?gina del carrito de compras del cliente.
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -14,6 +15,7 @@ import {
   updateLocalCartItemCantidad,
 } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function ClienteCarrito() {
   const navigate = useNavigate();
   const authenticated = isAuthenticated();

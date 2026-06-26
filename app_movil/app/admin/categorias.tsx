@@ -1,3 +1,4 @@
+// Página: categorias.tsx. vista de categorias del sistema.
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ThemedText } from '../../components/themed-text';
@@ -16,6 +17,7 @@ type Categoria = {
 
 const tipoOptions = ['producto', 'servicio'] as const;
 
+// Renderiza la vista principal de este componente.
 export default function AdminCategoriasScreen() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [allCategorias, setAllCategorias] = useState<Categoria[]>([]);

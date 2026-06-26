@@ -1,3 +1,4 @@
+// Página: ClienteProfesionales.js. p?gina de profesionales disponibles.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -5,6 +6,7 @@ import { faCalendar, faScissors } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
 import { apiRequest, getAssetUrl, getStoredRole, isAuthenticated } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function ClienteProfesionales() {
   const navigate = useNavigate();
   const [profesionales, setProfesionales] = useState([]);

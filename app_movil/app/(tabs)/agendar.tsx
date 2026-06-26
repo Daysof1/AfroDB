@@ -1,3 +1,4 @@
+// Página: agendar.tsx. vista de agendar del sistema.
 /**
  * Pantalla del carrio de compras y sus respectivas gestiones no requiere que este autenticado solo para hacer compras
  */
@@ -41,6 +42,7 @@ const routerReplace = (path: string) => (router as unknown as { replace: (p: str
 const fmt = (n: number) => `$${Number(n).toLocaleString('es-CO')}`;
 
 // componente principal agendar Screen 
+// Renderiza la vista principal de este componente.
 export default function AgendarScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth() as { isAuthenticated: boolean };

@@ -1,3 +1,4 @@
+// Página: subcategoria-form.tsx. vista de subcategoria-form del sistema.
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +24,7 @@ type Subcategoria = {
   categoria?: Categoria;
 };
 
+// Renderiza la vista principal de este componente.
 export default function AdminSubcategoriaForm() {
   const router = useRouter();
   const params = useLocalSearchParams<{ subcategoria?: string }>();

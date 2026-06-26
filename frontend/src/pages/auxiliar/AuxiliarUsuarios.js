@@ -1,8 +1,10 @@
+// Página: AuxiliarUsuarios.js. gesti?n de usuarios por auxiliar.
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 import { exportarUsuariosAPDF, exportarUsuariosAExcel } from '../../utils/exportUtils.js';
 
+// Renderiza la vista principal de este componente.
 export default function AuxiliarUsuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [error, setError] = useState('');

@@ -1,3 +1,4 @@
+// Página: servicio-form.tsx. vista de servicio-form del sistema.
 /**
  * Este archivo es el formulario para crear o edita un servicioenel panel del admin
  * modo crear: se llega desde el boton + crear servicioen admin/servicios
@@ -39,6 +40,7 @@ type Servicio = {
 type Categoria = { id: number; nombre: string; tipo?: string };
 type Subcategoria = { id: number; nombre: string; categoriaId: number; tipo?: string };
 
+// Renderiza la vista principal de este componente.
 export default function AdminServicioForm() {
     /**
      * navegacion 

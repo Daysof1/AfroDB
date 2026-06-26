@@ -1,3 +1,4 @@
+// Página: modal.tsx. vista de modal del sistema.
 // ─────────────────────────────────────────────────────────────────────────────
 // ARCHIVO: app/modal.tsx
 // PROPÓSITO: Pantalla modal de ejemplo/genérica.
@@ -14,6 +15,7 @@ import { ThemedText } from '../components/themed-text'; // Texto que respeta el 
 import { ThemedView } from '../components/themed-view'; // Vista que respeta el tema claro/oscuro.
 
 // ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────────
+// Renderiza la vista principal de este componente.
 export default function ModalScreen() {
   return (
     <ThemedView style={styles.container}>

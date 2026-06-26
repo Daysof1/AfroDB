@@ -1,3 +1,4 @@
+// Página: pedido-confirmado.tsx. vista de pedido-confirmado del sistema.
 // ─────────────────────────────────────────────────────────────────────────────
 // ARCHIVO: app/pedido-confirmado.tsx
 // PROPÓSITO: Pantalla de éxito tras confirmar una compra.
@@ -33,11 +34,13 @@ const routerReplace = (path: string) => (router as unknown as { replace: (p: str
 
 // ── HELPER DE FORMATO ─────────────────────────────────────────────────────────
 // Formatea un número a pesos colombianos.
+// Define la l?gica espec?fica de esta funci?n.
 function formatCOP(value: unknown) {
   return `$${Number(value || 0).toLocaleString('es-CO')}`;
 }
 
 // ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────────
+// Renderiza la vista principal de este componente.
 export default function PedidoConfirmadoScreen() {
 
   // ── PARÁMETRO DE RUTA ─────────────────────────────────────────────────────

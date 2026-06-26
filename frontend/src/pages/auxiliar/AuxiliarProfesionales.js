@@ -1,7 +1,9 @@
+// Página: AuxiliarProfesionales.js. gesti?n de profesionales por auxiliar.
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function AuxiliarProfesionales() {
   const [profesionales, setProfesionales] = useState([]);
   const [error, setError] = useState('');

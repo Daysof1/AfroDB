@@ -1,3 +1,4 @@
+// Página: productos.tsx. vista de productos del sistema.
 /**
  * Pantalla de Productos
  * Muestra catálogo de productos con buscador, filtros por categoría, paginación y detalles
@@ -25,6 +26,7 @@ const ITEMS_POR_PAGINA = 6;
 
 const AFRODB_IMAGE = catalogoService.buildImageUrl('uploads/fondo.png');
 
+// Renderiza la vista principal de este componente.
 export default function ProductosScreen() {
   const router = useRouter();
   const { agregarProducto } = useCarrito() as CarritoCtx;
@@ -300,7 +302,7 @@ export default function ProductosScreen() {
                     />
                     <ScrollView>
                       <Pressable style={styles.modalOption} onPress={() => { setSubcategoriaActiva('all'); setShowSubcatModal(false); setSearchSubcatTerm(''); }}>
-                        <ThemedText style={styles.modalOptionText}>Todas</ThemedText>
+                        <ThemedText style={styles.modalOptionText}>Todos</ThemedText>
                       </Pressable>
                       {subcategoriasFiltradas.map((subcat: any) => (
                         <Pressable key={subcat.id} style={styles.modalOption} onPress={() => { setSubcategoriaActiva(String(subcat.id)); setShowSubcatModal(false); setSearchSubcatTerm(''); }}>

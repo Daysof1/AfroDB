@@ -1,8 +1,10 @@
+// Página: AdminCategorias.js. gesti?n de categor?as del cat?logo.
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 import { exportarCategoriasAPDF, exportarCategoriasAExcel } from '../../utils/exportUtils.js';
 
+// Renderiza la vista principal de este componente.
 export default function AdminCategorias() {
   const [categorias, setCategorias] = useState([]);
   const [filteredCategorias, setFilteredCategorias] = useState([]);

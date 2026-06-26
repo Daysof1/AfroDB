@@ -1,7 +1,9 @@
+// Página: AdminProfesionales.js. gesti?n de profesionales desde administraci?n.
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function AdminProfesionales() {
   const [profesionales, setProfesionales] = useState([]);
   const [error, setError] = useState('');

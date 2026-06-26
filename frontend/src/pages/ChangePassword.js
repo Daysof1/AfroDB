@@ -1,8 +1,10 @@
+// Página: ChangePassword.js. p?gina para cambiar la contrase?a del usuario.
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
 import { apiRequest } from '../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function ChangePassword() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({

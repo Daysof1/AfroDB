@@ -1,3 +1,4 @@
+// Página: ClienteCatalogo.js. p?gina del cat?logo de productos para clientes.
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShoppingBag, faCartShopping } from '@fortawesome/free-solid-svg-icons';
@@ -10,6 +11,7 @@ import {
   getStoredRole,
 } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function ClienteCatalogo() {
   const authenticated = isAuthenticated();
   const userRole = getStoredRole();

@@ -1,9 +1,11 @@
+// Página: ProfesionalPerfil.js. perfil del profesional.
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons';
 import '../Profesional.css';
 import { apiRequest } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function ProfesionalPerfil() {
   const [perfil, setPerfil] = useState({
     nombre: '',

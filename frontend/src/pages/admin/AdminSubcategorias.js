@@ -1,8 +1,10 @@
+// Página: AdminSubcategorias.js. gesti?n de subcategor?as del cat?logo.
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 import { exportarSubcategoriasAPDF, exportarSubcategoriasAExcel } from '../../utils/exportUtils.js';
 
+// Renderiza la vista principal de este componente.
 export default function AdminSubcategorias() {
   const [subcategorias, setSubcategorias] = useState([]);
   const [filteredSubcategorias, setFilteredSubcategorias] = useState([]);

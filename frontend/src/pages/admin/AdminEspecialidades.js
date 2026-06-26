@@ -1,7 +1,9 @@
+// Página: AdminEspecialidades.js. gesti?n de especialidades desde administraci?n.
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 
+// Renderiza la vista principal de este componente.
 export default function AdminEspecialidades() {
   const [especialidades, setEspecialidades] = useState([]);
   const [error, setError] = useState('');

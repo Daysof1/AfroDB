@@ -1,3 +1,4 @@
+// Página: categoria-form.tsx. vista de categoria-form del sistema.
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -12,6 +13,7 @@ type Categoria = {
   activo?: boolean;
 };
 
+// Renderiza la vista principal de este componente.
 export default function AdminCategoriaForm() {
   const router = useRouter();
   const params = useLocalSearchParams<{ categoria?: string }>();

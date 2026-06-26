@@ -1,3 +1,4 @@
+// Página: pedidos.tsx. vista de pedidos del sistema.
 /**
  * Este archivo y pantalla es la lista e pedido en panel de administrador
  * mustra todos los pedidos del sistema en una lista paginada (de 10 por pagina)
@@ -43,6 +44,7 @@ type Pedido = {
  * Componnete principal
  * 
  */
+// Renderiza la vista principal de este componente.
 export default function AdminPedidoScreen() {
     /**
      * parametro de ruta

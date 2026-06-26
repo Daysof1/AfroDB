@@ -1,3 +1,4 @@
+// Página: AdminPedidos.js. gesti?n de pedidos del sistema.
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye } from '@fortawesome/free-solid-svg-icons';
@@ -5,6 +6,7 @@ import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 import { exportarPedidosAPDF, exportarPedidosAExcel } from '../../utils/exportUtils.js';
 
+// Renderiza la vista principal de este componente.
 export default function AdminPedidos() {
   const [pedidos, setPedidos] = useState([]);
   const [error, setError] = useState('');
