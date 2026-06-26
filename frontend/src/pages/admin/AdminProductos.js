@@ -120,10 +120,17 @@ export default function AdminProductos() {
       (producto?.categoria?.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (producto?.subcategoria?.nombre || '').toLowerCase().includes(textoBusqueda);
 
+    // Filtro por estado activo/inactivo
+    const coincideEstado =
+      filtro === 'Todos' ||
+      (filtro === 'True' && producto.activo === true) ||
+      (filtro === 'False' && producto.activo === false);
+
     return (
       (filtroCategoria === 'Todos' || categoriaNombre === filtroCategoria) &&
       (filtroSubcategoria === 'Todas' || subcategoriaNombre === filtroSubcategoria) &&
-      coincideBusqueda
+      coincideBusqueda &&
+      coincideEstado
     );
   });
 
