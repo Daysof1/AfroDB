@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../Admin.css';
 import { apiRequest, getAssetUrl } from '../../api/client.js';
+import Select from "react-select";
 import { exportarServiciosAPDF, exportarServiciosAExcel } from '../../utils/exportUtils.js';
 
 // Renderiza la vista principal de este componente.
@@ -300,28 +301,51 @@ export default function AdminServicios() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
-        <select
-          value={filtroCategoria}
-          onChange={(e) => setFiltroCategoria(e.target.value)}
+        <Select
+          value={{
+            value: filtroCategoria,
+            label: `Categoría: ${filtroCategoria}`
+          }}
+
+          onChange={(opcion) =>
+            setFiltroCategoria(opcion.value)
+          }
+
+          options={
+            categoriasFiltro.map((categoria) => ({
+              value: categoria,
+              label: `Categoría: ${categoria}`
+            }))
+          }
+
           className="search-input"
-        >
-          {categoriasFiltro.map((categoria) => (
-            <option key={categoria} value={categoria}>
-              Categoria: {categoria}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filtroSubcategoria}
-          onChange={(e) => setFiltroSubcategoria(e.target.value)}
+          placeholder="Filtrar categoría..."
+          isSearchable
+        />
+
+
+        <Select
+          value={{
+            value: filtroSubcategoria,
+            label: `Subcategoría: ${filtroSubcategoria}`
+          }}
+
+          onChange={(opcion) =>
+            setFiltroSubcategoria(opcion.value)
+          }
+
+          options={
+            subcategoriasFiltro.map((subcategoria) => ({
+              value: subcategoria,
+              label: `Subcategoría: ${subcategoria}`
+            }))
+          }
+
           className="search-input"
-        >
-          {subcategoriasFiltro.map((subcategoria) => (
-            <option key={subcategoria} value={subcategoria}>
-              Subcategoria: {subcategoria}
-            </option>
-          ))}
-        </select>
+          placeholder="Filtrar subcategoría..."
+          isSearchable
+        />
+
       </div>
 
       {isFormOpen && (
@@ -375,38 +399,87 @@ export default function AdminServicios() {
 
             <div className="form-group">
               <label>Categoría</label>
-              <select
-                value={newServicio.categoriaId}
-                onChange={(e) => {
-                  const categoriaId = e.target.value;
-                  setNewServicio({ ...newServicio, categoriaId, subcategoriaId: '' });
-                  loadSubcategorias(categoriaId);
-                }}
-                required
-              >
-                <option value="">Selecciona categoría</option>
-                {categorias.map((categoria) => (
-                  <option key={categoria.id} value={categoria.id}>
-                    {categoria.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="form-group">
 
-            <div className="form-group">
-              <label>Subcategoría</label>
-              <select
-                value={newServicio.subcategoriaId}
-                onChange={(e) => setNewServicio({ ...newServicio, subcategoriaId: e.target.value })}
-                required
-              >
-                <option value="">Selecciona subcategoría</option>
-                {subcategorias.map((subcategoria) => (
-                  <option key={subcategoria.id} value={subcategoria.id}>
-                    {subcategoria.nombre}
-                  </option>
-                ))}
-              </select>
+  <Select
+    value={
+      categorias
+        .map((categoria) => ({
+          value: categoria.id,
+          label: categoria.nombre
+        }))
+        .find(
+          (opcion) => opcion.value === newServicio.categoriaId
+        ) || null
+    }
+
+    onChange={(opcion) => {
+
+      const categoriaId = opcion ? opcion.value : "";
+
+      setNewServicio({
+        ...newServicio,
+        categoriaId: categoriaId,
+        subcategoriaId: ""
+      });
+
+      loadSubcategorias(categoriaId);
+    }}
+
+    options={
+      categorias.map((categoria) => ({
+        value: categoria.id,
+        label: categoria.nombre
+      }))
+    }
+
+    placeholder="Selecciona categoría..."
+    isSearchable
+    noOptionsMessage={() => "No hay categorías"}
+  />
+
+</div>
+
+
+<div className="form-group">
+
+  <label>Subcategoría</label>
+
+  <Select
+    value={
+      subcategorias
+        .map((subcategoria) => ({
+          value: subcategoria.id,
+          label: subcategoria.nombre
+        }))
+        .find(
+          (opcion) => opcion.value === newServicio.subcategoriaId
+        ) || null
+    }
+
+    onChange={(opcion) => {
+
+      setNewServicio({
+        ...newServicio,
+        subcategoriaId: opcion ? opcion.value : ""
+      });
+
+    }}
+
+    options={
+      subcategorias.map((subcategoria) => ({
+        value: subcategoria.id,
+        label: subcategoria.nombre
+      }))
+    }
+
+    placeholder="Selecciona subcategoría..."
+    isSearchable
+    isDisabled={!newServicio.categoriaId}
+    noOptionsMessage={() => "No hay subcategorías"}
+  />
+
+</div>
             </div>
 
             <div className="form-group">
