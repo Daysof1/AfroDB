@@ -8,6 +8,9 @@ export default function ProfesionalEspecialidades() {
   const [especialidades, setEspecialidades] = useState([]);
   const [catalogoEspecialidades, setCatalogoEspecialidades] = useState([]);
 
+  const [busqueda, setBusqueda] = useState('');
+  const [filtro, setFiltro] = useState('Todos');
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [newEsp, setNewEsp] = useState({ especialidadId: '' });
   const [error, setError] = useState('');
@@ -29,6 +32,17 @@ export default function ProfesionalEspecialidades() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const especialidadesFiltradas = especialidades.filter((especialidad) => {
+  const textoBusqueda = busqueda.toLowerCase().trim();
+
+  const coincideBusqueda =
+    !textoBusqueda ||
+    (especialidad.nombre || '').toLowerCase().includes(textoBusqueda) ||
+    (especialidad.descripcion || '').toLowerCase().includes(textoBusqueda);
+
+  return coincideBusqueda;
+});
 
   const disponibles = useMemo(() => {
     const selectedIds = new Set(especialidades.map((e) => e.id));
@@ -92,9 +106,18 @@ export default function ProfesionalEspecialidades() {
           </form>
         </div>
       )}
+      <div className="filtros">
+        <input
+          type="text"
+          placeholder="Buscar especialidades..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+      </div>
 
       <div className="especialidades-grid">
-        {especialidades.map(esp => (
+        {especialidadesFiltradas.map(esp => (
           <div key={esp.id} className="esp-card">
             <div className="esp-header">
               <h3>{esp.nombre}</h3>

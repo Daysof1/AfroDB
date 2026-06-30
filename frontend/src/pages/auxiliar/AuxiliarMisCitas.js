@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
+import Select from "react-select";
 import '../Cliente.css';
 import { apiRequest } from '../../api/client.js';
 
@@ -27,6 +28,9 @@ export default function AuxiliarMisCitas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+  
+  const [filtro, setFiltro] = useState('Todos');
 
   const servicioPreseleccionadoId = useMemo(() => {
     const servicioIdDesdeState = location?.state?.servicioId;
@@ -129,6 +133,28 @@ export default function AuxiliarMisCitas() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const citasFiltradas = citas.filter((cita) => {
+  const textoBusqueda = busqueda.toLowerCase().trim();
+
+  const coincideBusqueda =
+    !textoBusqueda ||
+      (cita.Servicios || []).some((s) =>
+    (s.nombre || '').toLowerCase().includes(textoBusqueda)
+  ) ||
+    (cita?.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+    (cita?.profesional?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+    (cita?.estado || '').toLowerCase().includes(textoBusqueda) ||
+    (cita.fecha || '').toLowerCase().includes(textoBusqueda) ||
+    (cita.hora || '').toLowerCase().includes(textoBusqueda) ||
+    (cita.notas || '').toLowerCase().includes(textoBusqueda);
+
+  const coincideEstado =
+    filtro === 'Todos' ||
+    (cita.estado || '').toLowerCase() === filtro.toLowerCase();
+
+  return coincideBusqueda && coincideEstado;
+});
 
   useEffect(() => {
     const hasServicioPrefill = Number.isFinite(servicioPreseleccionadoId)
@@ -275,16 +301,36 @@ export default function AuxiliarMisCitas() {
           <form onSubmit={handleCrearCita}>
             <div className="form-group">
               <label>Profesional</label>
-              <select
-                value={formData.profesionalId}
-                onChange={(e) => setFormData({ ...formData, profesionalId: e.target.value })}
-                disabled={usarSeleccionMultiple}
-              >
-                <option value="">Asignación automática por servicio</option>
-                {profesionales.map((prof) => (
-                  <option key={prof.id} value={prof.id}>{prof.nombre}</option>
-                ))}
-              </select>
+              <Select
+                value={
+                  profesionales
+                    .map((prof)=>({
+                      value:String(prof.id),
+                      label:prof.nombre
+                    }))
+                    .find(
+                      (op)=>op.value === String(formData.profesionalId)
+                    ) || null
+                }
+
+                onChange={(opcion)=>{
+                setFormData({
+                ...formData,
+                profesionalId: opcion ? opcion.value : ''
+                });
+                }}
+
+                options={
+                profesionales.map((prof)=>({
+                value:String(prof.id),
+                label:prof.nombre
+                }))
+                }
+
+                placeholder="Buscar profesional..."
+                isSearchable
+                isDisabled={usarSeleccionMultiple}
+                />
               <small>
                 Si no seleccionas profesional, el sistema asigna uno o varios según especialidad por servicio.
               </small>
@@ -322,40 +368,46 @@ export default function AuxiliarMisCitas() {
               {usarSeleccionMultiple && (
                 <>
                   <div className="servicios-selector-grid">
-                    {profesionales.map((profesional) => {
-                      const selected = formData.profesionalesIds.includes(Number(profesional.id));
+                    <Select
 
-                      return (
-                        <label
-                          key={profesional.id}
-                          className={`servicio-selector-item ${selected ? 'selected' : ''}`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selected}
-                            onChange={() => {
-                              setFormData((prev) => {
-                                const id = Number(profesional.id);
-                                const yaSeleccionado = prev.profesionalesIds.includes(id);
+                      isMulti
+                      classNamePrefix="react-select"
+                      menuPortalTarget={document.body}
+                      styles={{
+                        menuPortal: base => ({
+                          ...base,
+                          zIndex: 9999
+                        })
+                      }}
+                      placeholder="Buscar profesionales..."
+                      value={
+                      profesionales
+                      .filter(prof =>
+                      formData.profesionalesIds.includes(Number(prof.id))
+                      )
+                      .map(prof=>({
+                      value:Number(prof.id),
+                      label:prof.nombre
+                      }))
+                      }
 
-                                if (yaSeleccionado) {
-                                  return {
-                                    ...prev,
-                                    profesionalesIds: prev.profesionalesIds.filter((pid) => pid !== id),
-                                  };
-                                }
+                      options={
+                      profesionales.map(prof=>({
+                      value:Number(prof.id),
+                      label:prof.nombre
+                      }))
+                      }
 
-                                return {
-                                  ...prev,
-                                  profesionalesIds: [...prev.profesionalesIds, id],
-                                };
-                              });
-                            }}
-                          />
-                          <span>{profesional.nombre}</span>
-                        </label>
-                      );
-                    })}
+                      onChange={(opciones)=>{
+                      setFormData({
+                      ...formData,
+                      profesionalesIds:
+                      opciones
+                      ? opciones.map(op=>op.value)
+                      : []
+                      });
+                      }}
+                      />
                   </div>
                   <small>
                     {formData.profesionalesIds.length} profesional(es) seleccionado(s). Si no cubren todos los servicios, la cita no se podrá crear.
@@ -365,24 +417,37 @@ export default function AuxiliarMisCitas() {
             </div>
             <div className="form-group">
               <label>Servicios</label>
-              <div className="servicios-selector-grid">
-                {servicios.map((servicio) => {
-                  const checked = formData.servicioIds.includes(servicio.id);
-                  return (
-                    <label
-                      key={servicio.id}
-                      className={`servicio-selector-item ${checked ? 'selected' : ''}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleServicio(servicio.id)}
-                      />
-                      <span>{servicio.nombre}</span>
-                    </label>
-                  );
-                })}
-              </div>
+              <Select
+                isMulti
+                placeholder="Buscar servicios..."
+                value={
+                servicios
+                .filter(serv =>
+                formData.servicioIds.includes(serv.id)
+                )
+                .map(serv=>({
+                value:serv.id,
+                label:serv.nombre
+                }))
+                }
+
+                options={
+                servicios.map(serv=>({
+                value:serv.id,
+                label:serv.nombre
+                }))
+                }
+
+                onChange={(opciones)=>{
+                setFormData({
+                ...formData,
+                servicioIds:
+                opciones
+                ? opciones.map(op=>op.value)
+                : []
+                });
+                }}
+                />
               <small>{formData.servicioIds.length} servicio(s) seleccionado(s)</small>
             </div>
             <div className="form-group">
@@ -398,32 +463,76 @@ export default function AuxiliarMisCitas() {
         </div>
       )}
 
+      <div className="filtros">
+        <input
+          type="text"
+          placeholder="Buscar citas..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="search-input"
+        />
+        
+      <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todas ({citas.length})
+        </button>
+         <button
+          className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
+          onClick={() => setFiltro('Pendiente')}
+        >
+          Pendientes ({citas.filter((c) => (c.estado || '').toLowerCase() === 'pendiente').length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'Confirmada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Confirmada')}
+        >
+          Confirmadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'confirmada').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Completada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Completada')}
+        >
+          Completadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'completada').length})
+        </button>
+
+         <button
+          className={`filter-btn ${filtro === 'Cancelada' ? 'active' : ''}`}
+          onClick={() => setFiltro('Cancelada')}
+        >
+          Canceladas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'cancelada').length})
+        </button>
+      </div>
+
       <div className="citas-container">
         {citas.length === 0 ? (
           <div className="empty-state">
             <p>No tienes citas agendadas</p>
           </div>
         ) : (
-          <div className="citas-grid">
-            {citas.map((cita) => (
-              <div key={cita.id} className="cita-card">
-                <div className="cita-header">
+       <div className="citas-grid">
+            {citasFiltradas.map((cita) => (
+              <div key={cita.id} className="cita-card-prof">
+                <div className="cita-header-prof">
                   <h3>{(cita.Servicios || []).map((s) => s.nombre).join(', ') || 'Cita'}</h3>
                   <span
-                    className={`badge ${
-                      (cita.estado || '').toLowerCase() === 'pendiente'
-                      ? 'badge-warning'
-                      : (cita.estado || '').toLowerCase() === 'confirmada'
-                      ? 'badge-info'
-                      : (cita.estado || '').toLowerCase() === 'completada'
-                      ? 'badge-success'
-                      : (cita.estado || '').toLowerCase() === 'cancelada'
-                      ? 'badge-danger'
-                      : 'badge-secondary'
-                    }`}
-                  >
-                    {cita.estado}
-                  </span>
+                className={`badge ${
+                  (cita.estado || '').toLowerCase() === 'pendiente'
+                  ? 'badge-warning'
+                  : (cita.estado || '').toLowerCase() === 'confirmada'
+                  ? 'badge-info'
+                  : (cita.estado || '').toLowerCase() === 'completada'
+                  ? 'badge-success'
+                  : (cita.estado || '').toLowerCase() === 'cancelada'
+                  ? 'badge-danger'
+                  : 'badge-secondary'
+                }`}
+              >
+              {cita.estado}
+              </span>
                 </div>
 
                 <div className="cita-info">

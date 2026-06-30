@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faBell, faClock, faSackDollar } from '@fortawesome/free-solid-svg-icons';
+import Select from "react-select";
 import '../Cliente.css';
 import { apiRequest, getAssetUrl, getStoredRole, isAuthenticated } from '../../api/client.js';
 
@@ -123,32 +124,95 @@ export default function ClienteServicios() {
           onChange={onChangeBusqueda}
           className="search-input"
         />
-        <select
-          value={filtroCategoria}
-          onChange={onChangeCategoria}
+
+        {/* FILTRO CATEGORÍA */}
+        <Select
+          value={
+            categorias
+            .map((categoria) => ({
+              value: String(categoria.id),
+              label: `Categoria: ${categoria.nombre}`
+            }))
+            .find(
+              (opcion) => opcion.value === filtroCategoria
+            ) || {
+              value: "Todas",
+              label: "Categoría: Todas"
+            }
+          }
+
+          onChange={(opcion) => {
+            onChangeCategoria({
+              target: {
+                value: opcion.value
+              }
+            });
+          }}
+
+          options={[
+            {
+              value: "Todas",
+              label: "Categoria: Todas"
+            },
+
+            ...categorias.map((categoria) => ({
+              value: String(categoria.id),
+              label: `Categoría: ${categoria.nombre}`
+            }))
+          ]}
+
           className="search-input"
-        >
-          <option value="Todas">Categoria: Todas</option>
-          {categorias.map((categoria) => (
-            <option key={categoria.id} value={String(categoria.id)}>
-              Categoria: {categoria.nombre}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filtroSubcategoria}
-          onChange={onChangeSubcategoria}
+          placeholder="Filtrar categoría..."
+          isSearchable
+        />
+
+        {/* FILTRO SUBCATEGORÍA */}
+        <Select
+          value={
+            subcategorias
+              .map((subcategoria) => ({
+                value: String(subcategoria.id),
+                label: `Subcategoría: ${subcategoria.nombre}`
+              }))
+              .find(
+                (opcion) => opcion.value === filtroSubcategoria
+              ) || {
+                value: "Todas",
+                label: "Subcategoría: Todas"
+              }
+          }
+
+
+          onChange={(opcion) => {
+            onChangeSubcategoria({
+              target: {
+                value: opcion.value
+              }
+            });
+          }}
+
+
+          options={[
+            {
+              value: "Todas",
+              label: "Subcategoría: Todas"
+            },
+
+            ...subcategorias.map((subcategoria) => ({
+              value: String(subcategoria.id),
+              label: `Subcategoría: ${subcategoria.nombre}`
+            }))
+          ]}
+
+
           className="search-input"
-          disabled={filtroCategoria === 'Todas'}
-        >
-          <option value="Todas">Subcategoria: Todas</option>
-          {subcategorias.map((subcategoria) => (
-            <option key={subcategoria.id} value={String(subcategoria.id)}>
-              Subcategoria: {subcategoria.nombre}
-            </option>
-          ))}
-        </select>
-      </div>
+          placeholder="Filtrar subcategoría..."
+          isSearchable
+          isDisabled={filtroCategoria === "Todas"}
+        />
+
+        </div>
+          
 
       {loading && <p>Cargando servicios...</p>}
       {error && <div className="alert alert-error">{error}</div>}

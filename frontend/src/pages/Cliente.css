@@ -694,11 +694,37 @@
 
 /* FORMS */
 .form-container {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
   background: var(--color-white);
   border-radius: 1rem;
   padding: 2rem;
   margin-bottom: 2rem;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+
+/* React Select */
+.react-select__menu {
+  z-index: 9999 !important;
+  position: absolute !important;
+}
+
+
+.react-select__menu-list {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+}
+
+
+.react-select__control {
+  min-height: 45px;
+}
+
+.react-select__value-container {
+  max-height: none !important;
+  overflow: visible !important;
 }
 
 .form-container h2 {

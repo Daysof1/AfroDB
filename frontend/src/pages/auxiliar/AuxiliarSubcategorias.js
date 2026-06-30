@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
+import Select from "react-select";
 import { exportarSubcategoriasAPDF, exportarSubcategoriasAExcel } from '../../utils/exportUtils.js';
 
 // Renderiza la vista principal de este componente.
@@ -221,12 +222,33 @@ export default function AuxiliarSubcategorias() {
             <div className="form-group"><label>Descripción</label><textarea value={newSubcategoria.descripcion} onChange={(e) => setNewSubcategoria({ ...newSubcategoria, descripcion: e.target.value })} /></div>
             <div className="form-group">
               <label>Categoría</label>
-              <select value={newSubcategoria.categoriaId} onChange={(e) => setNewSubcategoria({ ...newSubcategoria, categoriaId: e.target.value })} required>
-                <option value="">Selecciona categoría</option>
-                {categorias.map((categoria) => (
-                  <option key={categoria.id} value={categoria.id}>{categoria.nombre}</option>
-                ))}
-              </select>
+              <Select
+                value={
+                  categorias
+                    .map((categoria) => ({
+                      value: categoria.id,
+                      label: categoria.nombre
+                    }))
+                    .find((opcion) => opcion.value === newSubcategoria.categoriaId)
+                }
+
+                onChange={(opcion) =>
+                  setNewSubcategoria({
+                    ...newSubcategoria,
+                    categoriaId: opcion.value
+                  })
+                }
+
+                options={
+                  categorias.map((categoria) => ({
+                    value: categoria.id,
+                    label: categoria.nombre
+                  }))
+                }
+
+                placeholder="Selecciona categoría..."
+                isSearchable
+              />
             </div>
             <div className="form-group">
               <label>Tipo</label>

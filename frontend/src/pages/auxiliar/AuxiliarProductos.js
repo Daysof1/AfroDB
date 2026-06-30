@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../Admin.css';
 import { apiRequest, getAssetUrl } from '../../api/client.js';
+import Select from "react-select";
 import { exportarProductosAPDF, exportarProductosAExcel } from '../../utils/exportUtils.js';
 
 // Renderiza la vista principal de este componente.
@@ -19,6 +20,7 @@ export default function AuxiliarProductos() {
   const [editingOriginal, setEditingOriginal] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState('Todos');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState('Todas');
+  const [filtro, setFiltro] = useState('Todos');
   const [showExportOptions, setShowExportOptions] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [newProduct, setNewProduct] = useState({
@@ -116,10 +118,17 @@ export default function AuxiliarProductos() {
       (producto?.categoria?.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (producto?.subcategoria?.nombre || '').toLowerCase().includes(textoBusqueda);
 
+    // Filtro por estado activo/inactivo
+    const coincideEstado =
+      filtro === 'Todos' ||
+      (filtro === 'True' && producto.activo === true) ||
+      (filtro === 'False' && producto.activo === false);
+
     return (
       (filtroCategoria === 'Todos' || categoriaNombre === filtroCategoria) &&
       (filtroSubcategoria === 'Todas' || subcategoriaNombre === filtroSubcategoria) &&
-      coincideBusqueda
+      coincideBusqueda &&
+      coincideEstado
     );
   });
 
@@ -313,28 +322,68 @@ export default function AuxiliarProductos() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
-        <select
-          value={filtroCategoria}
-          onChange={(e) => setFiltroCategoria(e.target.value)}
+        <Select
+          value={{
+            value: filtroCategoria,
+            label: `Categoría: ${filtroCategoria}`
+          }}
+
+          onChange={(opcion) =>
+            setFiltroCategoria(opcion.value)
+          }
+
+          options={
+            categoriasFiltro.map((categoria) => ({
+              value: categoria,
+              label: `Categoría: ${categoria}`
+            }))
+          }
+
           className="search-input"
-        >
-          {categoriasFiltro.map((categoria) => (
-            <option key={categoria} value={categoria}>
-              Categoria: {categoria}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filtroSubcategoria}
-          onChange={(e) => setFiltroSubcategoria(e.target.value)}
+          placeholder="Filtrar categoría..."
+          isSearchable
+        />
+        <Select
+          value={{
+            value: filtroSubcategoria,
+            label: `Subcategoría: ${filtroSubcategoria}`
+          }}
+
+          onChange={(opcion) =>
+            setFiltroSubcategoria(opcion.value)
+          }
+
+          options={
+            subcategoriasFiltro.map((subcategoria) => ({
+              value: subcategoria,
+              label: `Subcategoría: ${subcategoria}`
+            }))
+          }
+
           className="search-input"
+          placeholder="Filtrar subcategoría..."
+          isSearchable
+        />
+
+        <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
         >
-          {subcategoriasFiltro.map((subcategoria) => (
-            <option key={subcategoria} value={subcategoria}>
-              Subcategoria: {subcategoria}
-            </option>
-          ))}
-        </select>
+          Todos ({productos.length})
+        </button>
+         <button
+          className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
+          onClick={() => setFiltro('True')}
+        >
+          Activos ({productos.filter((s) => s.activo === true).length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
+          onClick={() => setFiltro('False')}
+        >
+          Inactivos ({productos.filter((s) => s.activo === false).length})
+        </button>
       </div>
 
       {isFormOpen && (
@@ -359,29 +408,79 @@ export default function AuxiliarProductos() {
             </div>
             <div className="form-group">
               <label>Categoría</label>
-              <select
-                value={newProduct.categoriaId}
-                onChange={(e) => {
-                  const categoriaId = e.target.value;
-                  setNewProduct({ ...newProduct, categoriaId, subcategoriaId: '' });
-                  loadSubcategorias(categoriaId);
+              <Select
+                value={
+                  categorias.map((categoria) => ({
+                    value: categoria.id,
+                    label: categoria.nombre
+                  }))
+                  .find(
+                    (opcion) => opcion.value === newProduct.categoriaId
+                  ) || null
+                }
+                onChange={(opcion) => {
+                  const categoriaId = opcion ? opcion.value : "";
+
+                  setNewProduct({ 
+                  ...newProduct, 
+                  categoriaId: categoriaId,
+                  subcategoriaId: "" 
+                });
+
+                loadSubcategorias(categoriaId);
                 }}
-                required
-              >
-                <option value="">Selecciona categoría</option>
-                {categorias.map((categoria) => (
-                  <option key={categoria.id} value={categoria.id}>{categoria.nombre}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Subcategoría</label>
-              <select value={newProduct.subcategoriaId} onChange={(e) => setNewProduct({ ...newProduct, subcategoriaId: e.target.value })} required>
-                <option value="">Selecciona subcategoría</option>
-                {subcategorias.map((subcategoria) => (
-                  <option key={subcategoria.id} value={subcategoria.id}>{subcategoria.nombre}</option>
-                ))}
-              </select>
+                options={
+      categorias.map((categoria) => ({
+        value: categoria.id,
+        label: categoria.nombre
+      }))
+    }
+
+    placeholder="Selecciona categoría..."
+    isSearchable
+    noOptionsMessage={() => "No hay categorías"}
+  />
+
+</div>
+
+
+<div className="form-group">
+
+  <label>Subcategoría</label>
+
+  <Select
+    value={
+      subcategorias
+        .map((subcategoria) => ({
+          value: subcategoria.id,
+          label: subcategoria.nombre
+        }))
+        .find(
+          (opcion) => opcion.value === newProduct.subcategoriaId
+        ) || null
+    }
+
+    onChange={(opcion) => {
+
+      setNewProduct({
+        ...newProduct,
+        subcategoriaId: opcion ? opcion.value : ""
+      });
+
+    }}
+
+    options={
+      subcategorias.map((subcategoria) => ({
+        value: subcategoria.id,
+        label: subcategoria.nombre
+      }))
+    }
+
+    placeholder="Selecciona subcategoría..."
+    isSearchable
+    isDisabled={!newProduct.categoriaId}
+    noOptionsMessage={() => "No hay subcategorías"}
+  />
             </div>
             <div className="form-group">
               <label>URL de imagen</label>

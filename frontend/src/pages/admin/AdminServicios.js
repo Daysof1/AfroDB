@@ -14,6 +14,7 @@ export default function AdminServicios() {
   const [success, setSuccess] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState('Todos');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState('Todas');
+  const [filtro, setFiltro] = useState('Todos');
   const [busqueda, setBusqueda] = useState('');
   const [showExportOptions, setShowExportOptions] = useState(false);
   const [pagina, setPagina] = useState(1);
@@ -125,10 +126,17 @@ export default function AdminServicios() {
       (servicio?.categoria?.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (servicio?.subcategoria?.nombre || '').toLowerCase().includes(textoBusqueda);
 
+          // Filtro por estado activo/inactivo
+    const coincideEstado =
+      filtro === 'Todos' ||
+      (filtro === 'True' && servicio.activo === true) ||
+      (filtro === 'False' && servicio.activo === false);
+
     return (
       (filtroCategoria === 'Todos' || categoriaNombre === filtroCategoria) &&
       (filtroSubcategoria === 'Todas' || subcategoriaNombre === filtroSubcategoria) &&
-      coincideBusqueda
+      coincideBusqueda &&
+      coincideEstado
     );
   });
 
@@ -346,6 +354,26 @@ export default function AdminServicios() {
           isSearchable
         />
 
+        <button
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todos ({servicios.length})
+        </button>
+         <button
+          className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
+          onClick={() => setFiltro('True')}
+        >
+          Activos ({servicios.filter((s) => s.activo === true).length})
+        </button>
+
+        <button
+          className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
+          onClick={() => setFiltro('False')}
+        >
+          Inactivos ({servicios.filter((s) => s.activo === false).length})
+        </button>
+
       </div>
 
       {isFormOpen && (
@@ -401,85 +429,85 @@ export default function AdminServicios() {
               <label>Categoría</label>
               <div className="form-group">
 
-  <Select
-    value={
-      categorias
-        .map((categoria) => ({
-          value: categoria.id,
-          label: categoria.nombre
-        }))
-        .find(
-          (opcion) => opcion.value === newServicio.categoriaId
-        ) || null
-    }
+              <Select
+                value={
+                  categorias
+                    .map((categoria) => ({
+                      value: categoria.id,
+                      label: categoria.nombre
+                    }))
+                    .find(
+                      (opcion) => opcion.value === newServicio.categoriaId
+                    ) || null
+                }
 
-    onChange={(opcion) => {
+                onChange={(opcion) => {
 
-      const categoriaId = opcion ? opcion.value : "";
+                  const categoriaId = opcion ? opcion.value : "";
 
-      setNewServicio({
-        ...newServicio,
-        categoriaId: categoriaId,
-        subcategoriaId: ""
-      });
+                  setNewServicio({
+                    ...newServicio,
+                    categoriaId: categoriaId,
+                    subcategoriaId: ""
+                  });
 
-      loadSubcategorias(categoriaId);
-    }}
+                  loadSubcategorias(categoriaId);
+                }}
 
-    options={
-      categorias.map((categoria) => ({
-        value: categoria.id,
-        label: categoria.nombre
-      }))
-    }
+                options={
+                  categorias.map((categoria) => ({
+                    value: categoria.id,
+                    label: categoria.nombre
+                  }))
+                }
 
-    placeholder="Selecciona categoría..."
-    isSearchable
-    noOptionsMessage={() => "No hay categorías"}
-  />
+                placeholder="Selecciona categoría..."
+                isSearchable
+                noOptionsMessage={() => "No hay categorías"}
+              />
 
-</div>
+            </div>
 
 
-<div className="form-group">
+            <div className="form-group">
 
-  <label>Subcategoría</label>
+              <label>Subcategoría</label>
 
-  <Select
-    value={
-      subcategorias
-        .map((subcategoria) => ({
-          value: subcategoria.id,
-          label: subcategoria.nombre
-        }))
-        .find(
-          (opcion) => opcion.value === newServicio.subcategoriaId
-        ) || null
-    }
+              <Select
+                value={
+                  subcategorias
+                    .map((subcategoria) => ({
+                      value: subcategoria.id,
+                      label: subcategoria.nombre
+                    }))
+                    .find(
+                      (opcion) => opcion.value === newServicio.subcategoriaId
+                    ) || null
+                }
 
-    onChange={(opcion) => {
+                onChange={(opcion) => {
 
-      setNewServicio({
-        ...newServicio,
-        subcategoriaId: opcion ? opcion.value : ""
-      });
+                  setNewServicio({
+                    ...newServicio,
+                    subcategoriaId: opcion ? opcion.value : ""
+                  });
 
-    }}
+                }}
 
-    options={
-      subcategorias.map((subcategoria) => ({
-        value: subcategoria.id,
-        label: subcategoria.nombre
-      }))
-    }
+                options={
+                  subcategorias.map((subcategoria) => ({
+                    value: subcategoria.id,
+                    label: subcategoria.nombre
+                  }))
+                }
 
-    placeholder="Selecciona subcategoría..."
-    isSearchable
-    isDisabled={!newServicio.categoriaId}
-    noOptionsMessage={() => "No hay subcategorías"}
-  />
+                placeholder="Selecciona subcategoría..."
+                isSearchable
+                isDisabled={!newServicio.categoriaId}
+                noOptionsMessage={() => "No hay subcategorías"}
+              />
 
-</div>
+            </div>
             </div>
 
             <div className="form-group">

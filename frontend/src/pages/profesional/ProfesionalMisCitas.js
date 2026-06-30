@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
+import Select from "react-select";
 import '../Cliente.css';
 import { apiRequest } from '../../api/client.js';
 
@@ -296,16 +297,36 @@ export default function ProfesionalMisCitas() {
           <form onSubmit={handleCrearCita}>
             <div className="form-group">
               <label>Profesional</label>
-              <select
-                value={formData.profesionalId}
-                onChange={(e) => setFormData({ ...formData, profesionalId: e.target.value })}
-                disabled={usarSeleccionMultiple}
-              >
-                <option value="">Asignación automática por servicio</option>
-                {profesionales.map((prof) => (
-                  <option key={prof.id} value={prof.id}>{prof.nombre}</option>
-                ))}
-              </select>
+              <Select
+                value={
+                  profesionales
+                    .map((prof)=>({
+                      value:String(prof.id),
+                      label:prof.nombre
+                    }))
+                    .find(
+                      (op)=>op.value === String(formData.profesionalId)
+                    ) || null
+                }
+
+                onChange={(opcion)=>{
+                setFormData({
+                ...formData,
+                profesionalId: opcion ? opcion.value : ''
+                });
+                }}
+
+                options={
+                profesionales.map((prof)=>({
+                value:String(prof.id),
+                label:prof.nombre
+                }))
+                }
+
+                placeholder="Buscar profesional..."
+                isSearchable
+                isDisabled={usarSeleccionMultiple}
+                />
               <small>
                 Si no seleccionas profesional, el sistema asigna uno o varios según especialidad por servicio.
               </small>
@@ -343,40 +364,45 @@ export default function ProfesionalMisCitas() {
               {usarSeleccionMultiple && (
                 <>
                   <div className="servicios-selector-grid">
-                    {profesionales.map((profesional) => {
-                      const selected = formData.profesionalesIds.includes(Number(profesional.id));
+                    <Select
+                      isMulti
+                      classNamePrefix="react-select"
+                      menuPortalTarget={document.body}
+                      styles={{
+                        menuPortal: base => ({
+                          ...base,
+                          zIndex: 9999
+                        })
+                      }}
+                      placeholder="Buscar profesionales..."
+                      value={
+                      profesionales
+                      .filter(prof =>
+                      formData.profesionalesIds.includes(Number(prof.id))
+                      )
+                      .map(prof=>({
+                      value:Number(prof.id),
+                      label:prof.nombre
+                      }))
+                      }
 
-                      return (
-                        <label
-                          key={profesional.id}
-                          className={`servicio-selector-item ${selected ? 'selected' : ''}`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selected}
-                            onChange={() => {
-                              setFormData((prev) => {
-                                const id = Number(profesional.id);
-                                const yaSeleccionado = prev.profesionalesIds.includes(id);
+                      options={
+                      profesionales.map(prof=>({
+                      value:Number(prof.id),
+                      label:prof.nombre
+                      }))
+                      }
 
-                                if (yaSeleccionado) {
-                                  return {
-                                    ...prev,
-                                    profesionalesIds: prev.profesionalesIds.filter((pid) => pid !== id),
-                                  };
-                                }
-
-                                return {
-                                  ...prev,
-                                  profesionalesIds: [...prev.profesionalesIds, id],
-                                };
-                              });
-                            }}
-                          />
-                          <span>{profesional.nombre}</span>
-                        </label>
-                      );
-                    })}
+                      onChange={(opciones)=>{
+                      setFormData({
+                      ...formData,
+                      profesionalesIds:
+                      opciones
+                      ? opciones.map(op=>op.value)
+                      : []
+                      });
+                      }}
+                      />
                   </div>
                   <small>
                     {formData.profesionalesIds.length} profesional(es) seleccionado(s). Si no cubren todos los servicios, la cita no se podrá crear.
@@ -386,24 +412,37 @@ export default function ProfesionalMisCitas() {
             </div>
             <div className="form-group">
               <label>Servicios</label>
-              <div className="servicios-selector-grid">
-                {servicios.map((servicio) => {
-                  const checked = formData.servicioIds.includes(servicio.id);
-                  return (
-                    <label
-                      key={servicio.id}
-                      className={`servicio-selector-item ${checked ? 'selected' : ''}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleServicio(servicio.id)}
-                      />
-                      <span>{servicio.nombre}</span>
-                    </label>
-                  );
-                })}
-              </div>
+              <Select
+                isMulti
+                placeholder="Buscar servicios..."
+                value={
+                servicios
+                .filter(serv =>
+                formData.servicioIds.includes(serv.id)
+                )
+                .map(serv=>({
+                value:serv.id,
+                label:serv.nombre
+                }))
+                }
+
+                options={
+                servicios.map(serv=>({
+                value:serv.id,
+                label:serv.nombre
+                }))
+                }
+
+                onChange={(opciones)=>{
+                setFormData({
+                ...formData,
+                servicioIds:
+                opciones
+                ? opciones.map(op=>op.value)
+                : []
+                });
+                }}
+                />
               <small>{formData.servicioIds.length} servicio(s) seleccionado(s)</small>
             </div>
             <div className="form-group">

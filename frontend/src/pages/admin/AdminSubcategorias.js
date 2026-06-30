@@ -231,34 +231,33 @@ export default function AdminSubcategorias() {
             <div className="form-group"><label>Descripción</label><textarea value={newSubcategoria.descripcion} onChange={(e) => setNewSubcategoria({ ...newSubcategoria, descripcion: e.target.value })} /></div>
             <div className="form-group">
               <label>Categoría</label>
+              <Select
+                value={
+                  categorias
+                    .map((categoria) => ({
+                      value: categoria.id,
+                      label: categoria.nombre
+                    }))
+                    .find((opcion) => opcion.value === newSubcategoria.categoriaId)
+                }
 
-<Select
-  value={
-    categorias
-      .map((categoria) => ({
-        value: categoria.id,
-        label: categoria.nombre
-      }))
-      .find((opcion) => opcion.value === newSubcategoria.categoriaId)
-  }
+                onChange={(opcion) =>
+                  setNewSubcategoria({
+                    ...newSubcategoria,
+                    categoriaId: opcion.value
+                  })
+                }
 
-  onChange={(opcion) =>
-    setNewSubcategoria({
-      ...newSubcategoria,
-      categoriaId: opcion.value
-    })
-  }
+                options={
+                  categorias.map((categoria) => ({
+                    value: categoria.id,
+                    label: categoria.nombre
+                  }))
+                }
 
-  options={
-    categorias.map((categoria) => ({
-      value: categoria.id,
-      label: categoria.nombre
-    }))
-  }
-
-  placeholder="Selecciona categoría..."
-  isSearchable
-/>
+                placeholder="Selecciona categoría..."
+                isSearchable
+              />
             </div>
             <div className="form-group">
               <label>Tipo</label>
