@@ -182,7 +182,7 @@ export default function AdminServicios() {
       duracion: String(servicio.duracion ?? ''),
       categoriaId: String(servicio.categoriaId ?? ''),
       subcategoriaId: String(servicio.subcategoriaId ?? ''),
-      imagenUrl: '',
+      imagenUrl: servicio.imagen ? getAssetUrl(servicio.imagen) : '',
     });
 
     if (servicio.categoriaId) {
