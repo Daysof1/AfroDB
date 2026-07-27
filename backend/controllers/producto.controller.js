@@ -436,7 +436,6 @@ const actualizarProducto = async (req, res) => {
         console.warn('No se pudo descargar imagen remota en actualizarProducto:', err.message || err);
       }
     }
-    }
     
     // Actualiza SOLO los campos que se enviaron (si no se envían, no cambian)
     if (nombre !== undefined) producto.nombre = nombre;
