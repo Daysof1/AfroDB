@@ -241,31 +241,45 @@ if (horaNum < 8 || horaNum > 20 || (horaNum === 20 && minutoNum > 0)) {
 
     const serviciosAsignados = [];
 
+    // Verifica si un `profesional` (cargado con su relación `especialidades`)
+    // incluye la `especialidadId` requerida. Se usa para asegurar que
+    // el profesional asignado a un servicio efectivamente tenga la
+    // especialidad asociada al nombre de la subcategoría del servicio.
     const profesionalTieneEspecialidad = (profesional, especialidadId) => {
       const idsEspecialidades = new Set((profesional.especialidades || []).map((esp) => esp.id));
       return idsEspecialidades.has(especialidadId);
     };
 
+    // Para cada servicio solicitamos la subcategoría y buscamos la
+    // especialidad configurada que corresponde a ese nombre. Luego
+    // buscamos un profesional (preferido, seleccionado o disponible)
+    // que tenga dicha especialidad. Si no existe, se cancela la
+    // creación de la cita con un error claro al cliente.
     for (const servicio of serviciosDB) {
       const nombreSubcategoria = servicio?.subcategoria?.nombre;
       const especialidad = especialidadPorNombreNormalizado.get(normalizarTexto(nombreSubcategoria));
 
       let profesionalParaServicio = null;
 
+      // Prioriza profesionales preferidos (si se enviaron) que tengan la especialidad
       if (profesionalesPreferidos.length > 0 && especialidad) {
         profesionalParaServicio = profesionalesPreferidos.find((p) => profesionalTieneEspecialidad(p, especialidad.id)) || null;
       }
 
+      // Si el cliente escogió un `profesionalId` explícito, se valida que
+      // ese profesional tenga la especialidad requerida
       if (profesionalSeleccionado && especialidad && profesionalTieneEspecialidad(profesionalSeleccionado, especialidad.id)) {
         profesionalParaServicio = profesionalSeleccionado;
       } else if (especialidad) {
-        // Si el cliente seleccionó una lista de profesionales, se respeta esa lista.
+        // Si aún no hay asignación, buscar entre candidatos (preferidos o todos)
         if (!profesionalParaServicio) {
           const candidatos = profesionalesPreferidos.length > 0 ? profesionalesPreferidos : profesionalesDisponibles;
           profesionalParaServicio = candidatos.find((p) => profesionalTieneEspecialidad(p, especialidad.id)) || null;
         }
       }
 
+      // Si no se encuentra ningún profesional con la especialidad requerida,
+      // se revierte la transacción y se devuelve un 400 con mensaje informativo.
       if (!profesionalParaServicio) {
         await t.rollback();
         return res.status(400).json({

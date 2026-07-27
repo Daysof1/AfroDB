@@ -366,18 +366,33 @@ const actualizarServicio = async (req, res) => {
       'activo'
     ];
 
+    // Guarda la imagen actual por si necesitamos eliminarla después
+    const imagenAnterior = servicio.imagen;
+
     if (req.file) {
-      if (servicio.imagen) {
-        deleteFile(servicio.imagen);
-      }
+      // Si se subió un archivo nuevo (Multer ya lo guardó en uploads),
+      // asignamos el nuevo nombre primero y luego eliminamos la anterior
+      // solo si existe y es distinta.
       servicio.imagen = req.file.filename;
+      if (imagenAnterior && imagenAnterior !== servicio.imagen) {
+        try { deleteFile(imagenAnterior); } catch (e) { console.error('Error eliminando imagen anterior:', e.message || e); }
+      }
     } else if (req.body?.imagenUrl) {
-      // Si llega imagenUrl en la actualización y no se subió archivo, descargarla y reemplazar
+      // Si llega imagenUrl en la actualización y no se subió archivo,
+      // evitamos borrar la imagen actual si la URL apunta a la misma imagen.
       try {
-        if (servicio.imagen) deleteFile(servicio.imagen);
-        const filename = await downloadImage(req.body.imagenUrl, servicio.nombre || 'imagen');
-        downloadedNewImageService = filename;
-        servicio.imagen = filename;
+        const imagenUrlStr = String(req.body.imagenUrl || '');
+        if (imagenAnterior && imagenUrlStr.includes(imagenAnterior)) {
+          // La URL apunta a la imagen ya existente: no hacemos nada.
+        } else {
+          // Descarga primero la nueva imagen; si tiene éxito, elimina la anterior.
+          const filename = await downloadImage(imagenUrlStr, servicio.nombre || 'imagen');
+          downloadedNewImageService = filename;
+          servicio.imagen = filename;
+          if (imagenAnterior && imagenAnterior !== filename) {
+            try { deleteFile(imagenAnterior); } catch (e) { console.error('Error eliminando imagen anterior:', e.message || e); }
+          }
+        }
       } catch (err) {
         console.warn('No se pudo descargar imagen remota en actualizarServicio:', err.message || err);
       }

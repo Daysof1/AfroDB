@@ -406,27 +406,36 @@ const actualizarProducto = async (req, res) => {
     
     // Si se subió una nueva imagen o se envió una URL, reemplaza la anterior
     let downloadedNewImage = null;
+    // Conserva la imagen anterior en memoria para eliminarla solo tras reemplazo
+    const imagenAnterior = producto.imagen;
+
     if (req.file) {
-      // Si el producto ya tenía una imagen, la elimina del disco
-      if (producto.imagen) {
-        const rutaImagenAnterior = path.join(__dirname, '../UPLOADS', producto.imagen);
-        try {
-          await fs.unlink(rutaImagenAnterior);   // Elimina el archivo anterior
-        } catch (err) {
-          console.error('Error al eliminar imagen anterior:', err);
-        }
-      }
-      // Asigna el nombre de la nueva imagen
+      // Multer ya guardó el archivo nuevo en uploads; asignamos primero
+      // y eliminamos la anterior solo si existe y es distinta.
       producto.imagen = req.file.filename;
+      if (imagenAnterior && imagenAnterior !== producto.imagen) {
+        try { deleteFile(imagenAnterior); } catch (err) { console.error('Error al eliminar imagen anterior:', err); }
+      }
     } else if (req.body?.imagenUrl) {
       try {
-        if (producto.imagen) deleteFile(producto.imagen);
-        const filename = await downloadImage(req.body.imagenUrl, producto.nombre || 'imagen');
-        downloadedNewImage = filename;
-        producto.imagen = filename;
+        const imagenUrlStr = String(req.body.imagenUrl || '');
+        // Si la URL apunta a la misma imagen ya guardada, no hacemos nada
+        if (imagenAnterior && imagenUrlStr.includes(imagenAnterior)) {
+          // Mantener la imagen actual
+        } else {
+          // Descargar la nueva imagen. Solo si la descarga tiene éxito,
+          // asignamos y eliminamos la imagen anterior.
+          const filename = await downloadImage(imagenUrlStr, producto.nombre || 'imagen');
+          downloadedNewImage = filename;
+          producto.imagen = filename;
+          if (imagenAnterior && imagenAnterior !== filename) {
+            try { deleteFile(imagenAnterior); } catch (err) { console.error('Error al eliminar imagen anterior:', err); }
+          }
+        }
       } catch (err) {
         console.warn('No se pudo descargar imagen remota en actualizarProducto:', err.message || err);
       }
+    }
     }
     
     // Actualiza SOLO los campos que se enviaron (si no se envían, no cambian)
