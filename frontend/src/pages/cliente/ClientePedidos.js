@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBox, faEye } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
-import { apiRequest } from '../../api/client.js';
+import { apiRequest, getStoredRole } from '../../api/client.js';
 
 // Renderiza la vista principal de este componente.
 export default function ClientePedidos() {
@@ -13,22 +13,32 @@ export default function ClientePedidos() {
   const [pedidoExpandidoId, setPedidoExpandidoId] = useState(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState('Todos');
+  const role = getStoredRole();
+
+  const loadPedidos = async () => {
+    try {
+      setLoading(true);
+      const response = await apiRequest('/cliente/pedidos');
+      setPedidos(response?.data?.pedidos || []);
+    } catch (err) {
+      setError(err.message || 'No se pudieron cargar los pedidos');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadPedidos = async () => {
-      try {
-        setLoading(true);
-        const response = await apiRequest('/cliente/pedidos');
-        setPedidos(response?.data?.pedidos || []);
-      } catch (err) {
-        setError(err.message || 'No se pudieron cargar los pedidos');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadPedidos();
   }, []);
+
+  const handleCancelarPedido = async (id) => {
+    try {
+      await apiRequest(`/cliente/pedidos/${id}/cancelar`, { method: 'PUT' });
+      await loadPedidos();
+    } catch (err) {
+      setError(err.message || 'No se pudo cancelar el pedido');
+    }
+  };
 
   const pedidosFiltrados = pedidos.filter((pedido) => {
     const textoBusqueda = busqueda.toLowerCase().trim();
@@ -169,6 +179,14 @@ export default function ClientePedidos() {
                   >
                     <FontAwesomeIcon icon={faEye} /> {pedidoExpandidoId === pedido.id ? 'Ocultar Detalles' : 'Ver Detalles'}
                   </button>
+                  {['cliente', 'profesional'].includes(role) && (pedido.estado || '').toLowerCase() === 'pendiente' && (
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => handleCancelarPedido(pedido.id)}
+                    >
+                      Cancelar pedido
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

@@ -719,19 +719,38 @@ const getAllCitas = async (req, res) => {
       include: [
         {
           model: Usuario,
-          as: 'cliente'
+          as: 'cliente',
+          attributes: ['id', 'nombre', 'email', 'telefono']
         },
         {
           model: Usuario,
-          as: 'profesional'
+          as: 'profesional',
+          attributes: ['id', 'nombre']
+        },
+        {
+          model: Servicio,
+          through: { attributes: ['precio', 'duracion', 'profesionalId'] }
         }
       ],
       order: [['createdAt', 'DESC']]
     });
 
+    const citasConServicios = citas.map((cita) => {
+      const servicios = (cita.Servicios || []).map((servicio) => ({
+        ...servicio.toJSON(),
+        UsuarioId: cita.usuarioId,
+        profesionalId: servicio.CitaServicio?.profesionalId ?? cita.profesionalId
+      }));
+
+      return {
+        ...cita.toJSON(),
+        Servicios: servicios
+      };
+    });
+
     res.json({
       success: true,
-      data: { citas }
+      data: { citas: citasConServicios }
     });
 
   } catch (error) {

@@ -177,6 +177,59 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
     });
   });
 
+  describe('🗓️ CITAS', () => {
+    test('✅ El listado administrativo de citas debe incluir los servicios asociados', async () => {
+      const serviciosResponse = await request(app)
+        .get('/api/servicios?activo=true')
+        .set('Authorization', `Bearer ${clienteToken}`);
+
+      expect(serviciosResponse.status).toBe(200);
+      expect(Array.isArray(serviciosResponse.body.data.servicios)).toBe(true);
+      expect(serviciosResponse.body.data.servicios.length).toBeGreaterThan(0);
+
+      const servicio = serviciosResponse.body.data.servicios[0];
+
+      const profesionalesResponse = await request(app)
+        .get('/api/profesionales')
+        .set('Authorization', `Bearer ${clienteToken}`);
+
+      expect(profesionalesResponse.status).toBe(200);
+      expect(Array.isArray(profesionalesResponse.body.data.profesionales)).toBe(true);
+      expect(profesionalesResponse.body.data.profesionales.length).toBeGreaterThan(0);
+
+      const profesional = profesionalesResponse.body.data.profesionales[0];
+      const fechaFutura = new Date();
+      fechaFutura.setDate(fechaFutura.getDate() + 1);
+      const fecha = fechaFutura.toISOString().slice(0, 10);
+
+      const crearCitaResponse = await request(app)
+        .post('/api/cliente/citas')
+        .set('Authorization', `Bearer ${clienteToken}`)
+        .send({
+          fecha,
+          hora: '10:00',
+          servicios: [servicio.id],
+          profesionalId: profesional.id
+        });
+
+      expect(crearCitaResponse.status).toBe(201);
+      expect(crearCitaResponse.body.success).toBe(true);
+
+      const response = await request(app)
+        .get('/api/admin/citas')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data.citas)).toBe(true);
+
+      const citaCreada = response.body.data.citas.find((cita) => cita.id === crearCitaResponse.body.data.cita.id);
+      expect(citaCreada).toBeDefined();
+      expect(Array.isArray(citaCreada?.Servicios)).toBe(true);
+      expect(citaCreada?.Servicios[0]).toHaveProperty('nombre');
+    });
+  });
+
   // ==========================================
   // 2. TESTS DE ADMIN - CATEGORÍAS
   // ==========================================
