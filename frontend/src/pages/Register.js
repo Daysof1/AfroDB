@@ -107,6 +107,19 @@ export default function Register() {
                   <option value="P.A.">P.A.</option>
                 </select>
               </div>
+              <div className="form-group">
+                <label>Documento</label>
+                <input
+                  type="text"
+                  value={documento}
+                  onChange={(e) => {
+                    setDocumento(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="Número de documento"
+                  className="form-input"
+                />
+              </div>
 
               <div className="form-group">
                 <label>Nombre</label>
@@ -132,20 +145,6 @@ export default function Register() {
                     setError('');
                   }}
                   placeholder="Tu apellido"
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Documento</label>
-                <input
-                  type="text"
-                  value={documento}
-                  onChange={(e) => {
-                    setDocumento(e.target.value);
-                    setError('');
-                  }}
-                  placeholder="Número de documento"
                   className="form-input"
                 />
               </div>
