@@ -32,7 +32,7 @@ const crearCita = async (req, res) => {
   const t = await sequelize.transaction();
 
   try {
-    const { fecha, hora, servicios, profesionalId, profesionalesIds } = req.body;
+    const { fecha, hora, servicios, profesionalId, profesionalesIds, notas } = req.body;
 
     // VALIDACIÓN 0: fecha y hora obligatorias y en futuro
     if (!fecha || !hora) {
@@ -349,7 +349,8 @@ if (horaNum < 8 || horaNum > 20 || (horaNum === 20 && minutoNum > 0)) {
       hora,
       duracionTotal,
       total,
-      estado: 'pendiente'
+      estado: 'pendiente',
+      notas: typeof notas === 'string' ? notas.trim() : (notas || null)
     }, { transaction: t });
 
     // ==========================================

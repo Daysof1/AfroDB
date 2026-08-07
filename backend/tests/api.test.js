@@ -209,11 +209,13 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
           fecha,
           hora: '10:00',
           servicios: [servicio.id],
-          profesionalId: profesional.id
+          profesionalId: profesional.id,
+          notas: 'Necesito atención especial con la zona del hombro.'
         });
 
       expect(crearCitaResponse.status).toBe(201);
       expect(crearCitaResponse.body.success).toBe(true);
+      expect(crearCitaResponse.body.data.cita).toHaveProperty('notas', 'Necesito atención especial con la zona del hombro.');
 
       const response = await request(app)
         .get('/api/admin/citas')
@@ -227,6 +229,7 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
       expect(citaCreada).toBeDefined();
       expect(Array.isArray(citaCreada?.Servicios)).toBe(true);
       expect(citaCreada?.Servicios[0]).toHaveProperty('nombre');
+      expect(citaCreada).toHaveProperty('notas', 'Necesito atención especial con la zona del hombro.');
     });
   });
 

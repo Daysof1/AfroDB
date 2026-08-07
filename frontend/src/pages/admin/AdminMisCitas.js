@@ -21,7 +21,7 @@ export default function AdminMisCitas() {
   const [citas, setCitas] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [profesionales, setProfesionales] = useState([]);
-  const [formData, setFormData] = useState({ profesionalId: '', profesionalesIds: [], servicioIds: [], fecha: '', hora: '' });
+  const [formData, setFormData] = useState({ profesionalId: '', profesionalesIds: [], servicioIds: [], fecha: '', hora: '', notas: '' });
   const [usarSeleccionMultiple, setUsarSeleccionMultiple] = useState(false);
   const [reprogramandoId, setReprogramandoId] = useState(null);
   const [reprogramacionData, setReprogramacionData] = useState({ fecha: '', hora: '' });
@@ -227,9 +227,10 @@ export default function AdminMisCitas() {
           servicios: formData.servicioIds,
           fecha: formData.fecha,
           hora: formData.hora,
+          notas: formData.notas || undefined,
         }),
       });
-      setFormData({ profesionalId: '', profesionalesIds: [], servicioIds: [], fecha: '', hora: '' });
+      setFormData({ profesionalId: '', profesionalesIds: [], servicioIds: [], fecha: '', hora: '', notas: '' });
       setUsarSeleccionMultiple(false);
       setIsFormOpen(false);
       await loadData();
@@ -457,6 +458,16 @@ export default function AdminMisCitas() {
             <div className="form-group">
               <label>Hora</label>
               <input type="time" value={formData.hora} onChange={(e) => setFormData({ ...formData, hora: e.target.value })} required />
+            </div>
+            <div className="form-group">
+              <label>Notas</label>
+              <textarea
+                className="form-input"
+                value={formData.notas || ''}
+                onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
+                placeholder="Agrega alguna nota para el profesional o para la cita."
+                rows={3}
+              />
             </div>
             <button type="submit" className="btn btn-primary">Agendar Cita</button>
           </form>
