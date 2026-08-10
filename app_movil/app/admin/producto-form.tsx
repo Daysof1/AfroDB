@@ -142,10 +142,10 @@ export default function AdminProductoForm() {
             return;//detiene la ejecucion si hay la peticion http 
         }
 
-      const precioNum = parseFloat(precio);
-      const stockNum = parseInt(stock, 10);
-      const categoriaNum = parseInt(categoriaId, 10);
-      const subcategoriaNum = parseInt(subcategoriaId, 10);
+      const precioNum = Number.parseFloat(precio);
+      const stockNum = Number.parseInt(stock, 10);
+      const categoriaNum = Number.parseInt(categoriaId, 10);
+      const subcategoriaNum = Number.parseInt(subcategoriaId, 10);
 
       if (Number.isNaN(precioNum) || precioNum <= 0) {
         Alert.alert('Error', 'El precio debe ser un número mayor a 0');
@@ -178,7 +178,7 @@ export default function AdminProductoForm() {
             if (editing && producto) {
                 // modo edicion llama a updateProduct con el id del producto
                 //se usa id como fallback 
-                await updateProduct(producto.id || producto.id, data);
+                await updateProduct(producto.id, data);
                 Alert.alert('Exitoso', 'producto actualizado');
             } else {
                 //cuando el formulario esta vacio se comporta como crecain

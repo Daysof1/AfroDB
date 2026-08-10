@@ -115,7 +115,7 @@ const upload = multer({
     // fileSize: tamaño máximo del archivo en bytes.
     // Lee MAX_FILE_SIZE del .env y lo convierte a número con parseInt().
     // Si no existe la variable, usa 5242880 bytes = 5 MB (5 * 1024 * 1024)
-    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5242880
+    fileSize: Number.parseInt(process.env.MAX_FILE_SIZE) || 5242880
   }
 });
 
@@ -194,7 +194,10 @@ module.exports = {
             ext = mime.split(';')[0];
           }
 
-          const safeBase = String(nameHint).replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || 'imagen';
+          const safeBase = String(nameHint)
+          .replace(/[^a-z0-9_-]/gi, '_')  // Reemplaza cada carácter no permitido individualmente
+          .replace(/^_+|_+$/g, '') 
+          || 'imagen';
           const filename = `${Date.now()}-${safeBase}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
           const filePath = path.join(uploadPath, filename);
           const fileStream = fs.createWriteStream(filePath);

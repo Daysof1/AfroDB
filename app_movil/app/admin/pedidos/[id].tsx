@@ -198,7 +198,7 @@ export default function AdminPedidoDetalleScreen() {
     <ScrollView contentContainerStyle={styles.container}>
 
       {/* Título: número de pedido. Se usa _id (MongoDB) o id como fallback. */}
-      <ThemedText type="title">Pedido #{pedido.id || pedido.id}</ThemedText>
+      <ThemedText type="title">Pedido #{pedido.id}</ThemedText>
 
       {/* Datos del cliente que realizó el pedido */}
       <ThemedText>Cliente: {pedido.usuario?.nombre} {pedido.usuario?.apellido}</ThemedText>

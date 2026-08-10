@@ -167,7 +167,7 @@ export default function AdminProductosScreen() {
       {/* ── LISTA DE PRODUCTOS ──────────────────────────────────────────── */}
       <FlatList
         data={productos}
-        keyExtractor={(item) => String(item.id || item.id)}
+        keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Pressable
@@ -196,9 +196,9 @@ export default function AdminProductosScreen() {
                   onPress={async () => {
                     try {
                       if (item.activo) {
-                        await desactivarProducto(item.id || item.id);
+                        await desactivarProducto(item.id);
                       } else {
-                        await activarProducto(item.id || item.id);
+                        await activarProducto(item.id);
                       }
                       fetchProductos(pagina, busqueda);
                     } catch {

@@ -192,7 +192,7 @@ export default function AdminPedidoScreen() {
       {/* ── LISTA DE PEDIDOS ────────────────────────────────────────────── */}
       <FlatList
         data={pedidos}                                              // Array de pedidos de la página actual.
-        keyExtractor={(item) => String(item.id || item.id)}       // ID único para cada fila.
+        keyExtractor={(item) => String(item.id)}       // ID único para cada fila.
         renderItem={({ item }) => (
           <Pressable
             style={styles.card}
@@ -201,13 +201,13 @@ export default function AdminPedidoScreen() {
             onPress={() =>
               (router as unknown as { push: (p: { pathname: string; params: Record<string, string> }) => void }).push({
                 pathname: '/admin/pedidos/[id]', // Ruta dinámica.
-                params: { id: String(item.id || item.id) }, // El ID se pasa como parámetro de ruta.
+                params: { id: String(item.id) }, // El ID se pasa como parámetro de ruta.
               })
             }
           >
             <View style={styles.cardBody}>
               {/* Número del pedido: se usa _id (MongoDB) o id como fallback */}
-              <ThemedText type="defaultSemiBold">Pedido #{item.id || item.id}</ThemedText>
+              <ThemedText type="defaultSemiBold">Pedido #{item.id}</ThemedText>
               {/* Nombre completo del cliente que realizó el pedido */}
               <ThemedText>Cliente: {item.usuario?.nombre} {item.usuario?.apellido}</ThemedText>
               {/* Estado actual del pedido */}

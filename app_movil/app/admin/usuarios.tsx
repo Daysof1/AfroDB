@@ -169,7 +169,7 @@ export default function AdminUsuariosScreen() {
       {/* ── LISTA DE USUARIOS ───────────────────────────────────────────── */}
       <FlatList
         data={usuarios}
-        keyExtractor={(item) => String(item.id || item.id)}
+        keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -190,9 +190,9 @@ export default function AdminUsuariosScreen() {
                   onPress={async () => {
                     try {
                       if (item.activo) {
-                        await desactivarUsuario(item.id || item.id);
+                        await desactivarUsuario(item.id);
                       } else {
-                        await activarUsuario(item.id || item.id);
+                        await activarUsuario(item.id);
                       }
                       fetchUsuarios(pagina, busqueda);
                     } catch {

@@ -168,7 +168,7 @@ export default function AdminServiciosScreen() {
       {/* ── LISTA DE ServicioS ──────────────────────────────────────────── */}
       <FlatList
         data={servicios}
-        keyExtractor={(item) => String(item.id || item.id)}
+        keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Pressable
@@ -196,9 +196,9 @@ export default function AdminServiciosScreen() {
                   onPress={async () => {
                     try {
                       if (item.activo) {
-                        await desactivarServicio(item.id || item.id);
+                        await desactivarServicio(item.id);
                       } else {
-                        await activarServicio(item.id || item.id);
+                        await activarServicio(item.id);
                       }
                       fetchServicios(pagina, busqueda);
                     } catch {

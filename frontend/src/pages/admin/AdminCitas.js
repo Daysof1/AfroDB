@@ -9,7 +9,6 @@ export default function AdminCitas() {
   const [citas, setCitas] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [profesionales, setProfesionales] = useState([]);
-  const [error, setError] = useState('');
   const [busqueda, setBusqueda] = useState('');
 
   const [filtro, setFiltro] = useState('Todos');

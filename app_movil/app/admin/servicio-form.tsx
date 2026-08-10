@@ -148,16 +148,16 @@ export default function AdminServicioForm() {
             const data = {
                 nombre,
                 descripcion,
-                precio: parseFloat(precio),
-                duracion: parseInt(duracion, 10),
+                precio: Number.parseFloat(precio),
+                duracion: Number.parseInt(duracion, 10),
                 imagenUrl,
-              categoriaId: parseInt(categoriaId, 10),
-              subcategoriaId: parseInt(subcategoriaId, 10),
+              categoriaId: Number.parseInt(categoriaId, 10),
+              subcategoriaId: Number.parseInt(subcategoriaId, 10),
             };
 
             if (editing && servicio) {
                 // modo edicion llama a updateService con el id del servicio
-                await updateService(servicio.id || servicio.id, data);
+                await updateService(servicio.id, data);
                 Alert.alert('Exitoso', 'Servicio actualizado');
             } else {
                 // cuando el formulario esta vacio se comporta como creación
