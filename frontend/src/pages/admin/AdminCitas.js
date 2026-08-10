@@ -124,7 +124,8 @@ export default function AdminCitas() {
 
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative' }}>
-              <button 
+              <button
+                type="button"
                 className="btn btn-primary"
                 onClick={() => setShowExportOptions(!showExportOptions)}
               >
