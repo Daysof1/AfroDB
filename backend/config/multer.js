@@ -13,11 +13,11 @@ const multer = require('multer');
 
 // Importa el módulo 'path' de Node.js (módulo nativo, no necesita instalación).
 // Provee utilidades para trabajar con rutas de archivos y directorios.
-const path = require('path');
+const path = require('node:path');
 
 // Importa el módulo 'fs' (File System) de Node.js (módulo nativo).
 // Permite leer, escribir, crear y eliminar archivos y carpetas del sistema.
-const fs = require('fs');
+const fs = require('node:fs');
 
 // Carga las variables del archivo .env en process.env.
 require('dotenv').config();
@@ -167,13 +167,32 @@ module.exports = {
    */
   async downloadImage(urlStr, nameHint = 'imagen') {
     try {
-      const { URL } = require('url');
+      const { URL } = require('node:url');
       const parsed = new URL(urlStr);
-      const protocol = parsed.protocol === 'http:' ? require('http') : require('https');
-      const path = require('path');
-      const crypto = require('crypto');
+      const protocol = parsed.protocol === 'http:' ? require('node:http') : require('node:https');
+      const path = require('node:path');
+      const crypto = require('node:crypto');
 
       return await new Promise((resolve, reject) => {
+        const https = require('https');
+        const http = require('http');
+
+        function isValidUrl(urlString) {
+            try {
+                const url = new URL(urlString);
+                // Solo permitir protocolos seguros
+                return ['https:', 'http:'].includes(url.protocol);
+            } catch {
+                return false;
+            }
+        }
+
+        // Validar antes de hacer la petición
+        if (!isValidUrl(urlStr)) {
+            throw new Error('URL no válida o insegura');
+        }
+
+        const protocol = urlStr.startsWith('https') ? https : http;
         const req = protocol.get(urlStr, (res) => {
           if (res.statusCode !== 200) {
             reject(new Error(`HTTP ${res.statusCode}`));
