@@ -141,6 +141,10 @@
   flex-direction: column;
   cursor: pointer;
   gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
 }
 
 .menu-toggle span {

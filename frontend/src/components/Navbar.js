@@ -81,19 +81,25 @@ export default function Navbar({ userRole, onLogout }) {
               <Link to="/profile">Mi Perfil</Link>
 
               {dashboardRoute && <Link to={dashboardRoute}>Dashboard</Link>}
-              <button onClick={handleLogout} className="btn-logout">
+              <button
+              type="button"
+               onClick={handleLogout} className="btn-logout">
                 Cerrar Sesión
               </button>
             </>
           )}
         </div>
 
-        <div className="menu-toggle" onClick={toggleMenu}>
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </div>
+            <button
+              type="button"
+              className="menu-toggle"
+              onClick={toggleMenu}
+              aria-label="Abrir menú"
+              >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
 
       {isMenuOpen && (
         <div className="navbar-mobile">
@@ -129,6 +135,7 @@ export default function Navbar({ userRole, onLogout }) {
 
               {['cliente', 'admin', 'auxiliar', 'profesional'].includes(userRole) && (
                 <button
+                type="button"
                   onClick={() => {
                     handleAgendarCita();
                     setIsMenuOpen(false);
@@ -145,6 +152,7 @@ export default function Navbar({ userRole, onLogout }) {
                 </Link>
               )}
               <button
+              type="button"
                 onClick={() => {
                   handleLogout();
                   setIsMenuOpen(false);

@@ -177,28 +177,28 @@ export default function AdminProfesionales() {
               </select>
             </div>
             <div className="form-group">
-              <label>Documento</label>
+              <label htmlFor="documento">Documento</label>
               <input
                 value={formData.documento}
                 onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label>Nombre</label>
+              <label htmlFor="nombre" >Nombre</label>
               <input
                 value={formData.nombre}
                 onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label>Apellido</label>
+              <label htmlFor="apellido" >Apellido</label>
               <input
                 value={formData.apellido}
                 onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label>Email</label>
+              <label htmlFor="email">Email</label>
               <input
                 type="email"
                 value={formData.email}
@@ -206,14 +206,14 @@ export default function AdminProfesionales() {
               />
             </div>
             <div className="form-group">
-              <label>Teléfono</label>
+              <label htmlFor="telefono">Teléfono</label>
               <input
                 value={formData.telefono}
                 onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label>Dirección</label>
+              <label htmlFor="direccion">Dirección</label>
               <input
                 value={formData.direccion}
                 onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
@@ -242,8 +242,11 @@ export default function AdminProfesionales() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(profesional)}>✏️ Editar</button>
+              <button 
+              type="button"
+              className="btn btn-sm btn-secondary" onClick={() => handleEdit(profesional)}>✏️ Editar</button>
               <button
+              type="button"
                 className={`btn btn-sm ${profesional.activo ? 'btn-warning' : 'btn-success'}`}
                 onClick={() => handleToggleActivo(profesional)}
               >
