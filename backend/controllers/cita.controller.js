@@ -120,7 +120,7 @@ if (horaNum < 8 || horaNum > 20 || (horaNum === 20 && minutoNum > 0)) {
 
     for (const s of serviciosDB) {
       duracionTotal += s.duracion;
-      total += parseFloat(s.precio);
+      total += Number.parseFloat(s.precio);
     }
     // ==========================================
     // VALIDACIÓN DE HORA DE FINALIZACIÓN
