@@ -8,7 +8,7 @@ import apiClient from '../api/apiClient';
 import { API_BASE_URL } from '../utils/constants';
 
 // Deriva el origen a partir de API_BASE_URL (quita el sufijo /api si existe)
-const origin = (typeof API_BASE_URL === 'string' ? API_BASE_URL : 'http://10.0.2.2:5000').replace(/\/api\/?$/, '').replace(/\/$/, '');
+const origin = (typeof API_BASE_URL === 'string' ? API_BASE_URL : 'https://10.0.2.2:5000').replace(/\/api\/?$/, '').replace(/\/$/, '');
 
 const catalogoService = {
     //consulta la lista de categorias disponibles para filtros de navegacion
