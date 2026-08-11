@@ -26,7 +26,6 @@ export default function AuxiliarProfesionales() {
   const profesionalesFiltrados = profesionales.filter((profesional) => {
     const textoBusqueda = busqueda.toLowerCase().trim();
     const coincideBusqueda =
-    !textoBusqueda ||
       !textoBusqueda ||
       (profesional.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (profesional.apellido || '').toLowerCase().includes(textoBusqueda) ||
@@ -58,24 +57,28 @@ export default function AuxiliarProfesionales() {
           className="search-input"
         />
         <button
-            className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
-            onClick={() => setFiltro('Todos')}
-          >
-            Todas ({profesionales.length})
-          </button>
-          <button
-            className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
-            onClick={() => setFiltro('True')}
-          >
-            Activas ({profesionales.filter((p) => p.activo === true).length})
-          </button>
+          type="button"
+          className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
+          onClick={() => setFiltro('Todos')}
+        >
+          Todas ({profesionales.length})
+        </button>
 
-          <button
-            className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
-            onClick={() => setFiltro('False')}
-          >
-            Inactivas ({profesionales.filter((p) => p.activo === false).length})
-          </button>
+        <button
+          type="button"
+          className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
+          onClick={() => setFiltro('True')}
+        >
+          Activas ({profesionales.filter((p) => p.activo === true).length})
+        </button>
+
+        <button
+          type="button"
+          className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
+          onClick={() => setFiltro('False')}
+        >
+          Inactivas ({profesionales.filter((p) => p.activo === false).length})
+        </button>
       </div>
 
 

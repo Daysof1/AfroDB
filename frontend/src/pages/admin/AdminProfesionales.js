@@ -39,7 +39,6 @@ export default function AdminProfesionales() {
   const profesionalesFiltrados = profesionales.filter((profesional) => {
     const textoBusqueda = busqueda.toLowerCase().trim();
     const coincideBusqueda =
-    !textoBusqueda ||
       !textoBusqueda ||
       (profesional.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (profesional.apellido || '').toLowerCase().includes(textoBusqueda) ||
@@ -137,12 +136,14 @@ export default function AdminProfesionales() {
         />
 
         <button
+          type="button"
                 className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
                 onClick={() => setFiltro('Todos')}
               >
                 Todas ({profesionales.length})
               </button>
               <button
+              type="button"
                 className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
                 onClick={() => setFiltro('True')}
               >
@@ -150,6 +151,7 @@ export default function AdminProfesionales() {
               </button>
 
               <button
+              type="button"
                 className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
                 onClick={() => setFiltro('False')}
               >
@@ -162,7 +164,7 @@ export default function AdminProfesionales() {
           <h2>Editar Profesional</h2>
           <form onSubmit={handleSave}>
             <div className="form-group">
-              <label>Tipo de Documento</label>
+              <label htmlFor="tipo_documento">Tipo de Documento</label>
               <select
                 value={formData.tipo_documento}
                 onChange={(e) => setFormData({ ...formData, tipo_documento: e.target.value })}

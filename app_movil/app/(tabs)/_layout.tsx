@@ -18,6 +18,16 @@ import { Colors } from '../../constants/theme';
 // useColorShema hook que detecta si el dispositivo esta en modo claro u oscuro
 import { useColorScheme } from '../../hooks/use-color-scheme';
 
+type TabBarIconProps = {
+    color: string;
+    size: number;
+    name: React.ComponentProps<typeof IconSymbol>['name'];
+};
+
+function TabBarIcon({ color, size, name }: TabBarIconProps) {
+    return <IconSymbol size={size} name={name} color={color} />;
+}
+
 //TabLayot componnete principl que configura toda la barra de navegacion
 //expo Router lo exporta como default y lo monta automaticamente
 // Renderiza la vista principal de este componente.
@@ -48,7 +58,7 @@ export default function TabLayout() {
                 title: 'AfroDB',
                 //tabBarIcon funcion que recibe el color activo o inactivo y devuelve el icono
                 //house.fill = icono de casa rellena ( reprensenta el icono de la tienda)
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+                tabBarIcon: ({ color }) => <TabBarIcon size={28} name="house.fill" color={color} />,
             }}
             />
 
@@ -62,7 +72,7 @@ export default function TabLayout() {
                     title: 'Carrito',
                     //tapBar que recibe el color activo o inactivo y devuelve el icono
                     //house.fill = icono de carrito rellena ( reprensenta el icono del carrito de compras)
-                    tabBarIcon: ({ color }) => <IconSymbol size={28} name="cart.fill" color={color} />,
+                    tabBarIcon: ({ color }) => <TabBarIcon size={28} name="cart.fill" color={color} />,
                 }}
                 />
 
@@ -78,7 +88,7 @@ export default function TabLayout() {
                     title: 'Agendar',
                     //tapBar que recibe el color activo o inactivo y devuelve el icono
                     //house.fill = icono de carrito rellena ( reprensenta el icono del carrito de compras)
-                    tabBarIcon: ({ color }) => <IconSymbol size={26} name="calendar" color={color} />,
+                    tabBarIcon: ({ color }) => <TabBarIcon size={26} name="calendar" color={color} />,
                 }}
                 />
 
@@ -89,7 +99,7 @@ export default function TabLayout() {
                     title: 'Cuenta',
                     //tapBar que recibe el color activo o inactivo y devuelve el icono
                     //house.fill = icono de carrito rellena ( reprensenta el icono del carrito de compras)
-                    tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+                    tabBarIcon: ({ color }) => <TabBarIcon size={28} name="person.fill" color={color} />,
                 }}
                 />
         </Tabs>

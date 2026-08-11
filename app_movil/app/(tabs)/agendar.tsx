@@ -1,18 +1,6 @@
 // Página: agendar.tsx. vista de agendar del sistema.
 /**
- * Pantalla del carrio de compras y sus respectivas gestiones no requiere que este autenticado solo para hacer compras
- */
-
-/** importar componentes de React native para construir la pantalla
- * ActivityIndicator, spiner de carga circular
- * Alert, dialogos emergentes nativos del sistema
- * Image, muestra las imagenes
- * Pressable, area tactil
- * ScrollView, contenedor com scroll vertical
- * StyleSheet, crea los estilos de forma optimizada
- * Text, muestra texto plano en pantalla
- * View, Contenedor generico equivale a un div en html y css
- * 
+ * Pantalla del carrito de compras y sus respectivas gestiones no requiere que este autenticado solo para hacer compras
  */
 
 import { useEffect, useState } from 'react';
@@ -27,22 +15,11 @@ import catalogoService from '../../src/services/catalogoService';
 import { ThemedText } from '../../components/themed-text';
 import { formatTimeWithPeriod } from '../../src/utils/time';
 
-
-// HELPERS de navegacion 
-//expo router tipifica router de forma extricta y expone .push/replace 
-//Directamente en typescript, se usa as unknown as .... para fprzar el tipo
-//y poder llmar a las funciones de navegacion sin  errores de compilacion 
-
-//routerPush navega a una nueva pantalla apilandola es decir se puede volver atras
+// HELPERS de navegacion
 const routerPush = (path: string) => (router as unknown as { push: (p: string) => void }).push(path);
-//routerReplace navega a una pantallla remplazando la actual recuerda que se puede volver atras
 const routerReplace = (path: string) => (router as unknown as { replace: (p: string) => void }).replace(path);
-
-//fmt: formatea un numero como pecio en pesos colombianos ejemplo fmt (15000) -> $15.000
 const fmt = (n: number) => `$${Number(n).toLocaleString('es-CO')}`;
 
-// componente principal agendar Screen 
-// Renderiza la vista principal de este componente.
 export default function AgendarScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth() as { isAuthenticated: boolean };
@@ -60,7 +37,9 @@ export default function AgendarScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  // Rango de agendamiento: 8:00 - 20:00
+  // ─────────────────────────────────────────────────────────────
+  // VALIDACIONES EXTRAS (extraídas para reducir complejidad)
+  // ─────────────────────────────────────────────────────────────
 
   const validateHora = (horaValue: string) => {
     if (!horaValue) {
@@ -79,16 +58,129 @@ export default function AgendarScreen() {
       return { valid: false, error: 'Hora fuera de rango' };
     }
 
-    // Validación global: solo permitir agendar entre 8:00 y 20:00 (8 PM)
     if (hour < 8 || hour > 20) {
       return { valid: false, error: 'Horario disponible de 8:00 a. m. a 8:00 p. m.' };
     }
 
-    // Mantener validación por periodo si es necesario (más restrictiva)
-    // Ya se validó el rango global 08:00-20:00 arriba
-
     return { valid: true, error: '' };
   };
+
+  // ─────────────────────────────────────────────────────────────
+  // VALIDACIÓN DE FORMULARIO (extraída para reducir complejidad)
+  // ─────────────────────────────────────────────────────────────
+
+  const validateForm = () => {
+    const errors: string[] = [];
+
+    // Validar autenticación
+    if (!isAuthenticated) {
+      errors.push('Debes iniciar sesión para agendar una cita');
+      router.replace('/explore');
+      return { isValid: false, errors };
+    }
+
+    // Validar servicios seleccionados
+    if (selectedIds.length === 0) {
+      errors.push('Selecciona al menos un servicio');
+      return { isValid: false, errors };
+    }
+
+    // Validar fecha y hora
+    if (!fecha || !hora) {
+      errors.push('Indica fecha y hora para la cita');
+      return { isValid: false, errors };
+    }
+
+    // Validar formato de fecha
+    const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!fechaRegex.test(fecha)) {
+      errors.push('Usa el formato YYYY-MM-DD (ej: 2026-06-30)');
+      return { isValid: false, errors };
+    }
+
+    // Validar que la fecha no sea pasada
+    const fechaSeleccionada = new Date(fecha);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    if (fechaSeleccionada < hoy) {
+      errors.push('No se puede agendar en una fecha pasada');
+      return { isValid: false, errors };
+    }
+
+    // Validar hora
+    const horaValidation = validateHora(hora);
+    if (!horaValidation.valid) {
+      errors.push(horaValidation.error || 'Verifica la hora ingresada');
+      return { isValid: false, errors };
+    }
+
+    return { isValid: true, errors: [] };
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // HANDLE SUBMIT REFACTORIZADO (complejidad reducida)
+  // ─────────────────────────────────────────────────────────────
+
+  const handleSubmit = async () => {
+    // Validar formulario
+    const validation = validateForm();
+    if (!validation.isValid) {
+      if (validation.errors.length > 0) {
+        Alert.alert('Error en el formulario', validation.errors[0]);
+      }
+      return;
+    }
+
+    // Formatear hora
+    const [hh, mm] = hora.split(':');
+    const horaFormateada = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00`;
+
+    const payload = {
+      fecha,
+      hora: horaFormateada,
+      servicios: selectedIds
+    };
+
+    // Enviar cita
+    setSubmitting(true);
+    try {
+      await crearCita(payload);
+      
+      // Éxito - limpiar y navegar
+      Alert.alert('✅', 'Tu cita fue agendada correctamente');
+      limpiarFormulario();
+      router.replace('/');
+      
+    } catch (err: unknown) {
+      manejarErrorCita(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // FUNCIONES AUXILIARES (extraídas para reducir complejidad)
+  // ─────────────────────────────────────────────────────────────
+
+  const limpiarFormulario = () => {
+    setServicioSeleccionado(null);
+    setSelectedIds([]);
+    setFecha('');
+    setHora('');
+  };
+
+  const manejarErrorCita = (err: unknown) => {
+    let errorMsg = 'No se pudo agendar la cita';
+    if (err && typeof err === 'object') {
+      const anyErr = err as any;
+      errorMsg = anyErr.response?.data?.message || anyErr.message || errorMsg;
+    }
+    Alert.alert('Error', errorMsg);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // HANDLERS DE PICKERS
+  // ─────────────────────────────────────────────────────────────
 
   const handleTimePickerChange = (_event: any, selected?: Date) => {
     if (Platform.OS !== 'ios') {
@@ -98,7 +190,7 @@ export default function AgendarScreen() {
 
     const hour = selected.getHours();
     const minute = selected.getMinutes();
-    // Validar rango 8-20
+    
     if (hour < 8 || hour > 20) {
       setHoraError('Horario disponible de 8:00 a. m. a 8:00 p. m.');
       return;
@@ -138,7 +230,10 @@ export default function AgendarScreen() {
     }
   };
 
-  // Cargar servicios disponibles
+  // ─────────────────────────────────────────────────────────────
+  // EFECTOS
+  // ─────────────────────────────────────────────────────────────
+
   useEffect(() => {
     let mounted = true;
     const loadServicios = async () => {
@@ -157,88 +252,20 @@ export default function AgendarScreen() {
     return () => { mounted = false; };
   }, []);
 
-  // Cuando se selecciona un servicio, agregarlo a selectedIds
   useEffect(() => {
     if (servicioSeleccionado?.id && selectedIds.length === 0) {
       setSelectedIds([String(servicioSeleccionado.id)]);
     }
   }, [servicioSeleccionado?.id]);
 
+  // ─────────────────────────────────────────────────────────────
+  // FUNCIONES DE UI
+  // ─────────────────────────────────────────────────────────────
+
   const toggleServicio = (id: string) => {
     setSelectedIds((prev) => 
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
-  };
-
-  const handleSubmit = async () => {
-    if (!isAuthenticated) {
-      Alert.alert('Inicia sesión', 'Debes iniciar sesión para agendar una cita');
-      router.replace('/explore');
-      return;
-    }
-
-    if (selectedIds.length === 0) {
-      Alert.alert('Sin servicios', 'Selecciona al menos un servicio');
-      return;
-    }
-
-    if (!fecha || !hora) {
-      Alert.alert('Falta información', 'Indica fecha y hora para la cita');
-      return;
-    }
-
-    // Validar que la fecha sea válida y esté en el futuro
-    const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!fechaRegex.test(fecha)) {
-      Alert.alert('Fecha inválida', 'Usa el formato YYYY-MM-DD (ej: 2026-06-30)');
-      return;
-    }
-
-    const fechaSeleccionada = new Date(fecha);
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    if (fechaSeleccionada < hoy) {
-      Alert.alert('Fecha inválida', 'No se puede agendar en una fecha pasada');
-      return;
-    }
-
-    const horaValidation = validateHora(hora);
-    if (!horaValidation.valid) {
-      Alert.alert('Hora inválida', horaValidation.error || 'Verifica la hora ingresada');
-      return;
-    }
-
-    // Formatear hora con padding: "8:30" -> "08:30:00"
-    const [hh, mm] = hora.split(':');
-    const horaFormateada = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00`;
-
-    const payload: any = { 
-      fecha, 
-      hora: horaFormateada,
-      servicios: selectedIds 
-    };
-
-    setSubmitting(true);
-    try {
-      await crearCita(payload);
-      Alert.alert('Tu cita fue agendada correctamente');
-      // limpiar formulario y contexto
-      setServicioSeleccionado(null);
-      setSelectedIds([]);
-      setFecha('');
-      setHora('');
-      // no hay selección por periodo
-      router.replace('/');
-    } catch (err: unknown) {
-      let errorMsg = 'No se pudo agendar la cita';
-      if (err && typeof err === 'object') {
-        const anyErr = err as any;
-        errorMsg = anyErr.response?.data?.message || anyErr.message || errorMsg;
-      }
-      Alert.alert('Error', errorMsg);
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   const handleCancelar = () => {
@@ -282,6 +309,10 @@ export default function AgendarScreen() {
     );
   };
 
+  // ─────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────
+
   if (!servicioSeleccionado?.id) {
     return (
       <View style={styles.container}>
@@ -290,11 +321,10 @@ export default function AgendarScreen() {
           <ThemedText style={styles.emptyText}>
             Selecciona un servicio para agendar una cita
           </ThemedText>
-          {/* Botón para ir al servicios (reemplaza la pantalla actual) */}
-              <Pressable style={styles.catalogBtn} onPress={() => router.push('/screens/servicios')}>
-              <Ionicons name="storefront-outline" size={16} color="#fff" />
-                <Text style={styles.catalogBtnText}>Ir a los servicios</Text>
-              </Pressable>
+          <Pressable style={styles.catalogBtn} onPress={() => router.push('/screens/servicios')}>
+            <Ionicons name="storefront-outline" size={16} color="#fff" />
+            <Text style={styles.catalogBtnText}>Ir a los servicios</Text>
+          </Pressable>
         </View>
       </View>
     );
@@ -428,7 +458,6 @@ export default function AgendarScreen() {
 
           <ThemedText style={styles.formSubLabel}>Horario disponible: 8:00 a.m. - 8:00 p.m.</ThemedText>
 
-          {/* Input de hora: mostrar ícono y selector de hora */}
           {Platform.OS === 'web' ? (
             <View style={[styles.input, styles.timeInputWeb, horaError && styles.inputError]}>
               <Text style={{ marginRight: 8 }}>🕒</Text>
@@ -499,7 +528,6 @@ export default function AgendarScreen() {
 // ESTILOS
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // Contenedor principal
   container: {
     flex: 1,
     backgroundColor: '#f9f6f2',
@@ -508,8 +536,6 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
   },
-
-  // Encabezado
   pageHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -529,8 +555,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1a1a2e',
   },
-
-  // Pantalla de carga
   centered: {
     flex: 1,
     alignItems: 'center',
@@ -541,8 +565,6 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 15,
   },
-
-  // Contenedor del formulario
   formContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -554,8 +576,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-
-  // Sección del formulario
   formSection: {
     gap: 10,
   },
@@ -565,8 +585,6 @@ const styles = StyleSheet.create({
     color: '#222',
     marginBottom: 8,
   },
-
-  // Grid de servicios
   serviciosGrid: {
     gap: 10,
   },
@@ -617,16 +635,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#a57c63',
   },
-
-  // Contador de selección
   selectionCount: {
     fontSize: 12,
     color: '#999',
     fontStyle: 'italic',
     marginTop: 4,
   },
-
-  // Labels del formulario
   formLabel: {
     fontWeight: '700',
     fontSize: 14,
@@ -639,8 +653,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontWeight: '600',
   },
-
-  // Selector de período
   periodSelector: {
     flexDirection: 'row',
     gap: 8,
@@ -674,8 +686,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontStyle: 'italic',
   },
-
-  // Inputs
   input: {
     borderWidth: 1,
     borderColor: '#e4d8cb',
@@ -721,8 +731,6 @@ const styles = StyleSheet.create({
     color: '#ef4444',
     fontWeight: '600',
   },
-
-  // Botón principal
   primaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -738,8 +746,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 15,
   },
-
-  // Botón secundario
   secondaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -756,8 +762,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-
-  // Pantalla vacía
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
@@ -771,8 +775,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
-
-  // Tarjeta del servicio seleccionado
   servicioCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -818,16 +820,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#222',
   },
-
-  // Título del formulario
   formTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#222',
     marginBottom: 4,
   },
-
-  // Botón expandir servicios
   expandBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -857,8 +855,6 @@ const styles = StyleSheet.create({
     minWidth: 28,
     textAlign: 'center',
   },
-
-  // Contenedor lista de servicios
   serviciosListContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -899,9 +895,18 @@ const styles = StyleSheet.create({
     color: '#a57c63',
   },
   catalogBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    borderRadius: 10, backgroundColor: '#a57c63',
-    paddingHorizontal: 22, paddingVertical: 13, marginTop: 4,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8,
+    borderRadius: 10, 
+    backgroundColor: '#a57c63',
+    paddingHorizontal: 22, 
+    paddingVertical: 13, 
+    marginTop: 4,
   },
-  catalogBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  catalogBtnText: { 
+    color: '#fff', 
+    fontWeight: '700', 
+    fontSize: 15 
+  },
 });

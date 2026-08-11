@@ -1,239 +1,295 @@
 /**
  * ============================================
- * CONFIGURACIÓN DE MULTER
+ * CONFIGURACIÓN DE MULTER (VERSIÓN SEGURA)
  * ============================================
- * Multer es un middleware de Express para manejar la subida de archivos (multipart/form-data).
- * Este archivo configura CÓMO se guardan las imágenes (nombre, carpeta) y QUÉ archivos se permiten.
- * Es usado en las rutas de productos (routes/) cuando se sube una imagen de producto.
  */
 
-// Importa el paquete 'multer' desde node_modules.
-// Multer intercepta las peticiones que contienen archivos y los procesa.
 const multer = require('multer');
-
-// Importa el módulo 'path' de Node.js (módulo nativo, no necesita instalación).
-// Provee utilidades para trabajar con rutas de archivos y directorios.
 const path = require('node:path');
-
-// Importa el módulo 'fs' (File System) de Node.js (módulo nativo).
-// Permite leer, escribir, crear y eliminar archivos y carpetas del sistema.
 const fs = require('node:fs');
-
-// Carga las variables del archivo .env en process.env.
+const { URL } = require('node:url');
+const crypto = require('node:crypto');
+const https = require('node:https');
+const http = require('node:http');
 require('dotenv').config();
 
-// Lee la ruta donde se guardarán los archivos subidos desde .env (variable UPLOAD_PATH).
-// Si no existe la variable, usa './uploads' como carpeta por defecto (relativa al proyecto).
 const uploadPath = process.env.UPLOAD_PATH || './uploads';
 
-// Verifica si la carpeta de uploads ya existe en el sistema de archivos.
-// fs.existsSync() retorna true si la ruta existe, false si no.
+// Crear carpeta si no existe
 if (!fs.existsSync(uploadPath)) {
-  // Si la carpeta NO existe, la crea.
-  // { recursive: true } permite crear carpetas anidadas (ej: ./uploads/images/products)
   fs.mkdirSync(uploadPath, { recursive: true });
-  // Informa en consola que la carpeta fue creada
   console.log(`📁 Carpeta ${uploadPath} creada`);
 }
 
-/**
- * Configuración de almacenamiento de multer.
- * multer.diskStorage() define las reglas para guardar archivos en disco.
- * Controla: dónde se guarda (destination) y con qué nombre (filename).
- */
+// ==========================================
+// CONFIGURACIÓN DE STORAGE
+// ==========================================
+
 const storage = multer.diskStorage({
-  /**
-   * destination: función que define la carpeta destino donde se guardará el archivo subido.
-   * 
-   * @param {Object} req - Objeto de petición HTTP de Express (contiene datos de la petición)
-   * @param {Object} file - Objeto con la información del archivo subido (nombre, tipo, tamaño)
-   * @param {Function} cb - Callback (función de retorno) que recibe: (error, rutaDestino)
-   */
   destination: function (req, file, cb) {
-    // Llama al callback con:
-    // - null: sin error (primer parámetro)
-    // - uploadPath: la carpeta donde se guardará el archivo (segundo parámetro)
     cb(null, uploadPath);
   },
-  
-  /**
-   * filename: función que define el nombre con el que se guardará el archivo.
-   * Se genera un nombre único para evitar que dos archivos se sobreescriban.
-   * Formato resultante: 1709578800000-producto.jpg (timestamp + nombre original)
-   * 
-   * @param {Object} req - Objeto de petición HTTP de Express
-   * @param {Object} file - Objeto con info del archivo (file.originalname = nombre original)
-   * @param {Function} cb - Callback que recibe: (error, nombreArchivo)
-   */
   filename: function (req, file, cb) {
-    // Date.now() genera un timestamp en milisegundos (ej: 1709578800000)
-    // Se concatena con '-' y el nombre original del archivo
-    // Esto garantiza un nombre único (el timestamp cambia cada milisegundo)
     const uniqueName = Date.now() + '-' + file.originalname;
-    // Llama al callback con null (sin error) y el nombre único generado
     cb(null, uniqueName);
   }
 });
 
-/**
- * Filtro para validar el tipo de archivo antes de guardarlo.
- * Solo permite imágenes. Si alguien intenta subir un .pdf o .exe, se rechaza.
- * 
- * @param {Object} req - Objeto de petición HTTP de Express
- * @param {Object} file - Objeto del archivo (file.mimetype indica el tipo: 'image/jpeg', etc.)
- * @param {Function} cb - Callback: cb(null, true) = aceptar, cb(error, false) = rechazar
- */
+// ==========================================
+// FILTRO DE ARCHIVOS
+// ==========================================
+
 const fileFilter = (req, file, cb) => {
-  // Array con los tipos MIME permitidos (solo formatos de imagen)
-  // MIME type es un estándar que identifica el tipo de contenido de un archivo
   const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
   
-  // Verifica si el tipo MIME del archivo subido está en la lista de permitidos
-  // includes() retorna true si el elemento está en el array
   if (allowedMimeTypes.includes(file.mimetype)) {
-    // Si el tipo es permitido, acepta el archivo: cb(null, true)
-    // null = sin error, true = aceptar archivo
     cb(null, true);
   } else {
-    // Si el tipo NO es permitido, rechaza el archivo con un mensaje de error
-    // El error será capturado por Express y enviado como respuesta al cliente
     cb(new Error('Solo se permiten imágenes (JPG, JPEG, PNG, GIF, WebP)'), false);
   }
 };
 
-/**
- * Crea la instancia final de multer combinando todas las configuraciones:
- * storage (dónde y cómo guardar), fileFilter (qué tipos permitir) y limits (tamaño máximo).
- */
+// ==========================================
+// INSTANCIA DE MULTER
+// ==========================================
+
 const upload = multer({
-  // storage: usa la configuración de almacenamiento definida arriba
   storage: storage,
-  // fileFilter: usa el filtro de tipos de archivo definido arriba
   fileFilter: fileFilter,
-  // limits: restricciones adicionales
   limits: {
-    // fileSize: tamaño máximo del archivo en bytes.
-    // Lee MAX_FILE_SIZE del .env y lo convierte a número con parseInt().
-    // Si no existe la variable, usa 5242880 bytes = 5 MB (5 * 1024 * 1024)
     fileSize: Number.parseInt(process.env.MAX_FILE_SIZE) || 5242880
   }
 });
 
-/**
- * Función para eliminar un archivo del servidor (del disco).
- * Se usa cuando se actualiza la imagen de un producto (borrar la anterior)
- * o cuando se elimina un producto completamente.
- * 
- * @param {String} filename - Solo el nombre del archivo a eliminar (ej: '1709578800000-foto.jpg')
- * @returns {Boolean} - true si se eliminó correctamente, false si hubo error o no existía
- */
+// ==========================================
+// FUNCIÓN SEGURA PARA ELIMINAR ARCHIVOS
+// ==========================================
+
 const deleteFile = (filename) => {
   try {
-    // path.join() une la ruta de la carpeta uploads con el nombre del archivo.
-    // Ejemplo: path.join('./uploads', '1709578800000-foto.jpg') = './uploads/1709578800000-foto.jpg'
-    // Usa el separador correcto según el sistema operativo (/ en Linux, \ en Windows)
-    const filePath = path.join(uploadPath, filename);
+    // Validar que el filename no contenga caracteres peligrosos
+    const sanitizedFilename = path.basename(filename);
+    if (sanitizedFilename !== filename) {
+      console.warn('⚠️ Intento de path traversal detectado:', filename);
+      return false;
+    }
+
+    const filePath = path.join(uploadPath, sanitizedFilename);
     
-    // Verifica si el archivo existe antes de intentar eliminarlo
+    // Verificar que el archivo está dentro de uploadPath
+    const resolvedPath = fs.realpathSync(filePath);
+    const resolvedUploadPath = fs.realpathSync(uploadPath);
+    if (!resolvedPath.startsWith(resolvedUploadPath)) {
+      console.warn('⚠️ Intento de acceso fuera de la carpeta permitida:', filePath);
+      return false;
+    }
+
     if (fs.existsSync(filePath)) {
-      // fs.unlinkSync() elimina el archivo del disco de forma síncrona (espera a que termine)
       fs.unlinkSync(filePath);
       console.log(`🗑️ Archivo eliminado: ${filename}`);
       return true;
     } else {
-      // Si el archivo no existe, avisa pero no lanza error
       console.log(`⚠️ Archivo no encontrado: ${filename}`);
       return false;
     }
   } catch (error) {
-    // Si ocurre cualquier error (permisos, disco lleno, etc.), lo registra
     console.error('❌ Error al eliminar archivo:', error.message);
     return false;
   }
 };
 
-// Exporta el middleware de multer y la función de eliminación
-// para que sean usados en los archivos de rutas (routes/).
-// Ejemplo: const { upload } = require('../config/multer');
-//          router.post('/productos', upload.single('imagen'), controller.crear);
-module.exports = {
-  upload,        // Middleware de multer: se usa en las rutas para recibir archivos
-  deleteFile,    // Función auxiliar: se usa en controllers para eliminar imágenes viejas
-  /**
-   * Descargar una imagen desde una URL y guardarla en la carpeta de uploads.
-   * Devuelve el nombre de archivo guardado.
-   * @param {string} urlStr
-   * @param {string} [nameHint]
-   */
-  async downloadImage(urlStr, nameHint = 'imagen') {
-    try {
-      const { URL } = require('node:url');
-      const parsed = new URL(urlStr);
-      const protocol = parsed.protocol === 'http:' ? require('node:http') : require('node:https');
-      const path = require('node:path');
-      const crypto = require('node:crypto');
+// ==========================================
+// FUNCIÓN SEGURA PARA DESCARGAR IMÁGENES
+// ==========================================
 
-      return await new Promise((resolve, reject) => {
-        const https = require('https');
-        const http = require('http');
+/**
+ * VALIDA que una URL sea segura antes de descargarla
+ * Previene ataques SSRF y path traversal
+ */
+const validateImageUrl = (urlStr) => {
+  try {
+    const parsedUrl = new URL(urlStr);
+    
+    // 1. SOLO permitir HTTP o HTTPS
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      throw new Error('Protocolo no permitido. Solo HTTP o HTTPS');
+    }
 
-        function isValidUrl(urlString) {
-            try {
-                const url = new URL(urlString);
-                // Solo permitir protocolos seguros
-                return ['https:', 'http:'].includes(url.protocol);
-            } catch {
-                return false;
-            }
+    // 2. Lista blanca de dominios permitidos (¡CONFIGURA ESTO!)
+    const allowedDomains = [
+      'images.unsplash.com',
+      'cdn.example.com',
+      'storage.googleapis.com',
+      // Agrega aquí los dominios que confías
+    ];
+
+    // Si la lista blanca está configurada, validar contra ella
+    if (allowedDomains.length > 0) {
+      const isAllowed = allowedDomains.some(domain => 
+        parsedUrl.hostname === domain || parsedUrl.hostname.endsWith('.' + domain)
+      );
+      
+      if (!isAllowed) {
+        throw new Error(`Dominio no permitido: ${parsedUrl.hostname}`);
+      }
+    }
+
+    // 3. Prevenir ataques con IPs locales
+    const hostname = parsedUrl.hostname.toLowerCase();
+    const blockedHosts = [
+      'localhost',
+      '127.0.0.1',
+      '0.0.0.0',
+      '::1',
+      '::ffff:127.0.0.1'
+    ];
+
+    if (blockedHosts.includes(hostname)) {
+      throw new Error('Acceso a localhost no permitido');
+    }
+
+    // 4. Prevenir IPs privadas
+    const privateIPRegex = /^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|127\.)/;
+    if (privateIPRegex.test(hostname)) {
+      throw new Error('Acceso a IP privada no permitido');
+    }
+
+    // 5. Validar extensión de archivo
+    const pathname = parsedUrl.pathname.toLowerCase();
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const hasValidExtension = validExtensions.some(ext => pathname.endsWith(ext));
+    
+    if (!hasValidExtension) {
+      throw new Error('La URL no apunta a una imagen con extensión válida');
+    }
+
+    return parsedUrl;
+  } catch (error) {
+    throw new Error(`URL inválida: ${error.message}`);
+  }
+};
+
+/**
+ * Descarga una imagen desde una URL de manera SEGURA
+ */
+const downloadImage = async (urlStr, nameHint = 'imagen') => {
+  try {
+    // 1. VALIDAR LA URL (previene SSRF)
+    const validatedUrl = validateImageUrl(urlStr);
+    
+    // 2. SANITIZAR el nombre del archivo
+    const safeBase = String(nameHint)
+      .replace(/[^a-z0-9_-]/gi, '_')
+      .replace(/^_+|_+$/g, '') 
+      || 'imagen';
+
+    // 3. Determinar protocolo de manera segura (ya validado)
+    const protocol = validatedUrl.protocol === 'https:' ? https : http;
+
+    // 4. Crear nombre único para el archivo
+    const ext = path.extname(validatedUrl.pathname) || '.jpg';
+    const filename = `${Date.now()}-${safeBase}-${crypto.randomBytes(4).toString('hex')}${ext}`;
+    const filePath = path.join(uploadPath, filename);
+
+    // 5. Descargar con timeout y límite de tamaño
+    return await new Promise((resolve, reject) => {
+      const requestOptions = {
+        hostname: validatedUrl.hostname,
+        port: validatedUrl.port || (validatedUrl.protocol === 'https:' ? 443 : 80),
+        path: validatedUrl.pathname + validatedUrl.search,
+        method: 'GET',
+        timeout: 10000, // 10 segundos
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; MiApp/1.0)'
+        }
+      };
+
+      const req = protocol.request(requestOptions, (res) => {
+        // Verificar código de estado
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode}`));
+          res.resume();
+          return;
         }
 
-        // Validar antes de hacer la petición
-        if (!isValidUrl(urlStr)) {
-            throw new Error('URL no válida o insegura');
+        // Verificar content-type
+        const contentType = res.headers['content-type'] || '';
+        if (!contentType.startsWith('image/')) {
+          reject(new Error('La URL no apunta a una imagen válida'));
+          res.resume();
+          return;
         }
 
-        const protocol = urlStr.startsWith('https') ? https : http;
-        const req = protocol.get(urlStr, (res) => {
-          if (res.statusCode !== 200) {
-            reject(new Error(`HTTP ${res.statusCode}`));
-            res.resume();
-            return;
-          }
+        // Verificar tamaño (Content-Length)
+        const contentLength = parseInt(res.headers['content-length'], 10);
+        const maxSize = Number.parseInt(process.env.MAX_FILE_SIZE) || 5242880; // 5MB
+        
+        if (contentLength && contentLength > maxSize) {
+          reject(new Error(`La imagen excede el tamaño máximo permitido (${maxSize} bytes)`));
+          res.resume();
+          return;
+        }
 
-          const contentType = res.headers['content-type'] || '';
-          if (!contentType.startsWith('image/')) {
-            reject(new Error('URL no apunta a una imagen'));
-            res.resume();
-            return;
-          }
+        // Crear stream de escritura
+        const fileStream = fs.createWriteStream(filePath);
+        let downloadedSize = 0;
 
-          let ext = '';
-          const mime = contentType.split('/')[1];
-          if (mime) {
-            ext = mime.split(';')[0];
-          }
+        res.pipe(fileStream);
 
-          const safeBase = String(nameHint)
-          .replace(/[^a-z0-9_-]/gi, '_')  // Reemplaza cada carácter no permitido individualmente
-          .replace(/^_+|_+$/g, '') 
-          || 'imagen';
-          const filename = `${Date.now()}-${safeBase}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
-          const filePath = path.join(uploadPath, filename);
-          const fileStream = fs.createWriteStream(filePath);
-          res.pipe(fileStream);
-          fileStream.on('finish', () => {
-            fileStream.close(() => resolve(filename));
-          });
-          fileStream.on('error', (err) => {
+        // Monitorear tamaño durante la descarga
+        res.on('data', (chunk) => {
+          downloadedSize += chunk.length;
+          if (downloadedSize > maxSize) {
+            res.destroy();
+            fileStream.destroy();
             try { fs.unlinkSync(filePath); } catch (e) {}
-            reject(err);
-          });
+            reject(new Error(`La imagen excede el tamaño máximo permitido (${maxSize} bytes)`));
+          }
         });
 
-        req.on('error', (err) => reject(err));
+        fileStream.on('finish', () => {
+          fileStream.close(() => resolve(filename));
+        });
+
+        fileStream.on('error', (err) => {
+          try { fs.unlinkSync(filePath); } catch (e) {}
+          reject(err);
+        });
+
+        // Timeout de la respuesta
+        res.setTimeout(30000, () => {
+          res.destroy();
+          fileStream.destroy();
+          try { fs.unlinkSync(filePath); } catch (e) {}
+          reject(new Error('Timeout al descargar la imagen'));
+        });
       });
-    } catch (error) {
-      throw error;
-    }
+
+      req.on('timeout', () => {
+        req.destroy();
+        try { fs.unlinkSync(filePath); } catch (e) {}
+        reject(new Error('Timeout en la solicitud'));
+      });
+
+      req.on('error', (err) => {
+        try { fs.unlinkSync(filePath); } catch (e) {}
+        reject(err);
+      });
+
+      req.end();
+    });
+  } catch (error) {
+    console.error('❌ Error al descargar imagen:', error.message);
+    throw error;
   }
+};
+
+// ==========================================
+// EXPORTS
+// ==========================================
+
+module.exports = {
+  upload,
+  deleteFile,
+  downloadImage
 };

@@ -44,8 +44,6 @@ export default function AdminUsuarios() {
   const usuariosFiltrados = usuarios.filter((usuario) => {
     const textoBusqueda = busqueda.toLowerCase().trim();
     const coincideBusqueda =
-    !textoBusqueda ||
-      !textoBusqueda ||
       !textoBusqueda ||
       (usuario.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (usuario.apellido || '').toLowerCase().includes(textoBusqueda) ||
