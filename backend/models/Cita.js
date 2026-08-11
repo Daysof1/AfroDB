@@ -175,6 +175,7 @@ const Cita = sequelize.define('Cita', {
       }
 
       // Selección aleatoria (puedes mejorar luego con disponibilidad)
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       const random = Math.floor(Math.random() * profesionales.length);
 
       cita.profesionalId = profesionales[random].id;
