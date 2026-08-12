@@ -57,7 +57,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: Number.parseInt(process.env.MAX_FILE_SIZE) || 5242880
+    fileSize: Number.parseInt(process.env.MAX_FILE_SIZE, 10) || 5242880
   }
 });
 
@@ -67,7 +67,6 @@ const upload = multer({
 
 const deleteFile = (filename) => {
   try {
-    // Validar que el filename no contenga caracteres peligrosos
     const sanitizedFilename = path.basename(filename);
     if (sanitizedFilename !== filename) {
       console.warn('⚠️ Intento de path traversal detectado:', filename);
@@ -76,7 +75,6 @@ const deleteFile = (filename) => {
 
     const filePath = path.join(uploadPath, sanitizedFilename);
     
-    // Verificar que el archivo está dentro de uploadPath
     const resolvedPath = fs.realpathSync(filePath);
     const resolvedUploadPath = fs.realpathSync(uploadPath);
     if (!resolvedPath.startsWith(resolvedUploadPath)) {
@@ -103,86 +101,112 @@ const deleteFile = (filename) => {
 // ==========================================
 
 /**
+ * LISTA BLANCA DE DOMINIOS PERMITIDOS
+ * Configura esto con los dominios que realmente necesitas
+ */
+const ALLOWED_DOMAINS = [
+  'images.unsplash.com',
+  'cdn.example.com',
+  'storage.googleapis.com',
+  // Agrega aquí los dominios que necesites
+];
+
+/**
+ * EXTENSIONES DE IMAGEN PERMITIDAS
+ */
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+
+/**
+ * IPS BLOQUEADAS (previene SSRF)
+ */
+const BLOCKED_HOSTS = [
+  'localhost',
+  '127.0.0.1',
+  '0.0.0.0',
+  '::1',
+];
+
+/**
+ * Regex para IPs privadas (optimizada)
+ */
+const PRIVATE_IP_REGEX = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/;
+
+/**
  * VALIDA que una URL sea segura antes de descargarla
  * Previene ataques SSRF y path traversal
  */
 const validateImageUrl = (urlStr) => {
+  // ===== VALIDACIÓN TEMPRANA =====
+  // Si la URL es undefined o null, rechazar
+  if (!urlStr || typeof urlStr !== 'string') {
+    throw new Error('URL inválida: debe ser un string');
+  }
+
+  // ===== PARSEO =====
+  let parsedUrl;
   try {
-    // Usar URL directamente (ya importado como node:url)
-    const parsedUrl = new URL(urlStr);
-    
-    // 1. SOLO permitir HTTP o HTTPS
-    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      throw new Error('Protocolo no permitido. Solo HTTP o HTTPS');
-    }
-
-    // 2. Lista blanca de dominios permitidos (¡CONFIGURA ESTO!)
-    const allowedDomains = [
-      'images.unsplash.com',
-      'cdn.example.com',
-      'storage.googleapis.com',
-    ];
-
-    // Si la lista blanca está configurada, validar contra ella
-    if (allowedDomains.length > 0) {
-      const isAllowed = allowedDomains.some(domain => 
-        parsedUrl.hostname === domain || parsedUrl.hostname.endsWith('.' + domain)
-      );
-      
-      if (!isAllowed) {
-        throw new Error(`Dominio no permitido: ${parsedUrl.hostname}`);
-      }
-    }
-
-    // 3. Prevenir ataques con IPs locales
-    const hostname = parsedUrl.hostname.toLowerCase();
-    const blockedHosts = [
-      'localhost',
-      '127.0.0.1',
-      '0.0.0.0',
-      '::1',
-      '::ffff:127.0.0.1'
-    ];
-
-    if (blockedHosts.includes(hostname)) {
-      throw new Error('Acceso a localhost no permitido');
-    }
-
-    // 4. Prevenir IPs privadas - Regex optimizada
-    const privateIPRegex = /^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|127\.)/;
-    if (privateIPRegex.test(hostname)) {
-      throw new Error('Acceso a IP privada no permitido');
-    }
-
-    // 5. Validar extensión de archivo
-    const pathname = parsedUrl.pathname.toLowerCase();
-    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-    const hasValidExtension = validExtensions.some(ext => pathname.endsWith(ext));
-    
-    if (!hasValidExtension) {
-      throw new Error('La URL no apunta a una imagen con extensión válida');
-    }
-
-    return parsedUrl;
+    parsedUrl = new URL(urlStr);
   } catch (error) {
-    // Lanzar el error para que sea manejado por el llamador
     throw new Error(`URL inválida: ${error.message}`);
   }
+
+  // ===== VALIDACIÓN DE PROTOCOLO =====
+  const protocol = parsedUrl.protocol;
+  if (protocol !== 'http:' && protocol !== 'https:') {
+    throw new Error('Protocolo no permitido. Solo HTTP o HTTPS');
+  }
+
+  // ===== VALIDACIÓN DE DOMINIO =====
+  const hostname = parsedUrl.hostname;
+  if (!hostname) {
+    throw new Error('URL sin hostname');
+  }
+
+  const hostnameLower = hostname.toLowerCase();
+
+  // 1. Bloquear localhost
+  if (BLOCKED_HOSTS.includes(hostnameLower)) {
+    throw new Error('Acceso a localhost no permitido');
+  }
+
+  // 2. Bloquear IPs privadas
+  if (PRIVATE_IP_REGEX.test(hostnameLower)) {
+    throw new Error('Acceso a IP privada no permitido');
+  }
+
+  // 3. Validar contra lista blanca (si está configurada)
+  if (ALLOWED_DOMAINS.length > 0) {
+    const isAllowed = ALLOWED_DOMAINS.some(domain => 
+      hostnameLower === domain || hostnameLower.endsWith('.' + domain)
+    );
+    
+    if (!isAllowed) {
+      throw new Error(`Dominio no permitido: ${hostname}`);
+    }
+  }
+
+  // ===== VALIDACIÓN DE EXTENSIÓN =====
+  const pathname = parsedUrl.pathname.toLowerCase();
+  const hasValidExtension = ALLOWED_EXTENSIONS.some(ext => pathname.endsWith(ext));
+  
+  if (!hasValidExtension) {
+    throw new Error('La URL no apunta a una imagen con extensión válida');
+  }
+
+  // ===== RETORNAR URL VALIDADA =====
+  return parsedUrl;
 };
 
 /**
  * Sanitiza el nombre del archivo de manera segura
- * Versión optimizada sin regex compleja
  */
 const sanitizeFileName = (nameHint) => {
   if (!nameHint) return 'imagen';
   
-  // Convertir a string y eliminar caracteres no permitidos
   let safe = String(nameHint)
-    .replace(/[^a-zA-Z0-9_-]/g, '_') // Regex simplificada
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
     .replace(/^_+|_+$/g, '');
   
-  // Si quedó vacío, usar default
   return safe || 'imagen';
 };
 
@@ -190,17 +214,16 @@ const sanitizeFileName = (nameHint) => {
  * Descarga una imagen desde una URL de manera SEGURA
  */
 const downloadImage = async (urlStr, nameHint = 'imagen') => {
-  // Variable para almacenar la ruta del archivo y poder limpiar en caso de error
   let filePath = null;
   
   try {
     // 1. VALIDAR LA URL (previene SSRF)
     const validatedUrl = validateImageUrl(urlStr);
     
-    // 2. SANITIZAR el nombre del archivo (regex optimizada)
+    // 2. SANITIZAR el nombre del archivo
     const safeBase = sanitizeFileName(nameHint);
 
-    // 3. Determinar protocolo de manera segura (ya validado)
+    // 3. Determinar protocolo
     const protocol = validatedUrl.protocol === 'https:' ? https : http;
 
     // 4. Crear nombre único para el archivo
@@ -210,7 +233,6 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
 
     // 5. Descargar con timeout y límite de tamaño
     return await new Promise((resolve, reject) => {
-      // Usar hostname y path del objeto URL validado
       const requestOptions = {
         hostname: validatedUrl.hostname,
         port: validatedUrl.port || (validatedUrl.protocol === 'https:' ? 443 : 80),
@@ -223,14 +245,12 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
       };
 
       const req = protocol.request(requestOptions, (res) => {
-        // Verificar código de estado
         if (res.statusCode !== 200) {
           reject(new Error(`HTTP ${res.statusCode}`));
           res.resume();
           return;
         }
 
-        // Verificar content-type
         const contentType = res.headers['content-type'] || '';
         if (!contentType.startsWith('image/')) {
           reject(new Error('La URL no apunta a una imagen válida'));
@@ -238,9 +258,8 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
           return;
         }
 
-        // Verificar tamaño (Content-Length)
-        const contentLength = parseInt(res.headers['content-length'], 10);
-        const maxSize = Number.parseInt(process.env.MAX_FILE_SIZE) || 5242880;
+        const contentLength = Number.parseInt(res.headers['content-length'], 10);
+        const maxSize = Number.parseInt(process.env.MAX_FILE_SIZE, 10) || 5242880;
         
         if (contentLength && contentLength > maxSize) {
           reject(new Error(`La imagen excede el tamaño máximo permitido (${maxSize} bytes)`));
@@ -248,19 +267,16 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
           return;
         }
 
-        // Crear stream de escritura
         const fileStream = fs.createWriteStream(filePath);
         let downloadedSize = 0;
 
         res.pipe(fileStream);
 
-        // Monitorear tamaño durante la descarga
         res.on('data', (chunk) => {
           downloadedSize += chunk.length;
           if (downloadedSize > maxSize) {
             res.destroy();
             fileStream.destroy();
-            // Limpiar archivo parcial
             if (filePath && fs.existsSync(filePath)) {
               try { fs.unlinkSync(filePath); } catch (cleanupError) {
                 console.error('Error al limpiar archivo parcial:', cleanupError.message);
@@ -275,7 +291,6 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
         });
 
         fileStream.on('error', (err) => {
-          // Limpiar archivo en caso de error
           if (filePath && fs.existsSync(filePath)) {
             try { fs.unlinkSync(filePath); } catch (cleanupError) {
               console.error('Error al limpiar archivo en error de stream:', cleanupError.message);
@@ -284,7 +299,6 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
           reject(err);
         });
 
-        // Timeout de la respuesta
         res.setTimeout(30000, () => {
           res.destroy();
           fileStream.destroy();
@@ -319,7 +333,6 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
       req.end();
     });
   } catch (error) {
-    // Limpiar archivo en caso de error general
     if (filePath && fs.existsSync(filePath)) {
       try { fs.unlinkSync(filePath); } catch (cleanupError) {
         console.error('Error al limpiar archivo en error general:', cleanupError.message);
