@@ -10,8 +10,14 @@ import { ThemedText } from '../../components/themed-text';
 import apiClient from '../../src/api/apiClient';
 import { useAuth } from '../../src/context/AuthContext';
 
+// ─────────────────────────────────────────────────────────────
+// TIPOS
+// ─────────────────────────────────────────────────────────────
+
+type CitaId = string | number;
+
 type Cita = {
-  id?: string | number;
+  id?: CitaId;
   fecha?: string;
   hora?: string;
   estado?: string;
@@ -53,7 +59,195 @@ type Cita = {
 
 type AuthUser = { rol?: string; nombre?: string };
 
-// Renderiza la vista principal de este componente.
+// ─────────────────────────────────────────────────────────────
+// FUNCIONES DE UTILIDAD
+// ─────────────────────────────────────────────────────────────
+
+const normalizeEstado = (estado?: string): string => {
+  return String(estado ?? '').toLowerCase().trim();
+};
+
+const isEstadoFinal = (estado?: string): boolean => {
+  const normalized = normalizeEstado(estado);
+  return normalized === 'completada' || normalized === 'cancelada';
+};
+
+const normalizeText = (value: unknown): string => {
+  return String(value ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+};
+
+const getClienteNombre = (item: Cita): string => {
+  const nombre = item.cliente?.nombre || item.usuario?.nombre || '';
+  const apellido = item.cliente?.apellido || item.usuario?.apellido || '';
+  return `${nombre} ${apellido}`.trim() || 'Sin cliente';
+};
+
+const getProfesionalNombre = (item: Cita): string => {
+  const nombre = item.profesional?.nombre || item.Profesional?.nombre || '';
+  const apellido = item.profesional?.apellido || item.Profesional?.apellido || '';
+  return `${nombre} ${apellido}`.trim() || 'Sin profesional';
+};
+
+const getServiciosTexto = (item: Cita, detalleCitas: Record<string, Cita>): string => {
+  const cacheKey = String(item.id);
+  const serviciosSource = detalleCitas[cacheKey]?.Servicios ?? item.Servicios;
+  if (Array.isArray(serviciosSource) && serviciosSource.length > 0) {
+    return serviciosSource.map((s) => s.nombre).filter(Boolean).join(', ');
+  }
+  return item.servicio || 'Sin servicio';
+};
+
+// ─────────────────────────────────────────────────────────────
+// COMPONENTE DE ÍTEM DE CITA (extraído para reducir complejidad)
+// ─────────────────────────────────────────────────────────────
+
+type CitaItemProps = {
+  item: Cita;
+  isExpanded: boolean;
+  isLoadingDetalle: boolean;
+  isConfirming: boolean;
+  isCancelling: boolean;
+  detalleCitas: Record<string, Cita>;
+  onToggle: (id: CitaId) => void;
+  onConfirm: (id: CitaId) => void;
+  onComplete: (id: CitaId) => void;
+  onCancel: (id: CitaId) => void;
+};
+
+const CitaItem = ({
+  item,
+  isExpanded,
+  isLoadingDetalle,
+  isConfirming,
+  isCancelling,
+  detalleCitas,
+  onToggle,
+  onConfirm,
+  onComplete,
+  onCancel,
+}: CitaItemProps) => {
+  const cliente = getClienteNombre(item);
+  const profesional = getProfesionalNombre(item);
+  const cacheKey = String(item.id);
+  const serviciosSource = detalleCitas[cacheKey]?.Servicios ?? item.Servicios;
+  const estadoNormalizado = normalizeEstado(item.estado);
+
+  const handleToggle = () => {
+    onToggle(item.id ?? '');
+  };
+
+  const renderServicios = () => {
+    if (!Array.isArray(serviciosSource) || serviciosSource.length === 0) {
+      return null;
+    }
+
+    return (
+      <View style={styles.serviceList}>
+        {serviciosSource.map((servicio, index) => {
+          const servicioNombre = servicio.nombre || `Servicio ${index + 1}`;
+          const duracion = servicio.CitaServicio?.duracion ?? servicio.duracion;
+          const precio = servicio.CitaServicio?.precio ?? servicio.precio ?? 0;
+          const cantidad = servicio.CitaServicio?.cantidad ?? servicio.cantidad ?? 1;
+          const subtotal = Number(precio) * Number(cantidad);
+
+          return (
+            <View key={`servicio-${index}-${servicioNombre}`} style={styles.serviceItem}>
+              <ThemedText style={styles.serviceLabel}>• {servicioNombre}</ThemedText>
+              {duracion ? <ThemedText style={styles.serviceInfo}>Duración: {duracion} min</ThemedText> : null}
+              <ThemedText style={styles.serviceInfo}>Total servicio: ${subtotal.toLocaleString('es-CO')}</ThemedText>
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
+
+  const renderAcciones = () => {
+    if (estadoNormalizado === 'pendiente') {
+      return (
+        <View style={styles.actionRow}>
+          <Pressable
+            style={[styles.confirmButton, isConfirming && { opacity: 0.7 }]}
+            onPress={() => onConfirm(item.id ?? '')}
+            disabled={isConfirming}
+          >
+            <ThemedText style={styles.confirmButtonText}>
+              {isConfirming ? 'Confirmando...' : 'Confirmar cita'}
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            style={[styles.cancelButton, isCancelling && { opacity: 0.7 }]}
+            onPress={() => onCancel(item.id ?? '')}
+            disabled={isCancelling}
+          >
+            <ThemedText style={styles.cancelButtonText}>
+              {isCancelling ? 'Cancelando...' : 'Cancelar cita'}
+            </ThemedText>
+          </Pressable>
+        </View>
+      );
+    }
+
+    if (estadoNormalizado === 'confirmada') {
+      return (
+        <Pressable
+          style={[styles.completeButton, isCancelling && { opacity: 0.7 }]}
+          onPress={() => onComplete(item.id ?? '')}
+          disabled={isCancelling}
+        >
+          <ThemedText style={styles.completeText}>
+            {isCancelling ? 'Completando...' : 'Completar cita'}
+          </ThemedText>
+        </Pressable>
+      );
+    }
+
+    if (estadoNormalizado === 'completada') {
+      return <ThemedText>La cita ya fue completada.</ThemedText>;
+    }
+
+    if (estadoNormalizado === 'cancelada') {
+      return <ThemedText>La cita fue cancelada y no puede modificarse.</ThemedText>;
+    }
+
+    return null;
+  };
+
+  return (
+    <Pressable style={styles.card} onPress={handleToggle}>
+      <ThemedText type="defaultSemiBold">Cita #{item.id ?? 'N/A'}</ThemedText>
+      <ThemedText>Fecha: {item.fecha ?? 'N/A'}</ThemedText>
+      <ThemedText>Hora: {item.hora ?? 'N/A'}</ThemedText>
+      <ThemedText>Cliente que agendó: {cliente}</ThemedText>
+      <ThemedText>Profesional asignado: {profesional}</ThemedText>
+      <ThemedText>Estado: {item.estado ?? 'N/A'}</ThemedText>
+      <ThemedText style={styles.hint}>
+        Presiona para {isExpanded ? 'ocultar' : 'ver'} más datos de la cita.
+      </ThemedText>
+
+      {isExpanded && (
+        <View style={styles.detailsBox}>
+          <ThemedText type="defaultSemiBold">Detalle completo</ThemedText>
+          {item.servicio && <ThemedText>Servicio agendado: {item.servicio}</ThemedText>}
+          {renderServicios()}
+          {item.notas && <ThemedText>Notas: {item.notas}</ThemedText>}
+          {typeof item.total === 'number' && (
+            <ThemedText>Total: ${item.total.toLocaleString('es-CO')}</ThemedText>
+          )}
+          {renderAcciones()}
+        </View>
+      )}
+    </Pressable>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// COMPONENTE PRINCIPAL
+// ─────────────────────────────────────────────────────────────
+
 export default function AdminCitasScreen() {
   const { user, isAuthenticated } = useAuth() as { user: AuthUser | null; isAuthenticated: boolean };
   const isAdmin = user?.rol === 'administrador';
@@ -62,14 +256,18 @@ export default function AdminCitasScreen() {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
-  const [expandedCitaId, setExpandedCitaId] = useState<string | number | null>(null);
+  const [expandedCitaId, setExpandedCitaId] = useState<CitaId | null>(null);
   const [detalleCitas, setDetalleCitas] = useState<Record<string, Cita>>({});
-  const [loadingDetalleId, setLoadingDetalleId] = useState<string | number | null>(null);
-  const [confirmadaId, setConfirmadaId] = useState<string | number | null>(null);
-  const [cancellingId, setCancellingId] = useState<string | number | null>(null);
+  const [loadingDetalleId, setLoadingDetalleId] = useState<CitaId | null>(null);
+  const [confirmadaId, setConfirmadaId] = useState<CitaId | null>(null);
+  const [cancellingId, setCancellingId] = useState<CitaId | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const loadCitaDetalle = async (id: string | number) => {
+  // ─────────────────────────────────────────────────────────────
+  // FUNCIONES DE CARGA
+  // ─────────────────────────────────────────────────────────────
+
+  const loadCitaDetalle = async (id: CitaId) => {
     const cacheKey = String(id);
     if (detalleCitas[cacheKey]) {
       return detalleCitas[cacheKey];
@@ -78,9 +276,12 @@ export default function AdminCitasScreen() {
     setLoadingDetalleId(id);
     try {
       const res = await apiClient.get(`/cliente/citas/${id}`);
-      const citaDetalle = res.data?.data?.cita ?? res.data?.data ?? res.data ?? {};
-      setDetalleCitas((prev) => ({ ...prev, [cacheKey]: citaDetalle }));
-      return citaDetalle as Cita;
+      const citaDetalle = res.data?.data?.cita ?? res.data?.data ?? res.data;
+      if (citaDetalle && typeof citaDetalle === 'object' && Object.keys(citaDetalle).length > 0) {
+        setDetalleCitas((prev) => ({ ...prev, [cacheKey]: citaDetalle }));
+        return citaDetalle as Cita;
+      }
+      return null;
     } catch {
       return null;
     } finally {
@@ -88,179 +289,14 @@ export default function AdminCitasScreen() {
     }
   };
 
-const normalizeEstado = (estado?: string) => String(estado ?? '').toLowerCase().trim();
-
-const isEstadoFinal = (estado?: string) => {
-  const normalized = normalizeEstado(estado);
-  return normalized === 'completada' || normalized === 'cancelada';
-};
-
-const confirmarCita = (id: string | number) => {
-  const cita = citas.find((c) => String(c.id) === String(id));
-  if (isEstadoFinal(cita?.estado)) {
-    Alert.alert('No permitido', 'No se puede confirmar una cita completada o cancelada.');
-    return;
-  }
-
-  Alert.alert(
-    'Confirmar cita',
-    '¿Estás seguro de que deseas confirmar esta cita?',
-    [
-      {
-        text: 'Cancelar',
-        style: 'cancel',
-      },
-      {
-        text: 'Sí, confirmar',
-        onPress: async () => {
-          setConfirmadaId(id);
-
-          try {
-            if (isAdmin || isAux) {
-              const res = await apiClient.put(
-                `/admin/citas/${id}/estado`,
-                { estado: 'confirmada' }
-              );
-
-              const updated =
-                res.data?.data?.cita ??
-                res.data?.data ??
-                res.data ??
-                {};
-
-              setCitas((prev) =>
-                prev.map((c) =>
-                  String(c.id) === String(id)
-                    ? { ...c, ...(updated || {}), estado: 'confirmada' }
-                    : c
-                )
-              );
-
-              setDetalleCitas((prev) => ({
-                ...prev,
-                [String(id)]: {
-                  ...(prev[String(id)] || {}),
-                  ...(updated || {}),
-                  estado: 'confirmada',
-                },
-              }));
-            } else {
-              await apiClient.put(`/cliente/citas/${id}/confirmada`);
-
-              setCitas((prev) =>
-                prev.map((c) =>
-                  String(c.id) === String(id)
-                    ? { ...c, estado: 'confirmada' }
-                    : c
-                )
-              );
-
-              setDetalleCitas((prev) => ({
-                ...prev,
-                [String(id)]: {
-                  ...(prev[String(id)] || {}),
-                  estado: 'confirmada',
-                },
-              }));
-            }
-
-            Alert.alert('Éxito', 'La cita ha sido confirmada correctamente.');
-          } catch (error: any) {
-            const msg =
-              error?.response?.data?.message ||
-              error?.message ||
-              'No se pudo confirmar la cita. Intenta nuevamente.';
-
-            Alert.alert('Error', msg);
-          } finally {
-            setConfirmadaId(null);
-          }
-        },
-      },
-    ]
-  );
-};
-
-const completarCita = (id: string | number) => {
-  const cita = citas.find((c) => String(c.id) === String(id));
-  if (isEstadoFinal(cita?.estado)) {
-    Alert.alert('No permitido', 'No se puede completar una cita que ya está finalizada.');
-    return;
-  }
-
-  Alert.alert('Completar cita', '¿Estás seguro de que deseas completar esta cita?', [
-    { text: 'No', style: 'cancel' },
-    {
-      text: 'Sí, completar',
-      onPress: async () => {
-        setCancellingId(id);
-        try {
-          if (isAdmin || isAux) {
-            const res = await apiClient.put(`/admin/citas/${id}/estado`, { estado: 'completada' });
-            const updated = res.data?.data?.cita ?? res.data?.data ?? res.data ?? {};
-            setCitas((prev) => prev.map((c) => (String(c.id) === String(id) ? { ...c, ...(updated || {}), estado: 'completada' } : c)));
-            setDetalleCitas((prev) => ({ ...prev, [String(id)]: { ...(prev[String(id)] || {}), ...(updated || {}), estado: 'completada' } }));
-          } else {
-            await apiClient.put(`/cliente/citas/${id}/completar`);
-            setCitas((prev) => prev.map((c) => (String(c.id) === String(id) ? { ...c, estado: 'completada' } : c)));
-            setDetalleCitas((prev) => ({ ...prev, [String(id)]: { ...(prev[String(id)] || {}), estado: 'completada' } }));
-          }
-          Alert.alert('Éxito', 'La cita ha sido completada correctamente.');
-        } catch (error: any) {
-          const msg = error?.response?.data?.message || error?.message || 'No se pudo completar la cita. Intenta nuevamente.';
-          Alert.alert('Error', msg);
-        } finally {
-          setCancellingId(null);
-        }
-      }
-    }
-  ]);
-};
-
-const cancelarCita = (id: string | number) => {
-  const cita = citas.find((c) => String(c.id) === String(id));
-  if (isEstadoFinal(cita?.estado)) {
-    Alert.alert('No permitido', 'No se puede cancelar una cita que ya está finalizada.');
-    return;
-  }
-
-  Alert.alert('Cancelar cita', '¿Estás seguro de que deseas cancelar esta cita?', [
-    { text: 'No', style: 'cancel' },
-    {
-      text: 'Sí, cancelar',
-      onPress: async () => {
-        setCancellingId(id);
-        try {
-          if (isAdmin || isAux) {
-            const res = await apiClient.put(`/admin/citas/${id}/estado`, { estado: 'cancelada' });
-            const updated = res.data?.data?.cita ?? res.data?.data ?? res.data ?? {};
-            setCitas((prev) => prev.map((c) => (String(c.id) === String(id) ? { ...c, ...(updated || {}), estado: 'cancelada' } : c)));
-            setDetalleCitas((prev) => ({ ...prev, [String(id)]: { ...(prev[String(id)] || {}), ...(updated || {}), estado: 'cancelada' } }));
-          } else {
-            await apiClient.put(`/cliente/citas/${id}/cancelar`);
-            setCitas((prev) => prev.map((c) => (String(c.id) === String(id) ? { ...c, estado: 'cancelada' } : c)));
-            setDetalleCitas((prev) => ({ ...prev, [String(id)]: { ...(prev[String(id)] || {}), estado: 'cancelada' } }));
-          }
-          Alert.alert('Éxito', 'La cita ha sido cancelada correctamente.');
-        } catch (error: any) {
-          const msg = error?.response?.data?.message || error?.message || 'No se pudo cancelar la cita. Intenta nuevamente.';
-          Alert.alert('Error', msg);
-        } finally {
-          setCancellingId(null);
-        }
-      }
-    }
-  ]);
-};
-
   const loadCitas = async () => {
     setLoading(true);
     setErrorMessage('');
 
     try {
       const res = await apiClient.get('/admin/citas');
-      const payload = res.data?.data ?? res.data ?? {};
-      const citasData = Array.isArray(payload.citas)
+      const payload = res.data?.data ?? res.data;
+      const citasData = Array.isArray(payload?.citas)
         ? payload.citas
         : Array.isArray(payload)
           ? payload
@@ -272,32 +308,164 @@ const cancelarCita = (id: string | number) => {
     } finally {
       setLoading(false);
     }
-  }; 
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // FUNCIONES DE ACCIONES (extraídas para reducir complejidad)
+  // ─────────────────────────────────────────────────────────────
+
+  const actualizarCita = (id: CitaId, nuevosDatos: Partial<Cita>) => {
+    setCitas((prev) =>
+      prev.map((c) => (String(c.id) === String(id) ? { ...c, ...nuevosDatos } : c))
+    );
+    setDetalleCitas((prev) => ({
+      ...prev,
+      [String(id)]: { ...(prev[String(id)] || {}), ...nuevosDatos },
+    }));
+  };
+
+  const confirmarCita = (id: CitaId) => {
+    const cita = citas.find((c) => String(c.id) === String(id));
+    if (isEstadoFinal(cita?.estado)) {
+      Alert.alert('No permitido', 'No se puede confirmar una cita completada o cancelada.');
+      return;
+    }
+
+    Alert.alert(
+      'Confirmar cita',
+      '¿Estás seguro de que deseas confirmar esta cita?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sí, confirmar',
+          onPress: async () => {
+            setConfirmadaId(id);
+            try {
+              const endpoint = isAdmin || isAux ? '/admin/citas/${id}/estado' : `/cliente/citas/${id}/confirmada`;
+              const payload = isAdmin || isAux ? { estado: 'confirmada' } : undefined;
+              
+              const res = payload 
+                ? await apiClient.put(endpoint, payload)
+                : await apiClient.put(endpoint);
+              
+              const updated = res.data?.data?.cita ?? res.data?.data ?? res.data;
+              actualizarCita(id, { ...(updated || {}), estado: 'confirmada' });
+              Alert.alert('Éxito', 'La cita ha sido confirmada correctamente.');
+            } catch (error: any) {
+              const msg = error?.response?.data?.message || error?.message || 'No se pudo confirmar la cita. Intenta nuevamente.';
+              Alert.alert('Error', msg);
+            } finally {
+              setConfirmadaId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const completarCita = (id: CitaId) => {
+    const cita = citas.find((c) => String(c.id) === String(id));
+    if (isEstadoFinal(cita?.estado)) {
+      Alert.alert('No permitido', 'No se puede completar una cita que ya está finalizada.');
+      return;
+    }
+
+    Alert.alert(
+      'Completar cita',
+      '¿Estás seguro de que deseas completar esta cita?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Sí, completar',
+          onPress: async () => {
+            setCancellingId(id);
+            try {
+              const endpoint = isAdmin || isAux ? '/admin/citas/${id}/estado' : `/cliente/citas/${id}/completar`;
+              const payload = isAdmin || isAux ? { estado: 'completada' } : undefined;
+              
+              const res = payload
+                ? await apiClient.put(endpoint, payload)
+                : await apiClient.put(endpoint);
+              
+              const updated = res.data?.data?.cita ?? res.data?.data ?? res.data;
+              actualizarCita(id, { ...(updated || {}), estado: 'completada' });
+              Alert.alert('Éxito', 'La cita ha sido completada correctamente.');
+            } catch (error: any) {
+              const msg = error?.response?.data?.message || error?.message || 'No se pudo completar la cita. Intenta nuevamente.';
+              Alert.alert('Error', msg);
+            } finally {
+              setCancellingId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const cancelarCita = (id: CitaId) => {
+    const cita = citas.find((c) => String(c.id) === String(id));
+    if (isEstadoFinal(cita?.estado)) {
+      Alert.alert('No permitido', 'No se puede cancelar una cita que ya está finalizada.');
+      return;
+    }
+
+    Alert.alert(
+      'Cancelar cita',
+      '¿Estás seguro de que deseas cancelar esta cita?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Sí, cancelar',
+          onPress: async () => {
+            setCancellingId(id);
+            try {
+              const endpoint = isAdmin || isAux ? '/admin/citas/${id}/estado' : `/cliente/citas/${id}/cancelar`;
+              const payload = isAdmin || isAux ? { estado: 'cancelada' } : undefined;
+              
+              const res = payload
+                ? await apiClient.put(endpoint, payload)
+                : await apiClient.put(endpoint);
+              
+              const updated = res.data?.data?.cita ?? res.data?.data ?? res.data;
+              actualizarCita(id, { ...(updated || {}), estado: 'cancelada' });
+              Alert.alert('Éxito', 'La cita ha sido cancelada correctamente.');
+            } catch (error: any) {
+              const msg = error?.response?.data?.message || error?.message || 'No se pudo cancelar la cita. Intenta nuevamente.';
+              Alert.alert('Error', msg);
+            } finally {
+              setCancellingId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // FILTRADO DE CITAS
+  // ─────────────────────────────────────────────────────────────
 
   const filteredCitas = useMemo(() => {
-    const normalize = (value: unknown) =>
-      String(value ?? '')
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '');
-
-    const query = normalize(searchQuery.trim());
+    const query = normalizeText(searchQuery.trim());
     if (!query) return citas;
 
     return citas.filter((item) => {
-      const servicioNombre = normalize(item.servicio);
+      const servicioNombre = normalizeText(item.servicio);
       const serviciosNombres = Array.isArray(item.Servicios)
-        ? item.Servicios.map((servicio) => normalize(servicio.nombre)).join(' ')
+        ? item.Servicios.map((servicio) => normalizeText(servicio.nombre)).join(' ')
         : '';
-      const descripcion = normalize(item.notas);
-      const clienteNombre = normalize(`${item.cliente?.nombre ?? ''} ${item.cliente?.apellido ?? ''}`);
-      const profesionalNombre = normalize(`${item.profesional?.nombre ?? item.Profesional?.nombre ?? ''} ${item.profesional?.apellido ?? item.Profesional?.apellido ?? ''}`);
-      const usuarioNombre = normalize(`${item.usuario?.nombre ?? ''} ${item.usuario?.apellido ?? ''}`);
-      const citaId = normalize(item.id);
-      const hayTexto = `${servicioNombre} ${serviciosNombres} ${descripcion} ${clienteNombre} ${profesionalNombre} ${usuarioNombre} ${citaId}`;
+      const descripcion = normalizeText(item.notas);
+      const clienteNombre = normalizeText(getClienteNombre(item));
+      const profesionalNombre = normalizeText(getProfesionalNombre(item));
+      const citaId = normalizeText(item.id);
+      const hayTexto = `${servicioNombre} ${serviciosNombres} ${descripcion} ${clienteNombre} ${profesionalNombre} ${citaId}`;
       return hayTexto.includes(query);
     });
   }, [citas, searchQuery]);
+
+  // ─────────────────────────────────────────────────────────────
+  // EFECTOS
+  // ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (isAuthenticated && (isAdmin || isAux)) {
@@ -307,6 +475,26 @@ const cancelarCita = (id: string | number) => {
     }
   }, [isAuthenticated, isAdmin, isAux]);
 
+  // ─────────────────────────────────────────────────────────────
+  // HANDLERS DE UI
+  // ─────────────────────────────────────────────────────────────
+
+  const handleToggleDetails = async (id: CitaId) => {
+    const nextId = expandedCitaId === id ? null : id;
+    setExpandedCitaId(nextId);
+
+    if (nextId !== null && !detalleCitas[String(id)]) {
+      const item = citas.find((c) => String(c.id) === String(id));
+      if (!Array.isArray(item?.Servicios)) {
+        await loadCitaDetalle(id);
+      }
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────
+
   if (!isAuthenticated || (!isAdmin && !isAux)) {
     return (
       <View style={styles.centered}>
@@ -315,11 +503,11 @@ const cancelarCita = (id: string | number) => {
       </View>
     );
   }
-  
 
   return (
     <View style={styles.container}>
       <ThemedText type="title">Citas</ThemedText>
+
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#a56363" />
@@ -329,133 +517,56 @@ const cancelarCita = (id: string | number) => {
 
       {errorMessage ? <ThemedText style={styles.error}>{errorMessage}</ThemedText> : null}
 
-      {/* ── BARRA DE BÚSQUEDA ──────────────────────────────────────────── */}
-<View style={styles.searchRow}>
-  <TextInput
-    placeholder="Buscar cita..."
-    value={searchQuery}
-    onChangeText={setSearchQuery}
-    style={styles.input}
-  />
-
-  {searchQuery.trim().length > 0 && (
-    <Pressable
-      style={styles.clearBtn}
-      onPress={() => setSearchQuery('')}
-    >
-      <ThemedText style={styles.searchBtnText}>X</ThemedText>
-    </Pressable>
-  )}
-
-
-</View>
-
+      {/* BARRA DE BÚSQUEDA */}
+      <View style={styles.searchRow}>
+        <TextInput
+          placeholder="Buscar cita..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.input}
+        />
+        {searchQuery.trim().length > 0 && (
+          <Pressable style={styles.clearBtn} onPress={() => setSearchQuery('')}>
+            <ThemedText style={styles.searchBtnText}>X</ThemedText>
+          </Pressable>
+        )}
+      </View>
 
       <FlatList
         data={filteredCitas}
-        keyExtractor={(item, index) => String(item.id ?? index)}
+        keyExtractor={(item, index) => String(item.id ?? `cita-${index}`)}
         contentContainerStyle={filteredCitas.length === 0 ? styles.emptyContainer : undefined}
         ListEmptyComponent={!loading ? <ThemedText>No hay citas registradas.</ThemedText> : null}
         renderItem={({ item }) => {
-          const clienteNombre = item.cliente?.nombre || item.usuario?.nombre || '';
-          const clienteApellido = item.cliente?.apellido || item.usuario?.apellido || '';
-          const cliente = `${clienteNombre} ${clienteApellido}`.trim() || 'Sin cliente';
-          const profesionalNombre = item.profesional?.nombre || item.Profesional?.nombre || '';
-          const profesionalApellido = item.profesional?.apellido || item.Profesional?.apellido || '';
-          const profesional = `${profesionalNombre} ${profesionalApellido}`.trim() || 'Sin profesional';
           const cacheKey = String(item.id);
-          const serviciosSource = detalleCitas[cacheKey]?.Servicios ?? item.Servicios;
-          const servicios = Array.isArray(serviciosSource) && serviciosSource.length > 0
-            ? serviciosSource.map((servicio) => servicio.nombre).filter(Boolean).join(', ')
-            : item.servicio || 'Sin servicio';
-          const servicioAgendado = loadingDetalleId === item.id ? 'Cargando servicio...' : servicios;
-          const isExpanded = String(item.id) === String(expandedCitaId);
-
-          const toggleDetails = async () => {
-            const nextId = isExpanded ? null : item.id ?? null;
-            setExpandedCitaId(nextId);
-
-            if (nextId !== null && !detalleCitas[cacheKey] && !Array.isArray(item.Servicios)) {
-              await loadCitaDetalle(item.id ?? '');
-            }
-          };
+          const isExpanded = expandedCitaId === item.id;
+          const isLoadingDetalle = loadingDetalleId === item.id;
+          const isConfirming = confirmadaId === item.id;
+          const isCancelling = cancellingId === item.id;
 
           return (
-            <Pressable style={styles.card} onPress={toggleDetails}>
-              <ThemedText type="defaultSemiBold">Cita #{item.id ?? 'N/A'}</ThemedText>
-              <ThemedText>Fecha: {item.fecha ?? 'N/A'}</ThemedText>
-              <ThemedText>Hora: {item.hora ?? 'N/A'}</ThemedText>
-              <ThemedText>Cliente que agendó: {cliente}</ThemedText>
-              <ThemedText>Profesional asignado: {profesional}</ThemedText>
-              <ThemedText>Estado: {item.estado ?? 'N/A'}</ThemedText>
-              <ThemedText style={styles.hint}>
-                Presiona para {isExpanded ? 'ocultar' : 'ver'} más datos de la cita.
-              </ThemedText>
-
-              {isExpanded ? (
-                <View style={styles.detailsBox}>
-                  <ThemedText type="defaultSemiBold">Detalle completo</ThemedText>
-                  {item.servicio ? <ThemedText>Servicio agendado: {item.servicio}</ThemedText> : null}
-                  {Array.isArray(serviciosSource) && serviciosSource.length > 0 ? (
-                    <View style={styles.serviceList}>
-                      {(serviciosSource || []).map((servicio, index) => {
-                        const servicioNombre = servicio.nombre || `Servicio ${index + 1}`;
-                        const duracion = servicio.CitaServicio?.duracion ?? servicio.duracion;
-                        const precio = servicio.CitaServicio?.precio ?? servicio.precio ?? 0;
-                        const cantidad = servicio.CitaServicio?.cantidad ?? servicio.cantidad ?? 1;
-                        const subtotal = Number(precio) * Number(cantidad);
-
-                        return (
-                          <View key={`servicio-${index}`} style={styles.serviceItem}>
-                            <ThemedText style={styles.serviceLabel}>• {servicioNombre}</ThemedText>
-                            {duracion ? <ThemedText style={styles.serviceInfo}>Duración: {duracion} min</ThemedText> : null}
-                            <ThemedText style={styles.serviceInfo}>Total servicio: ${subtotal.toLocaleString('es-CO')}</ThemedText>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  ) : null}
-                  {item.notas ? <ThemedText>Notas: {item.notas}</ThemedText> : null}
-                  {typeof item.total === 'number' ? <ThemedText>Total: ${item.total.toLocaleString('es-CO')}</ThemedText> : null}
-                  {normalizeEstado(item.estado) === 'pendiente' ? (
-                    <View style={styles.actionRow}>
-                      <Pressable
-                        style={[styles.confirmButton, confirmadaId === item.id ? { opacity: 0.7 } : undefined]}
-                        onPress={() => confirmarCita(item.id ?? '')}
-                        disabled={confirmadaId === item.id}
-                      >
-                        <ThemedText style={styles.confirmButtonText}>{confirmadaId === item.id ? 'Confirmando...' : 'Confirmar cita'}</ThemedText>
-                      </Pressable>
-                      <Pressable
-                        style={[styles.cancelButton, cancellingId === item.id ? { opacity: 0.7 } : undefined]}
-                        onPress={() => cancelarCita(item.id ?? '')}
-                        disabled={cancellingId === item.id}
-                      >
-                        <ThemedText style={styles.cancelButtonText}>{cancellingId === item.id ? 'Cancelando...' : 'Cancelar cita'}</ThemedText>
-                      </Pressable>
-                    </View>
-                  ) : normalizeEstado(item.estado) === 'confirmada' ? (
-                    <Pressable
-                      style={[styles.completeButton, cancellingId === item.id ? { opacity: 0.7 } : undefined]}
-                      onPress={() => completarCita(item.id ?? '')}
-                      disabled={cancellingId === item.id}
-                    >
-                      <ThemedText style={styles.completeText}>{cancellingId === item.id ? 'Completando...' : 'Completar cita'}</ThemedText>
-                    </Pressable>
-                  ) : normalizeEstado(item.estado) === 'completada' ? (
-                    <ThemedText>La cita ya fue completada.</ThemedText>
-                  ) : normalizeEstado(item.estado) === 'cancelada' ? (
-                    <ThemedText>La cita fue cancelada y no puede modificarse.</ThemedText>
-                  ) : null}
-                </View>
-              ) : null}
-            </Pressable>
+            <CitaItem
+              item={item}
+              isExpanded={isExpanded}
+              isLoadingDetalle={isLoadingDetalle}
+              isConfirming={isConfirming}
+              isCancelling={isCancelling}
+              detalleCitas={detalleCitas}
+              onToggle={handleToggleDetails}
+              onConfirm={confirmarCita}
+              onComplete={completarCita}
+              onCancel={cancelarCita}
+            />
           );
         }}
       />
     </View>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ESTILOS
+// ─────────────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#f9f6f2' },
@@ -489,4 +600,3 @@ const styles = StyleSheet.create({
   searchBtnText: { color: '#fff', fontWeight: '700' },
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
 });
-

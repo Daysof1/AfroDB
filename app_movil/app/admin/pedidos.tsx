@@ -1,35 +1,22 @@
 // Página: pedidos.tsx. vista de pedidos del sistema.
 /**
- * Este archivo y pantalla es la lista e pedido en panel de administrador
- * mustra todos los pedidos del sistema en una lista paginada (de 10 por pagina)
+ * Este archivo y pantalla es la lista de pedidos en panel de administrador
+ * muestra todos los pedidos del sistema en una lista paginada (de 10 por pagina)
  * permite buscar pedidos por texto en tiempo real mientras escribe
- * al presionar un pedido navega  admin/pedido/[id] para ver el detalle 
- * solo para rol de admin y auxiar
+ * al presionar un pedido navega a admin/pedido/[id] para ver el detalle 
+ * solo para rol de admin y auxiliar
  */
 
-// manejo de variables de estado local
 import { useState, useEffect } from "react";
-//Importar componentes 
-//Dimensions optiene al ancho y alto de la pantalla para hacer diseos responsivos
-//flatlist lista optimizada con virtualizacion para mostrar grandes cantidades de datos
-//modal mostrar detalles de contenido en ventanas emergentes
-
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
-
-//Lee los parametros de la url para obtener el id del pedido
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from "react-native";
 import { router } from "expo-router";
-//themedText : texto que aplica colores del tema del dispositivo de manera automatica claro u oscuro
 import { ThemedText } from '../../components/themed-text';
-//ciente http axios con JWT
 import apiClient from '../../src/api/apiClient';
 
-/**
- * TIPOS
- * representa un item de la lista de productos del pedido
- * todos los campos son opcionales ? porque el backend puede evitarlos todos 
- */
+// ─────────────────────────────────────────────────────────────
+// TIPOS
+// ─────────────────────────────────────────────────────────────
 
-// representa el pedido completo tal como lo devuelve el backend
 type Pedido = {
     id: string;
     estado?: string;
@@ -40,232 +27,296 @@ type Pedido = {
     };
 };
 
-/**
- * Componnete principal
- * 
- */
-// Renderiza la vista principal de este componente.
+// ─────────────────────────────────────────────────────────────
+// FUNCIONES AUXILIARES
+// ─────────────────────────────────────────────────────────────
+
+const buildQueryParams = (page: number, search: string): string => {
+    const params = new URLSearchParams();
+    
+    if (search.trim()) {
+        params.append('buscar', encodeURIComponent(search.trim()));
+        params.append('limite', '100');
+    } else {
+        params.append('limite', '10');
+    }
+    
+    params.append('pagina', String(page));
+    
+    return params.toString();
+};
+
+const filterPedidosBySearch = (pedidos: Pedido[], search: string): Pedido[] => {
+    const q = search.trim().toLowerCase();
+    if (!q) return pedidos;
+    
+    return pedidos.filter(p => {
+        const idStr = String(p.id || '').toLowerCase();
+        const nombre = (p.usuario?.nombre || '').toLowerCase();
+        const apellido = (p.usuario?.apellido || '').toLowerCase();
+        const estado = (p.estado || '').toLowerCase();
+        const total = String(p.total || '').toLowerCase();
+        return idStr.includes(q) || nombre.includes(q) || apellido.includes(q) || 
+               estado.includes(q) || total.includes(q);
+    });
+};
+
+// ─────────────────────────────────────────────────────────────
+// COMPONENTE PRINCIPAL
+// ─────────────────────────────────────────────────────────────
+
 export default function AdminPedidoScreen() {
-    /**
-     * parametro de ruta
-     * useLocalSearchParams lee los segmentos dinamicos de la url
-     */
+    const [pedidos, setPedidos] = useState<Pedido[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [busqueda, setBusqueda] = useState('');
+    const [pagina, setPagina] = useState(1);
+    const [totalPaginas, setTotalPaginas] = useState(1);
 
-    //estado local 
-    const [pedidos, setPedidos] = useState<Pedido[]>([]);// Array de pedidos de la pagina actual
-    const [loading, setLoading] = useState(true);//activo mientras se hace la peticion api
-    const [errorMessage, setErrorMessage] = useState(''); //Mensaje de error si falla la carga
-    const [busqueda, setBusqueda] = useState(''); //texto actual de la busqueda
-    const [pagina, setPagina] = useState(1); //pagina actual es la 1
-    const [totalPaginas, setTotalPaginas] = useState(1); //total de paginas devuelto por el backend
-
-    /**
-     * funcion fetchPedido
-     * llama el endpoint get/admin/pedidos con paramteros de busqueda y paginacion
-     * page numero de la pagina a cargar
-     * search texto de busqueda default si la cadena va vacia carga todos los pedidos
-     */
+    // ─────────────────────────────────────────────────────────────
+    // FUNCIÓN DE CARGA (refactorizada)
+    // ─────────────────────────────────────────────────────────────
 
     const fetchPedidos = async (page = 1, search = '') => {
-        setLoading(true); //muestra el spinner 
+        setLoading(true);
         setErrorMessage('');
+        
         try {
-            //construye el query del strimng dinamicamente
-            const params: string[] = [];
-        if (search.trim()) params.push(`buscar=${encodeURIComponent(search.trim())}`);//codifica los carateres especiales en la busqueda
-        params.push(`pagina=${page}`);// numero de la pagina
-        // Si hay una búsqueda, pedir más items al backend y luego filtrar en el cliente
-        params.push(search.trim() ? 'limite=100' : 'limite=10');
-            const url = `/admin/pedidos?${params.join('&')}`; //construye la url completa  con los parametros
-            //peticion get autenticada el token JWT lo agrega el apiClient automaticamente
+            const queryString = buildQueryParams(page, search);
+            const url = `/admin/pedidos?${queryString}`;
             const res = await apiClient.get(url);
-            // extrar los pedidos de array
+            
             const pedidosData: Pedido[] = res.data?.data?.pedidos || [];
-        // Si el backend no soporta búsqueda por texto, filtramos en el cliente
-        let finalPedidos = pedidosData;
-        const q = search.trim().toLowerCase();
-        if (q) {
-          finalPedidos = pedidosData.filter(p => {
-            const idStr = String(p.id || '').toLowerCase();
-            const nombre = (p.usuario?.nombre || '').toLowerCase();
-            const apellido = (p.usuario?.apellido || '').toLowerCase();
-            const estado = (p.estado || '').toLowerCase();
-            const total = String(p.total || '').toLowerCase();
-            return idStr.includes(q) || nombre.includes(q) || apellido.includes(q) || estado.includes(q) || total.includes(q);
-          });
-        }
-            // la respuesta tiene estructura { data : data: { pedido...}}
-            //el operador ? evita errores si algun nivel es undefined 
-        setPedidos(finalPedidos); //actualiza el estado con los pedidos obtenidos (posiblemente filtrados)
-            setPagina
-            (page);
-            //actualiza la pagina actual a medida que se va escribindo
-        setTotalPaginas(res.data?.data?.paginacion?.totalPaginas || 1);
-        }   catch (error: unknown) {
-            //si la peticion falla guarda el mensaje de error para mostrarlo en pantalla
-            setErrorMessage((error as { message?: string })?.message || 'no se pudo cargar el pedido');
+            const finalPedidos = filterPedidosBySearch(pedidosData, search);
+            
+            setPedidos(finalPedidos);
+            setPagina(page);
+            setTotalPaginas(res.data?.data?.paginacion?.totalPaginas || 1);
+            
+        } catch (error: unknown) {
+            setErrorMessage((error as { message?: string })?.message || 'No se pudo cargar el pedido');
         } finally {
-            setLoading(false);//oculta el spinner siempre que haya un error o no
+            setLoading(false);
         }
     };
 
-    /**
-     * efecto de carga inicial
-     * se ejecuta cad vez que cambie el parametro id de la url 
-     * en la practica solo se ejecuta el montar porque no se navega entre id diferentes 
-     */
+    // ─────────────────────────────────────────────────────────────
+    // EFECTOS
+    // ─────────────────────────────────────────────────────────────
 
     useEffect(() => {
         fetchPedidos(1, '');
     }, []);
 
-    /**
-     * Funcion handlePagina
-     * avanza o retrocede la pagina actual
-     * next +1 para siguiente -1 para abterior
-     * Math.max y Math.min evitan ir mas alla de los limites de pagina disponibles
-     */
+    // ─────────────────────────────────────────────────────────────
+    // HANDLERS
+    // ─────────────────────────────────────────────────────────────
 
     const handlePagina = (next: number) => {
         const nueva = Math.max(1, Math.min(totalPaginas, pagina + next));
-        fetchPedidos(nueva, busqueda);//recarga con la nueva pagina pero conserva el filtro
+        fetchPedidos(nueva, busqueda);
     };
 
-     // ── RENDERIZADO ───────────────────────────────────────────────────────────
-  return (
-    <View style={styles.container}>
+    const handleSearch = (text: string) => {
+        setBusqueda(text);
+        fetchPedidos(1, text);
+    };
 
-      {/* Título de la pantalla */}
-      <ThemedText type="title">Pedidos</ThemedText>
-
-      {/* ── BARRA DE BÚSQUEDA ──────────────────────────────────────────── */}
-<View style={styles.searchRow}>
-  <TextInput
-    placeholder="Buscar pedido..."
-    value={busqueda}
-    onChangeText={(text) => {
-      setBusqueda(text);
-      fetchPedidos(1, text); // Búsqueda en tiempo real
-    }}
-    style={styles.input}
-  />
-
-  {busqueda.trim().length > 0 && (
-    <Pressable
-      style={styles.clearBtn}
-      onPress={() => {
+    const handleClearSearch = () => {
         setBusqueda('');
         fetchPedidos(1, '');
-      }}
-    >
-      <ThemedText style={styles.searchBtnText}>X</ThemedText>
-    </Pressable>
-  )}
+    };
 
-  {/* Botón de búsqueda manual */}
-  <Pressable
-    style={styles.searchBtn}
-    onPress={() => fetchPedidos(1, busqueda)}
-  >
+    const navigateToPedido = (id: string) => {
+        (router as unknown as { 
+            push: (p: { pathname: string; params: Record<string, string> }) => void 
+        }).push({
+            pathname: '/admin/pedidos/[id]',
+            params: { id: String(id) },
+        });
+    };
 
-  </Pressable>
-</View>
+    // ─────────────────────────────────────────────────────────────
+    // RENDER
+    // ─────────────────────────────────────────────────────────────
 
-{/* Spinner: visible mientras se cargan los pedidos */}
-{loading ? (
-  <View style={styles.centered}>
-    <ActivityIndicator size="large" />
-    <ThemedText>Cargando pedidos...</ThemedText>
-  </View>
-) : null}
-      {/* Spinner: visible mientras se cargan los pedidos */}
-      {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" />
-          <ThemedText>Cargando pedidos...</ThemedText>
-        </View>
-      ) : null}
+    return (
+        <View style={styles.container}>
+            <ThemedText type="title">Pedidos</ThemedText>
 
-      {/* Mensaje de error: visible si la petición falló */}
-      {errorMessage ? <ThemedText style={styles.error}>{errorMessage}</ThemedText> : null}
+            {/* BARRA DE BÚSQUEDA */}
+            <View style={styles.searchRow}>
+                <TextInput
+                    placeholder="Buscar pedido..."
+                    value={busqueda}
+                    onChangeText={handleSearch}
+                    style={styles.input}
+                />
 
-      {/* ── LISTA DE PEDIDOS ────────────────────────────────────────────── */}
-      <FlatList
-        data={pedidos}                                              // Array de pedidos de la página actual.
-        keyExtractor={(item) => String(item.id)}       // ID único para cada fila.
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.card}
-            // Al presionar, navega a la pantalla de detalle con el ID del pedido.
-            // Se usa el mismo cast de router que en otros archivos admin.
-            onPress={() =>
-              (router as unknown as { push: (p: { pathname: string; params: Record<string, string> }) => void }).push({
-                pathname: '/admin/pedidos/[id]', // Ruta dinámica.
-                params: { id: String(item.id) }, // El ID se pasa como parámetro de ruta.
-              })
-            }
-          >
-            <View style={styles.cardBody}>
-              {/* Número del pedido: se usa _id (MongoDB) o id como fallback */}
-              <ThemedText type="defaultSemiBold">Pedido #{item.id}</ThemedText>
-              {/* Nombre completo del cliente que realizó el pedido */}
-              <ThemedText>Cliente: {item.usuario?.nombre} {item.usuario?.apellido}</ThemedText>
-              {/* Estado actual del pedido */}
-              <ThemedText>Estado: {item.estado}</ThemedText>
-              {/* Total formateado en pesos colombianos */}
-              <ThemedText style={styles.meta}>Total: ${Number(item.total || 0).toLocaleString('es-CO')}</ThemedText>
+                {busqueda.trim().length > 0 && (
+                    <Pressable style={styles.clearBtn} onPress={handleClearSearch}>
+                        <ThemedText style={styles.searchBtnText}>X</ThemedText>
+                    </Pressable>
+                )}
+
+                <Pressable
+                    style={styles.searchBtn}
+                    onPress={() => fetchPedidos(1, busqueda)}
+                />
             </View>
-          </Pressable>
-        )}
-        // Componente que se muestra cuando no hay pedidos y no hay carga ni error activos.
-        ListEmptyComponent={!loading && !errorMessage ? <ThemedText>No hay pedidos.</ThemedText> : null}
-        style={styles.list}
-      />
 
-      {/* ── PAGINACIÓN ──────────────────────────────────────────────────── */}
-      {/* Fila con botones < y > y el contador "Página X de Y". */}
-      <View style={styles.paginationRow}>
-        {/* Botón anterior: deshabilitado si estamos en la primera página */}
-        <Pressable style={styles.pageBtn} onPress={() => handlePagina(-1)} disabled={pagina <= 1}>
-          <ThemedText style={styles.pageBtnText}>{'<'}</ThemedText>
-        </Pressable>
-        <ThemedText style={styles.pageLabel}>Página {pagina} de {totalPaginas}</ThemedText>
-        {/* Botón siguiente: deshabilitado si estamos en la última página */}
-        <Pressable style={styles.pageBtn} onPress={() => handlePagina(1)} disabled={pagina >= totalPaginas}>
-          <ThemedText style={styles.pageBtnText}>{'>'}</ThemedText>
-        </Pressable>
-      </View>
-    </View>
-  );
+            {/* SPINNER DE CARGA */}
+            {loading ? (
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" />
+                    <ThemedText>Cargando pedidos...</ThemedText>
+                </View>
+            ) : null}
+
+            {/* MENSAJE DE ERROR */}
+            {errorMessage ? <ThemedText style={styles.error}>{errorMessage}</ThemedText> : null}
+
+            {/* LISTA DE PEDIDOS */}
+            <FlatList
+                data={pedidos}
+                keyExtractor={(item) => String(item.id)}
+                renderItem={({ item }) => (
+                    <Pressable
+                        style={styles.card}
+                        onPress={() => navigateToPedido(String(item.id))}
+                    >
+                        <View style={styles.cardBody}>
+                            <ThemedText type="defaultSemiBold">Pedido #{item.id}</ThemedText>
+                            <ThemedText>
+                                Cliente: {item.usuario?.nombre} {item.usuario?.apellido}
+                            </ThemedText>
+                            <ThemedText>Estado: {item.estado}</ThemedText>
+                            <ThemedText style={styles.meta}>
+                                Total: ${Number(item.total || 0).toLocaleString('es-CO')}
+                            </ThemedText>
+                        </View>
+                    </Pressable>
+                )}
+                ListEmptyComponent={
+                    !loading && !errorMessage ? <ThemedText>No hay pedidos.</ThemedText> : null
+                }
+                style={styles.list}
+            />
+
+            {/* PAGINACIÓN */}
+            <View style={styles.paginationRow}>
+                <Pressable 
+                    style={styles.pageBtn} 
+                    onPress={() => handlePagina(-1)} 
+                    disabled={pagina <= 1}
+                >
+                    <ThemedText style={styles.pageBtnText}>{'<'}</ThemedText>
+                </Pressable>
+                
+                <ThemedText style={styles.pageLabel}>
+                    Página {pagina} de {totalPaginas}
+                </ThemedText>
+                
+                <Pressable 
+                    style={styles.pageBtn} 
+                    onPress={() => handlePagina(1)} 
+                    disabled={pagina >= totalPaginas}
+                >
+                    <ThemedText style={styles.pageBtnText}>{'>'}</ThemedText>
+                </Pressable>
+            </View>
+        </View>
+    );
 }
 
-// ── ESTILOS ───────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// ESTILOS
+// ─────────────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  // Contenedor principal: ocupa toda la pantalla con padding interno.
-  container: { flex: 1, padding: 16, gap: 10, backgroundColor: '#f9f6f2' },
-  // Centrado para spinner de carga.
-  centered: { alignItems: 'center', gap: 10, marginVertical: 20 },
-  // Color rojo para mensajes de error.
-  error: { color: '#a56363' },
-  // Fila de búsqueda: input flexible + botón a la derecha.
-  searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  // Campo de texto: ocupa el espacio disponible (flex:1), borde gris, fondo blanco.
-  input: { flex: 1, borderWidth: 1, borderColor: '#624029', borderRadius: 10, paddingHorizontal: 12, backgroundColor: '#fff', color: '#3e2f25' },
-  // Botón de búsqueda: color principal de la web.
-  searchBtn: { backgroundColor: '#3e2f25', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
-  clearBtn: { backgroundColor: '#3f2d25', borderRadius: 14, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
-  searchBtnText: { color: '#fff', fontWeight: '700' },
-  // La lista ocupa todo el espacio vertical disponible entre la búsqueda y la paginación.
-  list: { flex: 1 },
-  // Tarjeta de pedido: borde suave y fondo blanco con sombra tenue.
-  card: { borderWidth: 1, borderColor: '#624029', borderRadius: 12, padding: 10, backgroundColor: '#fff', marginBottom: 10 },
-  cardBody: { flex: 1 },
-  // Estilo secundario para el total (tono cálido).
-  meta: { color: '#7b6758', fontSize: 13 },
-  // Fila de paginación centrada horizontalmente.
-  paginationRow: { flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
-  // Botón de página: color principal de la web.
-  pageBtn: { backgroundColor: '#3e2f25', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  pageBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  pageLabel: { fontWeight: 'bold', color: '#3e2f25' },
+    container: { 
+        flex: 1, 
+        padding: 16, 
+        gap: 10, 
+        backgroundColor: '#f9f6f2' 
+    },
+    centered: { 
+        alignItems: 'center', 
+        gap: 10, 
+        marginVertical: 20 
+    },
+    error: { 
+        color: '#a56363' 
+    },
+    searchRow: { 
+        flexDirection: 'row', 
+        gap: 8, 
+        marginBottom: 8 
+    },
+    input: { 
+        flex: 1, 
+        borderWidth: 1, 
+        borderColor: '#624029', 
+        borderRadius: 10, 
+        paddingHorizontal: 12, 
+        backgroundColor: '#fff', 
+        color: '#3e2f25' 
+    },
+    searchBtn: { 
+        backgroundColor: '#3e2f25', 
+        borderRadius: 10, 
+        paddingHorizontal: 14, 
+        justifyContent: 'center' 
+    },
+    clearBtn: { 
+        backgroundColor: '#3f2d25', 
+        borderRadius: 14, 
+        paddingHorizontal: 12, 
+        justifyContent: 'center', 
+        alignItems: 'center' 
+    },
+    searchBtnText: { 
+        color: '#fff', 
+        fontWeight: '700' 
+    },
+    list: { 
+        flex: 1 
+    },
+    card: { 
+        borderWidth: 1, 
+        borderColor: '#624029', 
+        borderRadius: 12, 
+        padding: 10, 
+        backgroundColor: '#fff', 
+        marginBottom: 10 
+    },
+    cardBody: { 
+        flex: 1 
+    },
+    meta: { 
+        color: '#7b6758', 
+        fontSize: 13 
+    },
+    paginationRow: { 
+        flexDirection: 'row', 
+        gap: 10, 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        marginTop: 10 
+    },
+    pageBtn: { 
+        backgroundColor: '#3e2f25', 
+        borderRadius: 8, 
+        paddingHorizontal: 12, 
+        paddingVertical: 6 
+    },
+    pageBtnText: { 
+        color: '#fff', 
+        fontWeight: '700', 
+        fontSize: 15 
+    },
+    pageLabel: { 
+        fontWeight: 'bold', 
+        color: '#3e2f25' 
+    },
 });

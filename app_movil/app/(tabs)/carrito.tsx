@@ -21,7 +21,7 @@ type carritoCtx = {
     cambiarCantidad: (id: string, cantidad: number) => Promise<void>;
     eliminarItem: (id: string) => Promise<void>;
     vaciarCarrito: () => Promise<void>;
-    refreshCarrito: () => Promise<void>; // ✅ TODO COMPLETADO
+    refreshCarrito: () => Promise<void>; // ✅ Función de recarga del carrito
 };
 
 // HELPERS de navegacion
@@ -32,7 +32,7 @@ const fmt = (n: number) => `$${Number(n).toLocaleString('es-CO')}`;
 export default function CarritoScreen() {
     const { isAuthenticated } = useAuth() as { isAuthenticated: boolean };
 
-    // ✅ TODO COMPLETADO: refreshCarrito ahora está tipado correctamente
+    // ✅ refreshCarrito tipado correctamente con el contexto
     const { 
         items, 
         total, 
@@ -43,7 +43,7 @@ export default function CarritoScreen() {
         refreshCarrito 
     } = useCarrito() as carritoCtx;
 
-    // ✅ useFocusEffect funcionando correctamente con refreshCarrito
+    // ✅ useFocusEffect refresca el carrito al volver a la pantalla
     useFocusEffect(
         useCallback(() => {
             refreshCarrito();
@@ -219,7 +219,7 @@ export default function CarritoScreen() {
     );
 }
 
-// ESTILOS (sin cambios)
+// ESTILOS
 const styles = StyleSheet.create({
     container: { flex: 1 },
     content: { padding: 16, gap: 14, paddingBottom: 32 },
