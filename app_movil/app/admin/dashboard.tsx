@@ -4,7 +4,7 @@
  * solo accesible para roles definidos     
  * muestra tarjetas de estadisticas en tiempo real categorias y productos 
  * pedidos / ventas totales 
- * los auxiliares ven todo excepto la tarjeta de usuarios isAdmin=false
+ * los auxiliares ven lo mismo que el admin excepto la tarjeta de usuarios isAdmin=false
  * incluye accesos rapidos y las secciones mas usadas
  * muestra informacion del sistema (estado de la api y rol de usuario)
  */

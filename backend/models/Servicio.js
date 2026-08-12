@@ -235,7 +235,7 @@ Servicio.prototype.estaActivo = function() {
 };
 
 Servicio.prototype.formatearPrecio = function() {
-  return `$${parseFloat(this.precio).toLocaleString('es-CO')}`;
+  return `$${Number.parseFloat(this.precio).toLocaleString('es-CO')}`;
 };
 
 

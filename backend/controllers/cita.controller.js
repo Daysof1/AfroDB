@@ -652,41 +652,45 @@ const reprogramarCita = async (req, res) => {
     const finNueva = new Date(inicioNueva);
     finNueva.setMinutes(finNueva.getMinutes() + cita.duracionTotal);
 
-    for (const profesionalId of profesionalesAsignados) {
+      for (const profesionalAsignadoId of profesionalesAsignadosIds) {
       const detallesProfesional = await CitaServicio.findAll({
-        where: { profesionalId },
-        attributes: ['citaId']
+        where: { profesionalId: profesionalAsignadoId },
+        attributes: ['citaId'],
+        transaction: t
       });
 
       const citaIds = detallesProfesional.map((detalle) => detalle.citaId);
       if (citaIds.length === 0) continue;
 
-      const citasExistentes = await Cita.findAll({
-        where: {
-          id: citaIds,
-          fecha,
-          estado: {
-            [Op.in]: ['confirmada']
-          },
-          id: { [Op.ne]: cita.id }
-        },
-        attributes: ['hora', 'duracionTotal']
-      });
+    const citasExistentes = await Cita.findAll({
+      where: {
+        [Op.and]: [
+          { id: citaIds },
+          { fecha: fecha },
+          { estado: { [Op.in]: ['confirmada'] } },
+          { id: { [Op.ne]: cita.id } }
+        ]
+      },
+      attributes: ['hora', 'duracionTotal'],
+      transaction: t
+    });
 
-      for (const citaExistente of citasExistentes) {
-        const inicioExistente = new Date(`${fecha}T${citaExistente.hora}`);
-        const finExistente = new Date(inicioExistente);
-        finExistente.setMinutes(finExistente.getMinutes() + citaExistente.duracionTotal);
+  
+    for (const citaIxistente of citasExistentes) {
+      const inicioExistente = new Date(`${fecha}T${citaIxistente.hora}`);
+      const finExistente = new Date(inicioExistente);
+      finExistente.setMinutes(finExistente.getMinutes() + citaIxistente.duracionTotal);
 
-        const hayCruce = inicioNueva < finExistente && finNueva > inicioExistente;
-        if (hayCruce) {
-          return res.status(400).json({
-            success: false,
-            message: 'Uno de los profesionales asignados ya tiene una cita en ese horario'
-          });
-        }
+      const hayCruce = inicioNueva < finExistente && finNueva > inicioExistente;
+      if (hayCruce) {
+        await t.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Uno de los profesionales asignados ya tiene una cita en ese horario'
+        });
       }
     }
+  }
 
     cita.fecha = fecha;
     cita.hora = hora;

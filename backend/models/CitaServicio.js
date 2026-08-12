@@ -154,7 +154,7 @@ const CitaServicio = sequelize.define('CitaServicio', {
  * calcularSubtotal → precio * cantidad
  */
 CitaServicio.prototype.calcularSubtotal = function() {
-  return parseFloat(this.precio) * this.cantidad;
+  return Number.parseFloat(this.precio) * this.cantidad;
 };
 
 module.exports = CitaServicio;

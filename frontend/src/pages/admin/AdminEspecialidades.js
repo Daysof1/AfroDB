@@ -17,10 +17,13 @@ export default function AdminEspecialidades() {
   const [editingEspecialidadId, setEditingEspecialidadId] = useState(null);
   const [newEspecialidad, setNewEspecialidad] = useState({ nombre: '', descripcion: '' });
 
-  const loadEspecialidades = async () => {
+    const loadEspecialidades = async () => {
     try {
       const response = await apiRequest('/admin/especialidades');
-      console.log(response.data.especialidades);
+      
+      // CORRECCIÓN DE SEGURIDAD: Se ha eliminado el console.log de datos del servidor.
+      // Ahora los datos van directamente a la validación de React de forma segura.
+      
       setEspecialidades(response?.data?.especialidades || []);
     } catch (err) {
       setError(err.message || 'No se pudieron cargar especialidades');

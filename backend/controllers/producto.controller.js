@@ -8,103 +8,142 @@
  * Las rutas están definidas en routes/admin.routes.js
  */
 
-// Importa el modelo Producto desde models/Producto.js → tabla 'Producto'
 const Producto = require('../models/Producto');
-
-// Importa el modelo Categoria desde models/Categoria.js → tabla 'Categoria'
 const Categoria = require('../models/Categoria');
-
-// Importa el modelo Subcategoria desde models/Subcategoria.js → tabla 'Subcategoria'
 const Subcategoria = require('../models/Subcategoria');
-
-// 'path' es un módulo nativo de Node.js para manejar rutas de archivos.
-// Se usa para construir la ruta completa de las imágenes en el disco.
-const path = require('path');
-
-// 'fs.promises' es el módulo nativo de Node.js para manejar archivos de forma asíncrona.
-// Se usa para eliminar imágenes del disco (unlink).
-const fs = require('fs').promises;
+const path = require('node:path');
+const fs = require('node:fs').promises;
 const { downloadImage, deleteFile } = require('../config/multer');
 
-/**
- * Obtener todos los productos (admin)
- * 
- * Ruta: GET /api/admin/productos
- * Query params opcionales:
- * - categoriaId, subcategoriaId: Filtrar por categoría/subcategoría
- * - activo: 'true'/'false'
- * - conStock: 'true' → solo productos con stock > 0
- * - buscar: texto para buscar en nombre o descripción
- * - pagina, limite: Paginación
- */
+// ─────────────────────────────────────────────────────────────
+// FUNCIONES AUXILIARES
+// ─────────────────────────────────────────────────────────────
+
+const buildProductoWhere = (filtros) => {
+  const { Op } = require('sequelize');
+  const { categoriaId, subcategoriaId, activo, conStock, buscar } = filtros;
+  
+  const where = {};
+  if (categoriaId) where.categoriaId = categoriaId;
+  if (subcategoriaId) where.subcategoriaId = subcategoriaId;
+  if (activo !== undefined) where.activo = activo === 'true';
+  if (conStock === 'true') where.stock = { [Op.gt]: 0 };
+  
+  if (buscar) {
+    where[Op.or] = [
+      { nombre: { [Op.like]: `%${buscar}%` } },
+      { descripcion: { [Op.like]: `%${buscar}%` } }
+    ];
+  }
+  
+  return where;
+};
+
+const getPaginacionParams = (pagina, limite) => {
+  const pageNum = Number.parseInt(pagina, 10);
+  const limitNum = Number.parseInt(limite, 10);
+  const offset = (pageNum - 1) * limitNum;
+  return { pageNum, limitNum, offset };
+};
+
+const validarCategoria = async (categoriaId) => {
+  const categoria = await Categoria.findByPk(categoriaId);
+  if (!categoria) {
+    throw new Error(`No existe una categoría con ID ${categoriaId}`);
+  }
+  if (!categoria.activo) {
+    throw new Error(`La categoría "${categoria.nombre}" está inactiva`);
+  }
+  return categoria;
+};
+
+const validarSubcategoria = async (subcategoriaId, categoriaId) => {
+  const subcategoria = await Subcategoria.findByPk(subcategoriaId);
+  if (!subcategoria) {
+    throw new Error(`No existe una subcategoría con ID ${subcategoriaId}`);
+  }
+  if (!subcategoria.activo) {
+    throw new Error(`La subcategoría "${subcategoria.nombre}" está inactiva`);
+  }
+  if (subcategoria.categoriaId !== Number.parseInt(categoriaId, 10)) {
+    throw new Error(`La subcategoría "${subcategoria.nombre}" no pertenece a la categoría seleccionada`);
+  }
+  return subcategoria;
+};
+
+const validarPrecio = (precio) => {
+  const precioNum = Number.parseFloat(precio);
+  if (precioNum <= 0) {
+    throw new Error('El precio debe ser mayor a 0');
+  }
+  return precioNum;
+};
+
+const validarStock = (stock) => {
+  const stockNum = Number.parseInt(stock, 10);
+  if (stockNum < 0) {
+    throw new Error('El stock no puede ser negativo');
+  }
+  return stockNum;
+};
+
+const limpiarImagenEnError = async (filename) => {
+  if (filename) {
+    try {
+      await deleteFile(filename);
+    } catch (err) {
+      console.error('Error al eliminar imagen:', err);
+    }
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// GET: Obtener todos los productos
+// ─────────────────────────────────────────────────────────────
+
 const getProductos = async (req, res) => {
   try {
-    // Extrae todos los filtros y datos de paginación de los query params
     const { 
       categoriaId, 
       subcategoriaId, 
       activo, 
       conStock,
       buscar,
-      pagina = 1,       // Página actual (default: 1)
-      limite = 100       // Registros por página (default: 100)
+      pagina = 1,
+      limite = 100
     } = req.query;
     
-    // Construye el objeto WHERE dinámicamente según los filtros recibidos
-    const where = {};
-    if (categoriaId) where.categoriaId = categoriaId;           // Filtra por categoría
-    if (subcategoriaId) where.subcategoriaId = subcategoriaId;  // Filtra por subcategoría
-    if (activo !== undefined) where.activo = activo === 'true';  // Convierte string a boolean
-    // Op.gt = greater than (>). stock > 0
-    if (conStock === 'true') where.stock = { [require('sequelize').Op.gt]: 0 };
+    const where = buildProductoWhere({ categoriaId, subcategoriaId, activo, conStock, buscar });
+    const { pageNum, limitNum, offset } = getPaginacionParams(pagina, limite);
     
-    // Búsqueda por texto en nombre o descripción
-    if (buscar) {
-      const { Op } = require('sequelize');
-      // Op.or: busca en nombre O descripción
-      // Op.like: equivale a LIKE en SQL
-      where[Op.or] = [
-        { nombre: { [Op.like]: `%${buscar}%` } },
-        { descripcion: { [Op.like]: `%${buscar}%` } }
-      ];
-    }
-    
-    // Calcula el offset para paginación (cuántos registros saltar)
-    const offset = (parseInt(pagina) - 1) * parseInt(limite);
-    
-    // Opciones completas de la consulta Sequelize
-    const opciones = {
-      where,                    // Filtros construidos arriba
-      include: [                // JOINs con tablas relacionadas
+    const { count, rows: productos } = await Producto.findAndCountAll({
+      where,
+      include: [
         {
           model: Categoria,
           as: 'categoria',
-          attributes: ['id', 'nombre']     // Solo trae id y nombre de la categoría
+          attributes: ['id', 'nombre']
         },
         {
           model: Subcategoria,
           as: 'subcategoria',
-          attributes: ['id', 'nombre']     // Solo trae id y nombre de la subcategoría
+          attributes: ['id', 'nombre']
         }
       ],
-      limit: parseInt(limite),  // Máximo de registros
-      offset,                   // Registros a saltar
-      order: [['nombre', 'ASC']]  // Ordenar alfabéticamente A-Z
-    };
+      limit: limitNum,
+      offset,
+      order: [['nombre', 'ASC']]
+    });
     
-    // findAndCountAll retorna { count: total, rows: registros de esta página }
-    const { count, rows: productos } = await Producto.findAndCountAll(opciones);
-    
-    // Responde con los productos y la información de paginación
     res.json({
       success: true,
       data: {
         productos,
         paginacion: {
-          total: count,                     // Total de productos que coinciden
-          pagina: parseInt(pagina),
-          limite: parseInt(limite),
-          totalPaginas: Math.ceil(count / parseInt(limite))  // Redondea hacia arriba
+          total: count,
+          pagina: pageNum,
+          limite: limitNum,
+          totalPaginas: Math.ceil(count / limitNum)
         }
       }
     });
@@ -119,24 +158,20 @@ const getProductos = async (req, res) => {
   }
 };
 
-/**
- * Obtener un producto por ID (admin)
- * 
- * Ruta: GET /api/admin/productos/:id
- * Retorna el producto con su categoría y subcategoría.
- */
+// ─────────────────────────────────────────────────────────────
+// GET: Obtener producto por ID
+// ─────────────────────────────────────────────────────────────
+
 const getProductoById = async (req, res) => {
   try {
-    const { id } = req.params;  // ID del producto desde la URL
+    const { id } = req.params;
     
-    // findByPk busca por Primary Key (clave primaria = id)
-    // include hace JOINs con Categoria y Subcategoria
     const producto = await Producto.findByPk(id, {
       include: [
         {
           model: Categoria,
           as: 'categoria',
-          attributes: ['id', 'nombre', 'activo']   // Incluye si está activa
+          attributes: ['id', 'nombre', 'activo']
         },
         {
           model: Subcategoria,
@@ -146,7 +181,6 @@ const getProductoById = async (req, res) => {
       ]
     });
     
-    // Si no existe el producto
     if (!producto) {
       return res.status(404).json({
         success: false,
@@ -154,12 +188,9 @@ const getProductoById = async (req, res) => {
       });
     }
     
-    // Responde con el producto encontrado
     res.json({
       success: true,
-      data: {
-        producto
-      }
+      data: { producto }
     });
     
   } catch (error) {
@@ -172,22 +203,16 @@ const getProductoById = async (req, res) => {
   }
 };
 
-/**
- * Crear nuevo producto (admin)
- * 
- * Ruta: POST /api/admin/productos
- * Body (multipart/form-data) porque puede incluir imagen:
- * - nombre (requerido), descripcion, precio (requerido), stock (requerido)
- * - categoriaId (requerido), subcategoriaId (requerido)
- * - imagen (archivo opcional - procesado por Multer middleware)
- */
+// ─────────────────────────────────────────────────────────────
+// POST: Crear producto
+// ─────────────────────────────────────────────────────────────
+
 const crearProducto = async (req, res) => {
+  let downloadedImagen = null;
+  
   try {
-    // Extrae los campos del body. Con multipart/form-data (por Multer), los campos
-    // de texto vienen en req.body y el archivo en req.file.
     const { nombre, descripcion, precio, stock, categoriaId, subcategoriaId } = req.body;
     
-    // VALIDACIÓN 1: Verifica que todos los campos obligatorios estén presentes
     if (!nombre || !precio || !categoriaId || !subcategoriaId) {
       return res.status(400).json({
         success: false,
@@ -195,62 +220,12 @@ const crearProducto = async (req, res) => {
       });
     }
     
-    // VALIDACIÓN 2: Verifica que la categoría exista y esté activa
-    const categoria = await Categoria.findByPk(categoriaId);
-    if (!categoria) {
-      return res.status(404).json({
-        success: false,
-        message: `No existe una categoría con ID ${categoriaId}`
-      });
-    }
-    if (!categoria.activo) {
-      return res.status(400).json({
-        success: false,
-        message: `La categoría "${categoria.nombre}" está inactiva`
-      });
-    }
+    await validarCategoria(categoriaId);
+    await validarSubcategoria(subcategoriaId, categoriaId);
+    const precioNum = validarPrecio(precio);
+    const stockNum = validarStock(stock);
     
-    // VALIDACIÓN 3: Verifica que la subcategoría exista, esté activa y pertenezca a la categoría
-    const subcategoria = await Subcategoria.findByPk(subcategoriaId);
-    if (!subcategoria) {
-      return res.status(404).json({
-        success: false,
-        message: `No existe una subcategoría con ID ${subcategoriaId}`
-      });
-    }
-    if (!subcategoria.activo) {
-      return res.status(400).json({
-        success: false,
-        message: `La subcategoría "${subcategoria.nombre}" está inactiva`
-      });
-    }
-    // Verifica que la subcategoría pertenezca a la categoría seleccionada
-    if (subcategoria.categoriaId !== parseInt(categoriaId)) {
-      return res.status(400).json({
-        success: false,
-        message: `La subcategoría "${subcategoria.nombre}" no pertenece a la categoría seleccionada`
-      });
-    }
-    
-    // VALIDACIÓN 4: Precio debe ser mayor a 0
-    if (parseFloat(precio) <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'El precio debe ser mayor a 0'
-      });
-    }
-    // Stock no puede ser negativo
-    if (parseInt(stock) < 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'El stock no puede ser negativo'
-      });
-    }
-    
-    // Si se subió una imagen, Multer la guarda en uploads/ y pone los datos en req.file.
-    // req.file.filename es el nombre generado por Multer (ej: "producto_1719344567890_abc12.jpg")
     let imagen = null;
-    let downloadedImagen = null;
     if (req.file) {
       imagen = req.file.filename;
     } else if (req.body?.imagenUrl) {
@@ -258,24 +233,22 @@ const crearProducto = async (req, res) => {
         downloadedImagen = await downloadImage(req.body.imagenUrl, nombre);
         imagen = downloadedImagen;
       } catch (err) {
-        console.warn('No se pudo descargar la imagen remota:');
+        console.warn('No se pudo descargar la imagen remota:', err.message);
         imagen = null;
       }
     }
     
-    // Crea el registro en la tabla Producto (INSERT INTO Producto ...)
     const nuevoProducto = await Producto.create({
       nombre,
-      descripcion: descripcion || null,            // Null si no se envía
-      precio: parseFloat(precio),                   // Convierte a número decimal
-      stock: parseInt(stock) || 0,                  // Convierte a entero, default 0
-      categoriaId: parseInt(categoriaId),           // FK a la tabla Categoria
-      subcategoriaId: parseInt(subcategoriaId),     // FK a la tabla Subcategoria
-      imagen,                                       // Nombre del archivo o null
-      activo: true                                   // Se crea activo por defecto
+      descripcion: descripcion || null,
+      precio: precioNum,
+      stock: stockNum,
+      categoriaId: Number.parseInt(categoriaId, 10),
+      subcategoriaId: Number.parseInt(subcategoriaId, 10),
+      imagen,
+      activo: true
     });
     
-    // Recarga el producto con sus relaciones (categoría y subcategoría)
     await nuevoProducto.reload({
       include: [
         { model: Categoria, as: 'categoria', attributes: ['id', 'nombre'] },
@@ -283,38 +256,22 @@ const crearProducto = async (req, res) => {
       ]
     });
     
-    // 201 = Created
     res.status(201).json({
       success: true,
       message: 'Producto creado exitosamente',
-      data: {
-        producto: nuevoProducto
-      }
+      data: { producto: nuevoProducto }
     });
     
   } catch (error) {
     console.error('Error en crearProducto:', error);
     
-    // Si ocurrió un error y se había subido una imagen, la elimina del disco
-    // para no dejar archivos huérfanos.
     if (req.file) {
-      // path.join() construye la ruta completa: __dirname (directorio actual) + ../uploads + nombre
-      const rutaImagen = path.join(__dirname, '../UPLOADS', req.file.filename);
-      try {
-        await fs.unlink(rutaImagen);    // Elimina el archivo del disco
-      } catch (err) {
-        console.error('Error al eliminar imagen:', err);
-      }
+      await limpiarImagenEnError(req.file.filename);
     }
     if (downloadedImagen) {
-      try {
-        deleteFile(downloadedImagen);
-      } catch (err) {
-        console.error('Error al eliminar imagen descargada tras fallo:', err.message || err);
-      }
+      await limpiarImagenEnError(downloadedImagen);
     }
     
-    // Captura errores de validación del modelo Sequelize
     if (error.name === 'SequelizeValidationError') {
       return res.status(400).json({
         success: false,
@@ -329,26 +286,24 @@ const crearProducto = async (req, res) => {
       error: error.message
     });
   }
-}; 
+};
 
+// ─────────────────────────────────────────────────────────────
+// PUT: Actualizar producto
+// ─────────────────────────────────────────────────────────────
 
-
-/**
- * Actualizar producto existente (admin)
- * 
- * Ruta: PUT /api/admin/productos/:id
- * Body (multipart/form-data):
- * - nombre, descripcion, precio, stock, categoriaId, subcategoriaId, activo
- * - imagen (archivo opcional - si se envía, reemplaza la anterior)
- */
 const actualizarProducto = async (req, res) => {
   try {
-    const { id } = req.params;   // ID del producto desde la URL
+    const { id } = req.params;
     const { nombre, descripcion, precio, stock, categoriaId, subcategoriaId, activo } = req.body;
-    const parsedCategoriaId = categoriaId !== undefined && categoriaId !== '' ? parseInt(categoriaId, 10) : undefined;
-    const parsedSubcategoriaId = subcategoriaId !== undefined && subcategoriaId !== '' ? parseInt(subcategoriaId, 10) : undefined;
     
-    // Busca el producto existente por su ID
+    const parsedCategoriaId = categoriaId !== undefined && categoriaId !== '' 
+      ? Number.parseInt(categoriaId, 10) 
+      : undefined;
+    const parsedSubcategoriaId = subcategoriaId !== undefined && subcategoriaId !== '' 
+      ? Number.parseInt(subcategoriaId, 10) 
+      : undefined;
+    
     const producto = await Producto.findByPk(id);
     
     if (!producto) {
@@ -358,7 +313,7 @@ const actualizarProducto = async (req, res) => {
       });
     }
     
-    // VALIDACIÓN: Si se cambia la categoría, verifica que exista y esté activa
+    // Validar categoría
     if (parsedCategoriaId !== undefined && parsedCategoriaId !== producto.categoriaId) {
       const categoria = await Categoria.findByPk(parsedCategoriaId);
       if (!categoria || !categoria.activo) {
@@ -369,8 +324,7 @@ const actualizarProducto = async (req, res) => {
       }
     }
     
-    // VALIDACIÓN: Si se cambia la subcategoría, verifica que exista, esté activa
-    // y pertenezca a la categoría (nueva o actual)
+    // Validar subcategoría
     if (parsedSubcategoriaId !== undefined && parsedSubcategoriaId !== producto.subcategoriaId) {
       const subcategoria = await Subcategoria.findByPk(parsedSubcategoriaId);
       if (!subcategoria || !subcategoria.activo) {
@@ -380,7 +334,6 @@ const actualizarProducto = async (req, res) => {
         });
       }
       
-      // Usa la nueva categoría si se envió, o la actual del producto
       const catId = parsedCategoriaId !== undefined ? parsedCategoriaId : producto.categoriaId;
       if (subcategoria.categoriaId !== catId) {
         return res.status(400).json({
@@ -390,66 +343,51 @@ const actualizarProducto = async (req, res) => {
       }
     }
     
-    // Validaciones de precio y stock
-    if (precio && parseFloat(precio) <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'El precio debe ser mayor a 0'
-      });
+    // Validar precio y stock
+    let precioNum, stockNum;
+    if (precio !== undefined) {
+      precioNum = validarPrecio(precio);
     }
-    if (stock && parseInt(stock) < 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'El stock no puede ser negativo'
-      });
+    if (stock !== undefined) {
+      stockNum = validarStock(stock);
     }
     
-    // Si se subió una nueva imagen o se envió una URL, reemplaza la anterior
-    let downloadedNewImage = null;
-    // Conserva la imagen anterior en memoria para eliminarla solo tras reemplazo
     const imagenAnterior = producto.imagen;
+    let downloadedNewImage = null;
 
+    // Manejo de imagen
     if (req.file) {
-      // Multer ya guardó el archivo nuevo en uploads; asignamos primero
-      // y eliminamos la anterior solo si existe y es distinta.
       producto.imagen = req.file.filename;
       if (imagenAnterior && imagenAnterior !== producto.imagen) {
-        try { deleteFile(imagenAnterior); } catch (err) { console.error('Error al eliminar imagen anterior:', err); }
+        await limpiarImagenEnError(imagenAnterior);
       }
     } else if (req.body?.imagenUrl) {
-      try {
-        const imagenUrlStr = String(req.body.imagenUrl || '');
-        // Si la URL apunta a la misma imagen ya guardada, no hacemos nada
-        if (imagenAnterior && imagenUrlStr.includes(imagenAnterior)) {
-          // Mantener la imagen actual
-        } else {
-          // Descargar la nueva imagen. Solo si la descarga tiene éxito,
-          // asignamos y eliminamos la imagen anterior.
+      const imagenUrlStr = String(req.body.imagenUrl || '');
+      if (!imagenAnterior || !imagenUrlStr.includes(imagenAnterior)) {
+        try {
           const filename = await downloadImage(imagenUrlStr, producto.nombre || 'imagen');
           downloadedNewImage = filename;
           producto.imagen = filename;
           if (imagenAnterior && imagenAnterior !== filename) {
-            try { deleteFile(imagenAnterior); } catch (err) { console.error('Error al eliminar imagen anterior:', err); }
+            await limpiarImagenEnError(imagenAnterior);
           }
+        } catch (err) {
+          console.warn('No se pudo descargar imagen remota:', err.message);
         }
-      } catch (err) {
-        console.warn('No se pudo descargar imagen remota en actualizarProducto:', err.message || err);
       }
     }
     
-    // Actualiza SOLO los campos que se enviaron (si no se envían, no cambian)
+    // Actualizar campos
     if (nombre !== undefined) producto.nombre = nombre;
     if (descripcion !== undefined) producto.descripcion = descripcion;
-    if (precio !== undefined) producto.precio = parseFloat(precio);
-    if (stock !== undefined) producto.stock = parseInt(stock);
+    if (precio !== undefined) producto.precio = precioNum;
+    if (stock !== undefined) producto.stock = stockNum;
     if (parsedCategoriaId !== undefined) producto.categoriaId = parsedCategoriaId;
     if (parsedSubcategoriaId !== undefined) producto.subcategoriaId = parsedSubcategoriaId;
     if (activo !== undefined) producto.activo = activo;
     
-    // save() ejecuta UPDATE en la BD
     await producto.save();
     
-    // Recarga el producto con sus relaciones actualizadas
     await producto.reload({
       include: [
         { model: Categoria, as: 'categoria', attributes: ['id', 'nombre'] },
@@ -457,29 +395,17 @@ const actualizarProducto = async (req, res) => {
       ]
     });
     
-    // Responde con el producto actualizado
     res.json({
       success: true,
       message: 'Producto actualizado exitosamente',
-      data: {
-        producto
-      }
+      data: { producto }
     });
     
   } catch (error) {
     console.error('Error en actualizarProducto:', error);
     
-    // Si hubo error y se subió una nueva imagen, la elimina para no dejar archivos huérfanos
     if (req.file) {
-      const rutaImagen = path.join(__dirname, '../UPLOADS', req.file.filename);
-      try {
-        await fs.unlink(rutaImagen);
-      } catch (err) {
-        console.error('Error al eliminar imagen:', err);
-      }
-    }
-    if (typeof downloadedNewImage === 'string' && downloadedNewImage) {
-      try { deleteFile(downloadedNewImage); } catch (e) {}
+      await limpiarImagenEnError(req.file.filename);
     }
     
     if (error.name === 'SequelizeValidationError') {
@@ -498,17 +424,14 @@ const actualizarProducto = async (req, res) => {
   }
 };
 
-/**
- * Activar/Desactivar producto (toggle) (admin)
- * 
- * Ruta: PATCH /api/admin/productos/:id/toggle
- * Invierte el estado activo del producto.
- */
+// ─────────────────────────────────────────────────────────────
+// PATCH: Toggle producto
+// ─────────────────────────────────────────────────────────────
+
 const toggleProducto = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Busca el producto por ID
     const producto = await Producto.findByPk(id);
     
     if (!producto) {
@@ -518,17 +441,13 @@ const toggleProducto = async (req, res) => {
       });
     }
     
-    // Invierte el estado: true → false, false → true
     producto.activo = !producto.activo;
     await producto.save();
     
-    // Responde indicando el nuevo estado
     res.json({
       success: true,
       message: `Producto ${producto.activo ? 'activado' : 'desactivado'} exitosamente`,
-      data: {
-        producto
-      }
+      data: { producto }
     });
     
   } catch (error) {
@@ -541,13 +460,10 @@ const toggleProducto = async (req, res) => {
   }
 };
 
-/**
- * Eliminar producto (admin)
- * 
- * Ruta: DELETE /api/admin/productos/:id
- * Elimina el producto de la BD. El hook beforeDestroy del modelo
- * se encarga de eliminar la imagen del disco automáticamente.
- */
+// ─────────────────────────────────────────────────────────────
+// DELETE: Eliminar producto
+// ─────────────────────────────────────────────────────────────
+
 const eliminarProducto = async (req, res) => {
   try {
     const { id } = req.params;
@@ -561,8 +477,6 @@ const eliminarProducto = async (req, res) => {
       });
     }
     
-    // destroy() ejecuta DELETE FROM Producto WHERE id = :id
-    // El hook beforeDestroy del modelo elimina la imagen del disco automáticamente.
     await producto.destroy();
     
     res.json({
@@ -580,22 +494,15 @@ const eliminarProducto = async (req, res) => {
   }
 };
 
-/**
- * Actualizar stock de un producto (admin)
- * 
- * Ruta: PATCH /api/admin/productos/:id/stock
- * Body JSON: { cantidad, operacion: 'aumentar' | 'reducir' | 'establecer' }
- * 
- * - aumentar: suma la cantidad al stock actual
- * - reducir: resta la cantidad del stock actual
- * - establecer: reemplaza el stock con la cantidad dada
- */
+// ─────────────────────────────────────────────────────────────
+// PATCH: Actualizar stock
+// ─────────────────────────────────────────────────────────────
+
 const actualizarStock = async (req, res) => {
   try {
     const { id } = req.params;
-    const { cantidad, operacion } = req.body;   // Datos del body JSON
+    const { cantidad, operacion } = req.body;
     
-    // Valida que se enviaron ambos campos
     if (!cantidad || !operacion) {
       return res.status(400).json({
         success: false,
@@ -603,8 +510,7 @@ const actualizarStock = async (req, res) => {
       });
     }
     
-    // Convierte la cantidad a número entero
-    const cantidadNum = parseInt(cantidad);
+    const cantidadNum = Number.parseInt(cantidad, 10);
     if (cantidadNum < 0) {
       return res.status(400).json({
         success: false,
@@ -612,7 +518,6 @@ const actualizarStock = async (req, res) => {
       });
     }
     
-    // Busca el producto por ID
     const producto = await Producto.findByPk(id);
     
     if (!producto) {
@@ -622,51 +527,49 @@ const actualizarStock = async (req, res) => {
       });
     }
     
-    let nuevoStock;   // Variable para almacenar el stock resultante
+    let nuevoStock;
+    let mensajeOperacion;
     
-    // Según la operación, calcula el nuevo stock
     switch (operacion) {
       case 'aumentar':
-        // aumentarStock() es un método del modelo Producto que suma cantidades
         nuevoStock = producto.aumentarStock(cantidadNum);
+        mensajeOperacion = 'aumentado';
         break;
       case 'reducir':
-        // Verifica que haya suficiente stock antes de reducir
         if (cantidadNum > producto.stock) {
           return res.status(400).json({
             success: false,
             message: `No hay suficiente stock. Stock actual: ${producto.stock}`
           });
         }
-        // reducirStock() es un método del modelo Producto que resta cantidades
         nuevoStock = producto.reducirStock(cantidadNum);
+        mensajeOperacion = 'reducido';
         break;
       case 'establecer':
-        // Simplemente establece el valor directamente
         nuevoStock = cantidadNum;
+        mensajeOperacion = 'establecido';
         break;
       default:
-        // Si la operación no es válida
         return res.status(400).json({
           success: false,
           message: 'Operación inválida. Usa: aumentar, reducir o establecer'
         });
     }
     
-    // Asigna el nuevo stock y guarda en la BD
     producto.stock = nuevoStock;
     await producto.save();
     
-    // Responde con el resultado de la operación
+    const stockAnterior = operacion === 'establecer' 
+      ? null 
+      : (operacion === 'aumentar' ? producto.stock - cantidadNum : producto.stock + cantidadNum);
+    
     res.json({
       success: true,
-      // Ternario anidado para personalizar el mensaje según la operación
-      message: `Stock ${operacion === 'aumentar' ? 'aumentado' : operacion === 'reducir' ? 'reducido' : 'establecido'} exitosamente`,
+      message: `Stock ${mensajeOperacion} exitosamente`,
       data: {
         productoId: producto.id,
         nombre: producto.nombre,
-        // Calcula el stock anterior según la operación realizada (null para 'establecer')
-        stockAnterior: operacion === 'establecer' ? null : (operacion === 'aumentar' ? producto.stock - cantidadNum : producto.stock + cantidadNum),
+        stockAnterior,
         stockNuevo: producto.stock
       }
     });
@@ -681,13 +584,16 @@ const actualizarStock = async (req, res) => {
   }
 };
 
-// Exporta todas las funciones del controlador para usarlas en las rutas de admin.
+// ─────────────────────────────────────────────────────────────
+// EXPORTS
+// ─────────────────────────────────────────────────────────────
+
 module.exports = {
-  getProductos,          // GET    /api/admin/productos - Listar todos
-  getProductoById,       // GET    /api/admin/productos/:id - Ver uno
-  crearProducto,         // POST   /api/admin/productos - Crear nuevo
-  actualizarProducto,    // PUT    /api/admin/productos/:id - Actualizar
-  toggleProducto,        // PATCH  /api/admin/productos/:id/toggle - Activar/Desactivar
-  eliminarProducto,      // DELETE /api/admin/productos/:id - Eliminar
-  actualizarStock        // PATCH  /api/admin/productos/:id/stock - Gestionar stock
+  getProductos,
+  getProductoById,
+  crearProducto,
+  actualizarProducto,
+  toggleProducto,
+  eliminarProducto,
+  actualizarStock
 };

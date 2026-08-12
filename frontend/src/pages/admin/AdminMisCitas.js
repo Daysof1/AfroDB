@@ -120,9 +120,16 @@ export default function AdminMisCitas() {
         apiRequest('/servicios?activo=true'),
         apiRequest('/profesionales'),
       ]);
-      setCitas(citasRes?.data?.citas || []);
+      
+      const citasIniciales = citasRes?.data?.citas || [];
+      const profesionalesData = profesionalesRes?.data?.profesionales || [];
+      setProfesionales(profesionalesData);
+
+      // CORRECCIÓN DE SEGURIDAD: Se ha eliminado el console.log de datos del servidor.
+      // console.log('Citas iniciales:', citasIniciales); // <--- ELIMINADA
+
+      setCitas(citasIniciales);
       setServicios(serviciosRes?.data?.servicios || []);
-      setProfesionales(profesionalesRes?.data?.profesionales || []);
     } catch (err) {
       setError(err.message || 'No se pudo cargar la información de citas');
     } finally {

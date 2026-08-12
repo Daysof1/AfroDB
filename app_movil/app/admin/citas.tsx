@@ -316,10 +316,13 @@ export default function AdminCitasScreen() {
     setCitas((prev) =>
       prev.map((c) => (String(c.id) === String(id) ? { ...c, ...nuevosDatos } : c))
     );
-    setDetalleCitas((prev) => ({
-      ...prev,
-      [String(id)]: { ...(prev[String(id)] || {}), ...nuevosDatos },
-    }));
+    setDetalleCitas((prev) => {
+      const existing = prev[String(id)] || null;
+      return {
+        ...prev,
+        [String(id)]: existing ? { ...existing, ...nuevosDatos } : { ...nuevosDatos },
+      };
+    });
   };
 
   const crearPayloadActualizacion = (estado: string) => {
@@ -358,7 +361,10 @@ export default function AdminCitasScreen() {
                 : await apiClient.put(endpoint);
               
               const updated = res.data?.data?.cita ?? res.data?.data ?? res.data;
-              actualizarCita(id, { ...(updated || {}), estado: 'confirmada' });
+              const datosActualizados = updated && typeof updated === 'object' && Object.keys(updated).length > 0
+                ? { ...updated, estado: 'confirmada' }
+                : { estado: 'confirmada' };
+              actualizarCita(id, datosActualizados);
               Alert.alert('Éxito', 'La cita ha sido confirmada correctamente.');
             } catch (error: any) {
               const msg = error?.response?.data?.message || error?.message || 'No se pudo confirmar la cita. Intenta nuevamente.';
@@ -397,7 +403,10 @@ export default function AdminCitasScreen() {
                 : await apiClient.put(endpoint);
               
               const updated = res.data?.data?.cita ?? res.data?.data ?? res.data;
-              actualizarCita(id, { ...(updated || {}), estado: 'completada' });
+              const datosActualizados = updated && typeof updated === 'object' && Object.keys(updated).length > 0
+                ? { ...updated, estado: 'completada' }
+                : { estado: 'completada' };
+              actualizarCita(id, datosActualizados);
               Alert.alert('Éxito', 'La cita ha sido completada correctamente.');
             } catch (error: any) {
               const msg = error?.response?.data?.message || error?.message || 'No se pudo completar la cita. Intenta nuevamente.';
@@ -436,7 +445,10 @@ export default function AdminCitasScreen() {
                 : await apiClient.put(endpoint);
               
               const updated = res.data?.data?.cita ?? res.data?.data ?? res.data;
-              actualizarCita(id, { ...(updated || {}), estado: 'cancelada' });
+              const datosActualizados = updated && typeof updated === 'object' && Object.keys(updated).length > 0
+                ? { ...updated, estado: 'cancelada' }
+                : { estado: 'cancelada' };
+              actualizarCita(id, datosActualizados);
               Alert.alert('Éxito', 'La cita ha sido cancelada correctamente.');
             } catch (error: any) {
               const msg = error?.response?.data?.message || error?.message || 'No se pudo cancelar la cita. Intenta nuevamente.';

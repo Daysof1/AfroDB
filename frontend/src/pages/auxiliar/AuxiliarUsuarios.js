@@ -11,7 +11,6 @@ export default function AuxiliarUsuarios() {
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState('Todos');
   const [showExportOptions, setShowExportOptions] = useState(false);
-  const limite = 100;
 
   const loadUsuarios = async () => {
     try {
@@ -29,8 +28,6 @@ export default function AuxiliarUsuarios() {
   const usuariosFiltrados = usuarios.filter((usuario) => {
     const textoBusqueda = busqueda.toLowerCase().trim();
     const coincideBusqueda =
-    !textoBusqueda ||
-      !textoBusqueda ||
       !textoBusqueda ||
       (usuario.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (usuario.apellido || '').toLowerCase().includes(textoBusqueda) ||

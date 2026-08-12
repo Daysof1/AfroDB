@@ -149,7 +149,7 @@ const DetallePedido = sequelize.define('DetallePedido', {
     beforeCreate: (detalle) => {
       // parseFloat() convierte el DECIMAL de Sequelize a número JavaScript
       // Luego multiplica por la cantidad para obtener el subtotal
-      detalle.subtotal = parseFloat(detalle.precioUnitario) * detalle.cantidad;
+      detalle.subtotal = Number.parseFloat(detalle.precioUnitario) * detalle.cantidad;
     },
 
     /**
@@ -159,7 +159,7 @@ const DetallePedido = sequelize.define('DetallePedido', {
     beforeUpdate: (detalle) => {
       // changed() verifica si un campo fue modificado
       if (detalle.changed('precioUnitario') || detalle.changed('cantidad')) {
-        detalle.subtotal = parseFloat(detalle.precioUnitario) * detalle.cantidad;
+        detalle.subtotal = Number.parseFloat(detalle.precioUnitario) * detalle.cantidad;
       }
     }
   }
@@ -176,7 +176,7 @@ const DetallePedido = sequelize.define('DetallePedido', {
  * @returns {number} precioUnitario × cantidad
  */
 DetallePedido.prototype.calcularSubtotal = function() {
-  return parseFloat(this.precioUnitario) * this.cantidad;
+  return Number.parseFloat(this.precioUnitario) * this.cantidad;
 };
 
 /**
@@ -238,7 +238,7 @@ DetallePedido.calcularTotalPedido = async function(pedidoId) {
   // Recorre y acumula los subtotales
   let total = 0;
   for (const detalle of detalles) {
-    total += parseFloat(detalle.subtotal); // parseFloat convierte DECIMAL a número JS
+    total += Number.parseFloat(detalle.subtotal); // parseFloat convierte DECIMAL a número JS
   }
   
   return total;

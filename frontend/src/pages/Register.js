@@ -1,4 +1,4 @@
-// Página: Register.js. p?gina de registro para nuevos usuarios.
+// Página: Register.js. página de registro para nuevos usuarios.
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Register.css';
@@ -92,8 +92,9 @@ export default function Register() {
 
             <form onSubmit={handleRegister}>
               <div className="form-group">
-                <label>Tipo de Documento</label>
+                <label htmlFor="tipoDocumento">Tipo de Documento</label>
                 <select
+                  id="tipoDocumento"
                   value={tipoDocumento}
                   onChange={(e) => {
                     setTipoDocumento(e.target.value);
@@ -108,8 +109,9 @@ export default function Register() {
                 </select>
               </div>
               <div className="form-group">
-                <label>Documento</label>
+                <label htmlFor="documento">Documento</label>
                 <input
+                  id="documento"
                   type="text"
                   value={documento}
                   onChange={(e) => {
@@ -122,8 +124,9 @@ export default function Register() {
               </div>
 
               <div className="form-group">
-                <label>Nombre</label>
+                <label htmlFor="nombre">Nombre</label>
                 <input
+                  id="nombre"
                   type="text"
                   value={nombre}
                   onChange={(e) => {
@@ -136,8 +139,9 @@ export default function Register() {
               </div>
 
               <div className="form-group">
-                <label>Apellido</label>
+                <label htmlFor="apellido">Apellido</label>
                 <input
+                  id="apellido"
                   type="text"
                   value={apellido}
                   onChange={(e) => {
@@ -150,8 +154,9 @@ export default function Register() {
               </div>
 
               <div className="form-group">
-                <label>Correo Electrónico</label>
+                <label htmlFor="email">Correo Electrónico</label>
                 <input
+                  id="email"
                   type="email"
                   value={email}
                   onChange={(e) => {
@@ -165,8 +170,9 @@ export default function Register() {
               </div>
 
               <div className="form-group">
-                <label>Teléfono (opcional)</label>
+                <label htmlFor="telefono">Teléfono (opcional)</label>
                 <input
+                  id="telefono"
                   type="text"
                   value={telefono}
                   onChange={(e) => {
@@ -179,8 +185,9 @@ export default function Register() {
               </div>
 
               <div className="form-group">
-                <label>Dirección (opcional)</label>
+                <label htmlFor="direccion">Dirección (opcional)</label>
                 <input
+                  id="direccion"
                   type="text"
                   value={direccion}
                   onChange={(e) => {
@@ -193,8 +200,9 @@ export default function Register() {
               </div>
 
               <div className="form-group">
-                <label>Contraseña</label>
+                <label htmlFor="password">Contraseña</label>
                 <input
+                  id="password"
                   type="password"
                   value={password}
                   onChange={(e) => {
@@ -208,8 +216,9 @@ export default function Register() {
               </div>
 
               <div className="form-group">
-                <label>Confirmar Contraseña</label>
+                <label htmlFor="confirmPassword">Confirmar Contraseña</label>
                 <input
+                  id="confirmPassword"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => {
@@ -238,4 +247,3 @@ export default function Register() {
     </div>
   );
 }
-

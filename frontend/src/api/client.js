@@ -201,20 +201,30 @@ export async function apiRequest(path, options = {}) {
 
  let payload = null;
 
-try {
-  const contentType = response.headers.get('content-type') || '';
+  try {
+    const contentType = response.headers.get('content-type') || '';
 
-  if (contentType.includes('application/json')) {
-    const data = await response.json();
+    if (contentType.includes('application/json')) {
+      const data = await response.json();
 
-    // Validar que la respuesta tenga una estructura de objeto válida
-    if (data !== null && typeof data === 'object' && !Array.isArray(data)) {
-      payload = data;
+      // Validación estricta contra datos maliciosos del servidor
+      if (data !== null && typeof data === 'object' && !Array.isArray(data)) {
+        
+        // Creamos un objeto seguro con SOLO los campos que esperamos
+        const safePayload = {
+          success: typeof data.success === 'boolean' ? data.success : false,
+          message: typeof data.message === 'string' ? data.message : '',
+          data: data.data ?? null,
+          errors: Array.isArray(data.errors) ? data.errors : null,
+          token: typeof data.token === 'string' ? data.token : null,
+        };
+
+        payload = safePayload;
+      }
     }
+  } catch {
+    payload = null;
   }
-} catch {
-  payload = null;
-}
 
   if (!response.ok || payload?.success === false) {
     let message = payload?.message || `Error HTTP ${response.status}`;

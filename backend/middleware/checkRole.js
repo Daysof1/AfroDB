@@ -231,7 +231,7 @@ const esPropioUsuarioOAdmin = (req, res, next) => {
 
     const usuarioIdParam = req.params.usuarioId || req.params.id;
 
-    if (parseInt(usuarioIdParam) !== req.usuario.id) {
+    if (Number.parseInt(usuarioIdParam) !== req.usuario.id) {
       return res.status(403).json({
         success: false,
         message: 'No puedes acceder a datos de otros usuarios'
