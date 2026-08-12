@@ -10,6 +10,7 @@
 
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
+const crypto = require('crypto');
 
 const Cita = sequelize.define('Cita', {
 
@@ -176,7 +177,8 @@ const Cita = sequelize.define('Cita', {
 
       // Selección aleatoria (puedes mejorar luego con disponibilidad)
       // eslint-disable-next-line security/detect-non-literal-fs-filename
-      const random = Math.floor(Math.random() * profesionales.length);
+      // Selección aleatoria segura del profesional
+      const random = crypto.randomInt(profesionales.length);
 
       cita.profesionalId = profesionales[random].id;
     },
@@ -204,7 +206,7 @@ const Cita = sequelize.define('Cita', {
  */
 Cita.prototype.obtenerTotalServicios = async function() {
   const servicios = await this.getServicios(); // belongsToMany
-  return servicios.reduce((total, s) => total + parseFloat(s.precio), 0);
+  return servicios.reduce((total, s) => total + Number.parseFloat(s.precio), 0);
 };
 
 /**

@@ -33,7 +33,6 @@
 .footer-contact-section {
   display: flex;
   align-items: center;
-  flex-shrink: 0;
   flex: 0 0 auto;
 }
 
