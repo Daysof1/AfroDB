@@ -89,7 +89,7 @@ export default function Navbar({ userRole, onLogout }) {
             </>
           )}
         </div>
-
+          </div>
             <button
               type="button"
               className="menu-toggle"

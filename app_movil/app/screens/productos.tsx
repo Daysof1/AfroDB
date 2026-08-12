@@ -331,7 +331,7 @@ export default function ProductosScreen() {
           <ThemedText style={styles.loadingText}>Cargando catálogo...</ThemedText>
         </View>
       )}
-      {!loading && errorMessage && <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>}
+      {!loading && !errorMessage && <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>}
       {!loading && !errorMessage && !hasProductos && (
         <ThemedText style={styles.emptyText}>No hay productos para mostrar.</ThemedText>
       )}
