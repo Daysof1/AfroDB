@@ -556,13 +556,13 @@ const HoraSection = ({
                 />
             )}
 
-            {hora && !horaError && (
+            {!!hora && !horaError && (
                 <ThemedText style={styles.horaLabel}>
                     {formatTimeWithPeriod(hora)}
                 </ThemedText>
             )}
 
-            {horaError && (
+            {!!horaError && (
                 <ThemedText style={styles.errorText}>
                     {horaError}
                 </ThemedText>

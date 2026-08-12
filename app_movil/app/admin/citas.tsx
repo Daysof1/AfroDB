@@ -73,10 +73,14 @@ const isEstadoFinal = (estado?: string): boolean => {
 };
 
 const normalizeText = (value: unknown): string => {
-  return String(value ?? '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') {
+    return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  return '';
 };
 
 const getClienteNombre = (item: Cita): string => {
@@ -91,17 +95,8 @@ const getProfesionalNombre = (item: Cita): string => {
   return `${nombre} ${apellido}`.trim() || 'Sin profesional';
 };
 
-const getServiciosTexto = (item: Cita, detalleCitas: Record<string, Cita>): string => {
-  const cacheKey = String(item.id);
-  const serviciosSource = detalleCitas[cacheKey]?.Servicios ?? item.Servicios;
-  if (Array.isArray(serviciosSource) && serviciosSource.length > 0) {
-    return serviciosSource.map((s) => s.nombre).filter(Boolean).join(', ');
-  }
-  return item.servicio || 'Sin servicio';
-};
-
 // ─────────────────────────────────────────────────────────────
-// COMPONENTE DE ÍTEM DE CITA (extraído para reducir complejidad)
+// COMPONENTE DE ÍTEM DE CITA
 // ─────────────────────────────────────────────────────────────
 
 type CitaItemProps = {
@@ -296,11 +291,14 @@ export default function AdminCitasScreen() {
     try {
       const res = await apiClient.get('/admin/citas');
       const payload = res.data?.data ?? res.data;
-      const citasData = Array.isArray(payload?.citas)
-        ? payload.citas
-        : Array.isArray(payload)
-          ? payload
-          : [];
+      let citasData: Cita[] = [];
+      
+      if (Array.isArray(payload?.citas)) {
+        citasData = payload.citas;
+      } else if (Array.isArray(payload)) {
+        citasData = payload;
+      }
+      
       setCitas(citasData);
     } catch (error: unknown) {
       setErrorMessage((error as { message?: string })?.message || 'No se pudo cargar las citas.');
@@ -311,7 +309,7 @@ export default function AdminCitasScreen() {
   };
 
   // ─────────────────────────────────────────────────────────────
-  // FUNCIONES DE ACCIONES (extraídas para reducir complejidad)
+  // FUNCIONES DE ACCIONES
   // ─────────────────────────────────────────────────────────────
 
   const actualizarCita = (id: CitaId, nuevosDatos: Partial<Cita>) => {
@@ -322,6 +320,17 @@ export default function AdminCitasScreen() {
       ...prev,
       [String(id)]: { ...(prev[String(id)] || {}), ...nuevosDatos },
     }));
+  };
+
+  const crearPayloadActualizacion = (estado: string) => {
+    return isAdmin || isAux ? { estado } : undefined;
+  };
+
+  const obtenerEndpoint = (id: CitaId, accion: string): string => {
+    if (isAdmin || isAux) {
+      return `/admin/citas/${id}/estado`;
+    }
+    return `/cliente/citas/${id}/${accion}`;
   };
 
   const confirmarCita = (id: CitaId) => {
@@ -341,8 +350,8 @@ export default function AdminCitasScreen() {
           onPress: async () => {
             setConfirmadaId(id);
             try {
-              const endpoint = isAdmin || isAux ? '/admin/citas/${id}/estado' : `/cliente/citas/${id}/confirmada`;
-              const payload = isAdmin || isAux ? { estado: 'confirmada' } : undefined;
+              const endpoint = obtenerEndpoint(id, 'confirmada');
+              const payload = crearPayloadActualizacion('confirmada');
               
               const res = payload 
                 ? await apiClient.put(endpoint, payload)
@@ -380,8 +389,8 @@ export default function AdminCitasScreen() {
           onPress: async () => {
             setCancellingId(id);
             try {
-              const endpoint = isAdmin || isAux ? '/admin/citas/${id}/estado' : `/cliente/citas/${id}/completar`;
-              const payload = isAdmin || isAux ? { estado: 'completada' } : undefined;
+              const endpoint = obtenerEndpoint(id, 'completar');
+              const payload = crearPayloadActualizacion('completada');
               
               const res = payload
                 ? await apiClient.put(endpoint, payload)
@@ -419,8 +428,8 @@ export default function AdminCitasScreen() {
           onPress: async () => {
             setCancellingId(id);
             try {
-              const endpoint = isAdmin || isAux ? '/admin/citas/${id}/estado' : `/cliente/citas/${id}/cancelar`;
-              const payload = isAdmin || isAux ? { estado: 'cancelada' } : undefined;
+              const endpoint = obtenerEndpoint(id, 'cancelar');
+              const payload = crearPayloadActualizacion('cancelada');
               
               const res = payload
                 ? await apiClient.put(endpoint, payload)
@@ -538,7 +547,6 @@ export default function AdminCitasScreen() {
         contentContainerStyle={filteredCitas.length === 0 ? styles.emptyContainer : undefined}
         ListEmptyComponent={!loading ? <ThemedText>No hay citas registradas.</ThemedText> : null}
         renderItem={({ item }) => {
-          const cacheKey = String(item.id);
           const isExpanded = expandedCitaId === item.id;
           const isLoadingDetalle = loadingDetalleId === item.id;
           const isConfirming = confirmadaId === item.id;

@@ -42,8 +42,6 @@ const push = (path: string) => (router as unknown as { push: (p: string) => void
 // FUNCIÓN AUXILIAR PARA NORMALIZAR RESPUESTAS
 // ─────────────────────────────────────────────────────────────
 
-const normalizePayload = (response: any): any => response?.data?.data ?? response?.data ?? {};
-
 const getTotalFromResponse = (response: any, fallback: number = 0): number => {
     if (!response) return fallback;
     const data = response.data?.data ?? response.data ?? response;
@@ -76,7 +74,7 @@ export default function AdminDashboardScreen() {
     const [loading, setLoading] = useState(false);
 
     // ─────────────────────────────────────────────────────────────
-    // CARGA DE ESTADÍSTICAS (refactorizada)
+    // CARGA DE ESTADÍSTICAS
     // ─────────────────────────────────────────────────────────────
 
     const loadStats = useCallback(async () => {
@@ -98,7 +96,7 @@ export default function AdminDashboardScreen() {
 
             const [catsRes, subsRes, serRes, prodsRes, ordersRes, citasRes] = results;
 
-            // ✅ Manejo de errores sin catch vacío
+            // Obtener estadísticas de usuarios solo si es admin
             let userStats = null;
             if (isAdmin) {
                 try {
@@ -122,11 +120,7 @@ export default function AdminDashboardScreen() {
                 : 0;
 
             const ordStats = ordersRes.status === 'fulfilled'
-                ? ordersRes.value.data?.data || {}
-                : {};
-
-            const citaPayload = citasRes.status === 'fulfilled'
-                ? normalizePayload(citasRes.value)
+                ? ordersRes.value.data?.data ?? {}
                 : {};
 
             const totalCitas = getTotalFromResponse(citasRes.status === 'fulfilled' ? citasRes.value : null);
@@ -141,7 +135,6 @@ export default function AdminDashboardScreen() {
                 citas: totalCitas,
             });
         } catch (error) {
-            // ✅ Error manejado correctamente con log
             console.error('Error cargando estadísticas del dashboard:', error);
         } finally {
             setLoading(false);

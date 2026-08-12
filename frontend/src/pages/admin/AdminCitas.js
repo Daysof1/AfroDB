@@ -33,23 +33,28 @@ export default function AdminCitas() {
       
       console.log('Citas iniciales:', citasIniciales);
       
-      // Cargar servicios para cada cita usando el endpoint /cliente/citas/:id
-      const citasConServicios = await Promise.all(
-        citasIniciales.map(async (cita) => {
-          try {
-            console.log(`Cargando detalles de cita ${cita.id}`);
-            const citaCompleta = await apiRequest(`/cliente/citas/${cita.id}`);
-            console.log(`Cita ${cita.id} completa:`, citaCompleta);
-            return {
-              ...cita,
-              Servicios: citaCompleta?.data?.cita?.Servicios || []
-            };
-          } catch (err) {
-            console.warn(`No se pudieron cargar servicios para cita ${cita.id}:`, err.message);
-            return cita;
-          }
-        })
+  // Cargar servicios para cada cita usando el endpoint /cliente/citas/:id
+const citasConServicios = await Promise.all(
+  citasIniciales.map(async (cita) => {
+    try {
+      console.log('Cargando detalles de la cita.');
+
+      const citaCompleta = await apiRequest(
+        `/cliente/citas/${cita.id}`
       );
+
+      console.log('Detalles de la cita cargados correctamente.');
+
+      return {
+        ...cita,
+        Servicios: citaCompleta?.data?.cita?.Servicios || []
+      };
+    } catch (err) {
+      console.warn('No se pudieron cargar los servicios de la cita.');
+      return cita;
+    }
+  })
+);
       
       console.log('Citas con servicios:', citasConServicios);
       setCitas(citasConServicios);

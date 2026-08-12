@@ -22,8 +22,6 @@ export default function AdminCategoriasScreen() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [allCategorias, setAllCategorias] = useState<Categoria[]>([]);
   const [busqueda, setBusqueda] = useState('');
-  const [pagina, setPagina] = useState(1);
-  const [totalPaginas] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [nombre, setNombre] = useState('');
@@ -31,7 +29,7 @@ export default function AdminCategoriasScreen() {
   const [tipo, setTipo] = useState<'producto' | 'servicio'>('producto');
   const { user } = useAuth() as { user?: { rol?: string } | null };
 
-  const fetchCategorias = async (page = 1, search = '') => {
+  const fetchCategorias = async (search = '') => {
     setLoading(true);
     try {
       const url = `/admin/categorias`;
@@ -50,8 +48,6 @@ export default function AdminCategoriasScreen() {
       } else {
         setCategorias(categoriasData);
       }
-
-      setPagina(page);
     } catch (error: unknown) {
       Alert.alert('Error', (error as { message?: string })?.message || 'Error al cargar categorías');
     } finally {
@@ -59,12 +55,10 @@ export default function AdminCategoriasScreen() {
     }
   };
 
-  const isAdmin = user?.rol === 'administrador';
-
   const searchTimeout = useRef<any>(null);
 
   useEffect(() => {
-    fetchCategorias(1, '');
+    fetchCategorias('');
   }, []);
 
   const handleCreate = async () => {
@@ -87,7 +81,7 @@ export default function AdminCategoriasScreen() {
       setNombre('');
       setDescripcion('');
       setTipo('producto');
-      await fetchCategorias(1, busqueda);
+      await fetchCategorias(busqueda);
       Alert.alert('Éxito', 'Categoría creada correctamente');
     } catch (error) {
       Alert.alert('Error', (error as Error).message || 'No se pudo crear la categoría');
@@ -99,7 +93,7 @@ export default function AdminCategoriasScreen() {
   const handleToggle = async (categoria: Categoria) => {
     try {
       await apiClient.patch(`/admin/categorias/${categoria.id}/toggle`);
-      await fetchCategorias(1, busqueda);
+      await fetchCategorias(busqueda);
     } catch (error) {
       Alert.alert('Error', (error as Error).message || 'No se pudo cambiar el estado');
     }
@@ -122,7 +116,7 @@ export default function AdminCategoriasScreen() {
           onChangeText={(text) => {
             setBusqueda(text);
             if (searchTimeout.current) clearTimeout(searchTimeout.current);
-            searchTimeout.current = setTimeout(() => fetchCategorias(1, text), 300);
+            searchTimeout.current = setTimeout(() => fetchCategorias(text), 300);
           }}
           style={[styles.input, { flex: 1 }]}
         />
@@ -138,7 +132,7 @@ export default function AdminCategoriasScreen() {
             <Ionicons name="close" size={20} color="#fff" />
           </Pressable>
         ) : null}
-        <Pressable style={styles.searchBtn} onPress={() => fetchCategorias(1, busqueda)}>
+        <Pressable style={styles.searchBtn} onPress={() => fetchCategorias(busqueda)}>
           <ThemedText style={styles.searchBtnText}>Buscar</ThemedText>
         </Pressable>
       </View>

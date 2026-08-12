@@ -199,13 +199,22 @@ export async function apiRequest(path, options = {}) {
     headers,
   });
 
-  const raw = await response.text();
-  let payload = null;
-  try {
-    payload = raw ? JSON.parse(raw) : null;
-  } catch {
-    payload = null;
+ let payload = null;
+
+try {
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    const data = await response.json();
+
+    // Validar que la respuesta tenga una estructura de objeto válida
+    if (data !== null && typeof data === 'object' && !Array.isArray(data)) {
+      payload = data;
+    }
   }
+} catch {
+  payload = null;
+}
 
   if (!response.ok || payload?.success === false) {
     let message = payload?.message || `Error HTTP ${response.status}`;

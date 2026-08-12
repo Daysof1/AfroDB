@@ -13,7 +13,7 @@ const express = require ( 'express');
 const cors = require ( 'cors');
 
 // Importar path para manejar rutas de archivos
-const path = require ( 'path');
+const path = require ( 'node:path');
 
 // importar dotenv para manejar variables del entorno 
 require ('dotenv').config();
@@ -32,6 +32,9 @@ const { runSeeders } = require('./seeders/adminSeeder');
 // crear aplicaciones express 
 
 const app = express ();
+
+// Ocultar información de la tecnología utilizada por el servidor
+app.disable('x-powered-by');
 
 // Obtener el puerto desde las variables de entorno 
 const PORT = process.env.PORT || 5000;
@@ -70,13 +73,15 @@ app.use('/uploads', express.static(path.join(__dirname, 'UPLOADS')));
 // middleware para logging de peticiones 
 // muestra en consola las peticiones que llega el servidor 
 
+// middleware para logging de peticiones
+// muestra en consola que el servidor recibió una petición
+
 if (process.env.NODE_ENV === 'development') {
     app.use((req, res, next) => {
-        console.log(`ok ${req.method} ${req.path}`);
+        console.log('Solicitud HTTP recibida.');
         next();
     });
 }
-
 // rutas 
 
 // rutas raiz verificar que el servidor esta corriendo 

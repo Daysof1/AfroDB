@@ -152,7 +152,7 @@ const crearServicio = async (req, res) => {
         downloadedImagen = await downloadImage(req.body.imagenUrl, nombre);
         imagen = downloadedImagen;
       } catch (err) {
-        console.warn('No se pudo descargar la imagen remota:', err.message || err);
+        console.warn('No se pudo descargar la imagen remota:');
         imagen = null;
       }
     }

@@ -1,30 +1,23 @@
 // Página: servicio-form.tsx. vista de servicio-form del sistema.
 /**
- * Este archivo es el formulario para crear o edita un servicioenel panel del admin
- * modo crear: se llega desde el boton + crear servicioen admin/servicios
- * n se recibe ningun parametro de ruta
- * modo editar se llega al precionar un servicio en la lista
+ * Este archivo es el formulario para crear o editar un servicio en el panel del admin
+ * modo crear: se llega desde el boton + crear servicio en admin/servicios
+ * no se recibe ningun parametro de ruta
+ * modo editar se llega al presionar un servicio en la lista
  * se recibe el parametro en la url/ api/ como un json 
- * al guardar exitosamnete regrsa a la pantalla anterior con router.back() 
+ * al guardar exitosamente regresa a la pantalla anterior con router.back() 
  */
 
-
-// manejo de variables de estado local
 import { useEffect, useMemo, useState } from "react";
-//Importar componentes 
-//Dimensions optiene al ancho y alto de la pantalla para hacer diseos responsivos
-//flatlist lista optimizada con virtualizacion para mostrar grandes cantidades de datos
-//modal mostrar detalles de contenido en ventanas emergentes
-
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";//navegacion y parametros de ruta
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { createService, updateService } from '../../src/services/adminService';
 import apiClient from '../../src/api/apiClient';
 import { SearchableSelect } from '../../components/ui/searchable-select';
-/**
- * tipo de servicio
- * estrucura del orduto recibido como parametro cuando edita
- */
+
+// ─────────────────────────────────────────────────────────────
+// TIPOS
+// ─────────────────────────────────────────────────────────────
 
 type Servicio = {
     id?: string;
@@ -33,58 +26,36 @@ type Servicio = {
     precio?: number;
     duracion?: number;
     imagen?: string;
-  categoriaId?: number;
-  subcategoriaId?: number;
+    categoriaId?: number;
+    subcategoriaId?: number;
 };
 
 type Categoria = { id: number; nombre: string; tipo?: string };
 type Subcategoria = { id: number; nombre: string; categoriaId: number; tipo?: string };
 
-// Renderiza la vista principal de este componente.
+// ─────────────────────────────────────────────────────────────
+// COMPONENTE PRINCIPAL
+// ─────────────────────────────────────────────────────────────
+
 export default function AdminServicioForm() {
-    /**
-     * navegacion 
-     * use router permite navegar programaticamente 
-     */
-    const router  = useRouter();
-    /**
-     * Parametros de ruta
-     * el parametro del servicio es opcional solo existe en modo editar
-     * expo router son strings 
-     */
+    const router = useRouter();
     const params = useLocalSearchParams<{ servicio?: string }>();
 
-    /**
-     * servicio recibido
-     * si exise el parametro intenta pasearlo como un json
-     * si fala el parse (JSON malinformado), lo deja como undefined (modo de creacion)
-     */
-    let servicio: Servicio |undefined;
+    // Parsear servicio si existe
+    let servicio: Servicio | undefined;
     if (params.servicio) {
         try {
             servicio = JSON.parse(params.servicio) as Servicio;
         } catch {
-            servicio = undefined;// fallo silencioso se trata como formulario vacio
+            servicio = undefined;
         }
     }
 
-    /**
-     * modo formulario
-     * editing = true  modo edicion (servicio recibido)
-     * editing = false modo creacion 
-     */
     const editing = !!servicio;
 
-    /**
-     * EStado local campos del formulario
-     * los campos d inicializan con los valores del servicio si se esta editando 
-     * o en cadena vacia si se esta creando
-     * El operador ??  devuelve el lado derecho solo si el izquierdo es null /undefined
-     */
-
+    // ── ESTADOS ──────────────────────────────────────────────────────────────
     const [nombre, setNombre] = useState(servicio?.nombre ?? '');
     const [descripcion, setDescripcion] = useState(servicio?.descripcion ?? '');
-    //precio y duracion se guardan como string para facilitar la entrada de TextInput
     const [precio, setPrecio] = useState(servicio?.precio?.toString() ?? '');
     const [duracion, setDuracion] = useState(servicio?.duracion?.toString() ?? '');
     const [imagenUrl, setImagenUrl] = useState(servicio?.imagen ?? '');
@@ -94,179 +65,261 @@ export default function AdminServicioForm() {
     const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
     const [loading, setLoading] = useState(false);
 
+    // ─────────────────────────────────────────────────────────────
+    // EFECTOS
+    // ─────────────────────────────────────────────────────────────
+
     useEffect(() => {
-      const loadCatalogos = async () => {
-        try {
-          const [catsRes, subsRes] = await Promise.all([
-            apiClient.get('/admin/categorias'),
-            apiClient.get('/admin/subcategorias'),
-          ]);
+        const loadCatalogos = async () => {
+            try {
+                const [catsRes, subsRes] = await Promise.all([
+                    apiClient.get('/admin/categorias'),
+                    apiClient.get('/admin/subcategorias'),
+                ]);
 
-          const cats = catsRes.data?.data?.categorias || catsRes.data?.categorias || [];
-          const subs = subsRes.data?.data?.subcategorias || subsRes.data?.subcategorias || [];
+                const cats = catsRes.data?.data?.categorias || catsRes.data?.categorias || [];
+                const subs = subsRes.data?.data?.subcategorias || subsRes.data?.subcategorias || [];
 
-          // Filtrar solo categorías de tipo 'servicio'
-          const categoriasFiltradas = Array.isArray(cats) ? cats.filter((cat: Categoria) => cat.tipo === 'servicio') : [];
-          
-          // Filtrar subcategorías que pertenezcan a categorías de tipo 'servicio'
-          const subcategoriasFiltradas = Array.isArray(subs) ? subs.filter((sub: Subcategoria) => {
-            const categoriaPadre = categoriasFiltradas.find((cat: Categoria) => cat.id === sub.categoriaId);
-            return !!categoriaPadre;
-          }) : [];
+                // Filtrar solo categorías de tipo 'servicio'
+                const categoriasFiltradas = Array.isArray(cats) 
+                    ? cats.filter((cat: Categoria) => cat.tipo === 'servicio') 
+                    : [];
+                
+                // ✅ Línea 113: Usar .some() en lugar de .find()
+                const subcategoriasFiltradas = Array.isArray(subs) 
+                    ? subs.filter((sub: Subcategoria) => {
+                        return categoriasFiltradas.some((cat: Categoria) => cat.id === sub.categoriaId);
+                    }) 
+                    : [];
 
-          setCategorias(categoriasFiltradas);
-          setSubcategorias(subcategoriasFiltradas);
-        } catch {
-          setCategorias([]);
-          setSubcategorias([]);
-        }
-      };
+                setCategorias(categoriasFiltradas);
+                setSubcategorias(subcategoriasFiltradas);
+            } catch {
+                setCategorias([]);
+                setSubcategorias([]);
+            }
+        };
 
-      loadCatalogos();
+        loadCatalogos();
     }, []);
 
+    // ─────────────────────────────────────────────────────────────
+    // MEMO: Subcategorías filtradas por categoría seleccionada
+    // ─────────────────────────────────────────────────────────────
+
     const subcategoriasFiltradas = useMemo(
-      () => subcategorias.filter((sub) => String(sub.categoriaId) === categoriaId),
-      [subcategorias, categoriaId]
+        () => subcategorias.filter((sub) => String(sub.categoriaId) === categoriaId),
+        [subcategorias, categoriaId]
     );
 
-    /**
-     * funcion handleSubmit
-     * valida los campos llama alservicio correspondene (crear o actualizar)
-     * y regresa a a pantalla anterir si fue exitoso
-     */
-    const handleSubmit = async () => {
-        // validacion basica los campos obligatorios no pueden estar vacios 
-      if (!nombre || !descripcion || !precio || !duracion || !categoriaId || !subcategoriaId) {
-        Alert.alert('Error', 'Todos los campos son obligatorios, incluyendo duración, categoría y subcategoría');
-            return;//detiene la ejecucion si hay la peticion http 
-        }
+    // ─────────────────────────────────────────────────────────────
+    // FUNCIONES DE VALIDACIÓN (extraídas para reducir complejidad)
+    // ─────────────────────────────────────────────────────────────
 
-        setLoading(true);// Desabilita el boton durante la peticion 
+    const validarCampos = () => {
+        if (!nombre || !descripcion || !precio || !duracion || !categoriaId || !subcategoriaId) {
+            Alert.alert('Error', 'Todos los campos son obligatorios, incluyendo duración, categoría y subcategoría');
+            return false;
+        }
+        return true;
+    };
+
+    const validarPrecio = (precioNum: number) => {
+        if (Number.isNaN(precioNum) || precioNum <= 0) {
+            Alert.alert('Error', 'El precio debe ser un número mayor a 0');
+            return false;
+        }
+        return true;
+    };
+
+    const validarDuracion = (duracionNum: number) => {
+        if (Number.isNaN(duracionNum) || duracionNum <= 0) {
+            Alert.alert('Error', 'La duración debe ser un número mayor a 0');
+            return false;
+        }
+        return true;
+    };
+
+    const validarIds = (categoriaNum: number, subcategoriaNum: number) => {
+        if (Number.isNaN(categoriaNum) || Number.isNaN(subcategoriaNum)) {
+            Alert.alert('Error', 'Categoría y subcategoría deben ser IDs numéricos válidos');
+            return false;
+        }
+        return true;
+    };
+
+    // ─────────────────────────────────────────────────────────────
+    // HANDLE SUBMIT
+    // ─────────────────────────────────────────────────────────────
+
+    const handleSubmit = async () => {
+        // Validaciones
+        if (!validarCampos()) return;
+
+        const precioNum = Number.parseFloat(precio);
+        const duracionNum = Number.parseInt(duracion, 10);
+        const categoriaNum = Number.parseInt(categoriaId, 10);
+        const subcategoriaNum = Number.parseInt(subcategoriaId, 10);
+
+        if (!validarPrecio(precioNum)) return;
+        if (!validarDuracion(duracionNum)) return;
+        if (!validarIds(categoriaNum, subcategoriaNum)) return;
+
+        setLoading(true);
         try {
-            // contruye el objeto de datos convirtendolod precio y duracion a numerico
             const data = {
                 nombre,
                 descripcion,
-                precio: Number.parseFloat(precio),
-                duracion: Number.parseInt(duracion, 10),
+                precio: precioNum,
+                duracion: duracionNum,
                 imagenUrl,
-              categoriaId: Number.parseInt(categoriaId, 10),
-              subcategoriaId: Number.parseInt(subcategoriaId, 10),
+                categoriaId: categoriaNum,
+                subcategoriaId: subcategoriaNum,
             };
 
             if (editing && servicio) {
-                // modo edicion llama a updateService con el id del servicio
                 await updateService(servicio.id, data);
-                Alert.alert('Exitoso', 'Servicio actualizado');
+                Alert.alert('Éxito', 'Servicio actualizado');
             } else {
-                // cuando el formulario esta vacio se comporta como creación
                 await createService(data);
-                Alert.alert('Exito', 'Servicio creado');
+                Alert.alert('Éxito', 'Servicio creado');
             }
-            router.back();// regresa a admin/servicios despues de guardar
+            router.back();
         } catch {
-            //si la peticion falla muesra el eror a usuario
             Alert.alert('Error', 'No se pudo guardar el servicio');
         } finally {
-            setLoading(false);//Habilita el boton nuevamente
+            setLoading(false);
         }
     };
-// ── RENDERIZADO ───────────────────────────────────────────────────────────
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
 
-      {/* ── CAMPO: Nombre ───────────────────────────────────────────────── */}
-      <Text style={styles.label}>Nombre</Text>
-      <TextInput
-        style={styles.input}
-        value={nombre}
-        onChangeText={setNombre} // Actualiza el estado al escribir.
-      />
+    // ─────────────────────────────────────────────────────────────
+    // RENDER
+    // ─────────────────────────────────────────────────────────────
 
-      {/* ── CAMPO: Descripción ──────────────────────────────────────────── */}
-      <Text style={styles.label}>Descripcion</Text>
-      <TextInput
-        style={styles.input}
-        value={descripcion}
-        onChangeText={setDescripcion}
-        multiline // Permite múltiples líneas para textos largos.
-      />
+    return (
+        <ScrollView contentContainerStyle={styles.container}>
+            {/* CAMPO: Nombre */}
+            <Text style={styles.label}>Nombre</Text>
+            <TextInput
+                style={styles.input}
+                value={nombre}
+                onChangeText={setNombre}
+            />
 
-      {/* ── CAMPO: Precio ───────────────────────────────────────────────── */}
-      <Text style={styles.label}>Precio</Text>
-      <TextInput
-        style={styles.input}
-        value={precio}
-        onChangeText={setPrecio}
-        keyboardType="numeric" // Muestra teclado numérico en dispositivos móviles.
-      />
+            {/* CAMPO: Descripción */}
+            <Text style={styles.label}>Descripción</Text>
+            <TextInput
+                style={styles.input}
+                value={descripcion}
+                onChangeText={setDescripcion}
+                multiline
+            />
 
-      {/* ── CAMPO: Duración ─────────────────────────────────────────────── */}
-      <Text style={styles.label}>Duración (minutos)</Text>
-      <TextInput
-        style={styles.input}
-        value={duracion}
-        onChangeText={setDuracion}
-        keyboardType="numeric"
-        placeholder="Duración en minutos"
-      />
-      
-      <SearchableSelect
-        label="Categoría"
-        value={categoriaId}
-        placeholder="Selecciona una categoría"
-        items={categorias.map((cat) => ({ id: cat.id, label: cat.nombre }))}
-        onSelect={(value) => {
-          setCategoriaId(value);
-          setSubcategoriaId('');
-        }}
-        noResultsText="No se encontró ninguna categoría."
-      />
+            {/* CAMPO: Precio */}
+            <Text style={styles.label}>Precio</Text>
+            <TextInput
+                style={styles.input}
+                value={precio}
+                onChangeText={setPrecio}
+                keyboardType="numeric"
+            />
 
-      <SearchableSelect
-        label="Subcategoría"
-        value={subcategoriaId}
-        placeholder="Selecciona una subcategoría"
-        items={subcategoriasFiltradas.map((sub) => ({ id: sub.id, label: sub.nombre }))}
-        onSelect={setSubcategoriaId}
-        disabled={!categoriaId}
-        noResultsText={categoriaId ? 'No se encontró ninguna subcategoría.' : 'Selecciona primero una categoría.'}
-      />
+            {/* CAMPO: Duración */}
+            <Text style={styles.label}>Duración (minutos)</Text>
+            <TextInput
+                style={styles.input}
+                value={duracion}
+                onChangeText={setDuracion}
+                keyboardType="numeric"
+                placeholder="Duración en minutos"
+            />
 
-      {/* ── CAMPO: URL Imagen ───────────────────────────────────────────── */}
-      <Text style={styles.label}>URL Imagen</Text>
-      <TextInput
-        style={styles.input}
-        value={imagenUrl}
-        onChangeText={setImagenUrl}
-        // Sin keyboardType especial: admite cualquier texto (URL o ruta).
-      />
+            {/* CAMPO: Categoría */}
+            <SearchableSelect
+                label="Categoría"
+                value={categoriaId}
+                placeholder="Selecciona una categoría"
+                items={categorias.map((cat) => ({ id: cat.id, label: cat.nombre }))}
+                onSelect={(value) => {
+                    setCategoriaId(value);
+                    setSubcategoriaId('');
+                }}
+                noResultsText="No se encontró ninguna categoría."
+            />
 
-      {/* ── BOTÓN DE GUARDAR ────────────────────────────────────────────── */}
-      {/* El título cambia según el modo: "Actualizar" si edita, "Crear" si es nuevo. */}
-      <Pressable
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>{editing ? 'Actualizar' : 'Crear'}</Text>
-      </Pressable>
-    </ScrollView>
-  );
+            {/* CAMPO: Subcategoría */}
+            <SearchableSelect
+                label="Subcategoría"
+                value={subcategoriaId}
+                placeholder="Selecciona una subcategoría"
+                items={subcategoriasFiltradas.map((sub) => ({ id: sub.id, label: sub.nombre }))}
+                onSelect={setSubcategoriaId}
+                disabled={!categoriaId}
+                noResultsText={categoriaId ? 'No se encontró ninguna subcategoría.' : 'Selecciona primero una categoría.'}
+            />
+
+            {/* CAMPO: URL Imagen */}
+            <Text style={styles.label}>URL Imagen</Text>
+            <TextInput
+                style={styles.input}
+                value={imagenUrl}
+                onChangeText={setImagenUrl}
+            />
+
+            {/* BOTÓN DE GUARDAR */}
+            <Pressable
+                style={[styles.button, loading && styles.buttonDisabled]}
+                onPress={handleSubmit}
+                disabled={loading}
+            >
+                <Text style={styles.buttonText}>{editing ? 'Actualizar' : 'Crear'}</Text>
+            </Pressable>
+        </ScrollView>
+    );
 }
 
-// ── ESTILOS ───────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// ESTILOS
+// ─────────────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  // Contenedor del ScrollView: padding interior, fondo claro similar a la web.
-  // flexGrow: 1 hace que ocupe toda la pantalla aunque el contenido sea corto.
-  container: { padding: 20, backgroundColor: '#f9f6f2', flexGrow: 1 },
-  // Etiqueta de campo: negrita con margen superior para separar campos.
-  label: { fontWeight: 'bold', marginTop: 10, color: '#3e2f25' },
-  // Campo de texto: borde gris suave, esquinas redondeadas, padding interior.
-  input: { borderWidth: 1, borderColor: '#7a5c46', borderRadius: 5, padding: 8, marginTop: 5, marginBottom: 10, backgroundColor: '#fff' },
-  helper: { fontSize: 12, color: '#666', marginBottom: 8 },
-  button: { marginTop: 20, backgroundColor: '#7a5c46', borderRadius: 10, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
-  buttonDisabled: { opacity: 0.7 },
-  buttonText: { color: '#fff', fontWeight: '700' },
+    container: { 
+        padding: 20, 
+        backgroundColor: '#f9f6f2', 
+        flexGrow: 1 
+    },
+    label: { 
+        fontWeight: 'bold', 
+        marginTop: 10, 
+        color: '#3e2f25' 
+    },
+    input: { 
+        borderWidth: 1, 
+        borderColor: '#7a5c46', 
+        borderRadius: 5, 
+        padding: 8, 
+        marginTop: 5, 
+        marginBottom: 10, 
+        backgroundColor: '#fff' 
+    },
+    helper: { 
+        fontSize: 12, 
+        color: '#666', 
+        marginBottom: 8 
+    },
+    button: { 
+        marginTop: 20, 
+        backgroundColor: '#7a5c46', 
+        borderRadius: 10, 
+        paddingVertical: 14, 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+    },
+    buttonDisabled: { 
+        opacity: 0.7 
+    },
+    buttonText: { 
+        color: '#fff', 
+        fontWeight: '700' 
+    },
 });

@@ -396,8 +396,8 @@ export default function TabTwoScreen() {
           {renderRegisterFields()}
           {renderLoginFields()}
 
-          {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
-          {successMessage && <ThemedText style={styles.success}>{successMessage}</ThemedText>}
+          {!!errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
+          {!!successMessage && <ThemedText style={styles.success}>{successMessage}</ThemedText>}
 
           <Pressable 
             style={styles.primaryButton} 
@@ -430,7 +430,7 @@ export default function TabTwoScreen() {
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       {renderProfileHeader()}
-      {perfilSuccess && renderSuccessBanner()}
+      {!!perfilSuccess && renderSuccessBanner()}
       {renderEditProfile()}
       {renderAdminButtons()}
       {renderLogoutButton()}
@@ -609,7 +609,7 @@ export default function TabTwoScreen() {
             onChangeText={setEditDireccion}
             style={styles.input}
           />
-          {perfilError && (
+          {!!perfilError && (
             <View style={styles.errorBanner}>
               <Ionicons name="alert-circle" size={15} color="#ef4444" />
               <Text style={styles.errorText}>{perfilError}</Text>
