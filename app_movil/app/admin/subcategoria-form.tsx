@@ -243,13 +243,14 @@ export default function AdminSubcategoriaForm() {
   }, []);
 
   useEffect(() => {
-    if (categoriaId) {
-      const categoriaSeleccionada = categorias.find((cat) => String(cat.id) === categoriaId);
-      if (!categoriaSeleccionada || categoriaSeleccionada.tipo !== tipo) {
-        setCategoriaId('');
-      }
+  if (categoriaId) {
+    const categoriaSeleccionada = categorias.find((cat) => String(cat.id) === categoriaId);
+    // ✅ CORREGIDO: Usando optional chaining
+    if (!categoriaSeleccionada || categoriaSeleccionada?.tipo !== tipo) {
+      setCategoriaId('');
     }
-  }, [tipo, categorias, categoriaId]);
+  }
+}, [tipo, categorias, categoriaId]);
 
   // ─────────────────────────────────────────────────────────────
   // MEMO: Categorías filtradas

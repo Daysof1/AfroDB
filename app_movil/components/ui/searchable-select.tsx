@@ -8,16 +8,16 @@ type SearchableSelectItem = {
   disabled?: boolean;
 };
 
-type SearchableSelectProps = {
+type SearchableSelectProps = Readonly<{
   label: string;
   value: string;
   placeholder: string;
-  items: SearchableSelectItem[];
+  items: readonly SearchableSelectItem[];
   onSelect: (value: string) => void;
   disabled?: boolean;
   noResultsText?: string;
   searchPlaceholder?: string;
-};
+}>;
 
 export function SearchableSelect({
   label,

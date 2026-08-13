@@ -14,7 +14,7 @@
 const { Sequelize } = require('sequelize');
 
 // Importa y ejecuta dotenv para cargar las variables del archivo .env
-// en el objeto global process.env, haciéndolas accesibles en todo el archivo.
+// en el objeto global process.env, haciéndolas accesibles en el archivo.
 require('dotenv').config();
 
 /**
@@ -116,7 +116,7 @@ const testConnection = async () => {
 const syncDatabase = async (force = false, alter = false) => {
   try {
     // sync() compara los modelos con las tablas en la BD y las ajusta.
-    // { force: true } = DROP TABLE + CREATE TABLE (borra todo)
+    // { force: true } = DROP TABLE + CREATE TABLE (borra)
     // { alter: true } = ALTER TABLE (modifica columnas sin borrar datos)
     // { } (sin opciones) = CREATE TABLE IF NOT EXISTS (solo crea si no existe)
     await sequelize.sync({ force, alter });

@@ -48,7 +48,7 @@ function normalizeItem(item) {
 }
 
 // calcula resumen del carrito: items normalizados, cantidad total y monto total
-function  summarize(items) {
+function summarize(items) {
     const normalized = items.map(normalizeItem);
     const totalItems = normalized.reduce((acc, item) => acc + item.cantidad, 0);
     const total = normalized.reduce((acc, item) => acc + item.subtotal, 0);
@@ -56,17 +56,28 @@ function  summarize(items) {
     return { items: normalized, totalItems, total };
 }
 
+// ─────────────────────────────────────────────────────────────
+// FUNCIÓN AUXILIAR (extraída para eliminar ternario anidado)
+// ─────────────────────────────────────────────────────────────
+
+function getItemsFromPayload(payload) {
+    // Intentar obtener items desde diferentes estructuras posibles
+    if (Array.isArray(payload?.items)) {
+        return payload.items;
+    }
+    if (Array.isArray(payload)) {
+        return payload;
+    }
+    return [];
+}
+
 const carritoService = {
     //obtiene el carrito desde el backend o desde storage segun la sesion
     getCarrito: async (isAuthenticated) => {
-        if ( isAuthenticated ){
+        if (isAuthenticated) {
             const response = await apiClient.get('/cliente/carrito');
             const payload = response.data?.data ?? response.data ?? {};
-            const items = Array.isArray(payload.items)
-                ? payload.items
-                : Array.isArray(payload)
-                    ? payload
-                    : [];
+            const items = getItemsFromPayload(payload);
             const summary = summarize(items);
             const resumen = payload.resumen || {};
 
@@ -97,7 +108,7 @@ const carritoService = {
         if (existing) {
             existing.cantidad += cantidad;
         } else {
-            localItems.push({ 
+            localItems.push({
                 id: Date.now(),
                 productoId: producto.id,
                 nombre: producto.nombre,
@@ -149,7 +160,6 @@ const carritoService = {
     },
 
     //migrar todos los items guardados localmene al carrito del backend despues que ele usuario inicia sesion
-
     mergeLocalToBackend: async () => {
         const localItems = await readLocalCart();
         if (localItems.length === 0) {

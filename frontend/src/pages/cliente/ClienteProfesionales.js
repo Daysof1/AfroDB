@@ -1,8 +1,8 @@
-// Página: ClienteProfesionales.js. p?gina de profesionales disponibles.
-import { useEffect, useState } from 'react';
+// Página: ClienteProfesionales.js. página de profesionales disponibles.
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendar, faScissors } from '@fortawesome/free-solid-svg-icons';
+import { faCalendar, faScissors, faTimes } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
 import { apiRequest, getAssetUrl, getStoredRole, isAuthenticated } from '../../api/client.js';
 
@@ -15,6 +15,9 @@ export default function ClienteProfesionales() {
   const [errorPerfil, setErrorPerfil] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Ref para el modal (para manejar el foco)
+  const modalRef = useRef(null);
 
   const handleAgendarCita = (profesionalId) => {
     const userRole = getStoredRole();
@@ -45,6 +48,17 @@ export default function ClienteProfesionales() {
   const cerrarPerfil = () => {
     setPerfilSeleccionado(null);
     setErrorPerfil('');
+    // Devolver el foco al botón que abrió el modal
+    if (modalRef.current) {
+      modalRef.current.focus();
+    }
+  };
+
+  // Manejar tecla Escape para cerrar el modal
+  const handleKeyDown = (event) => {
+    if (event.key === 'Escape' && perfilSeleccionado) {
+      cerrarPerfil();
+    }
   };
 
   useEffect(() => {
@@ -61,6 +75,13 @@ export default function ClienteProfesionales() {
     };
 
     loadProfesionales();
+    
+    // Agregar listener para tecla Escape
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   return (
@@ -83,20 +104,52 @@ export default function ClienteProfesionales() {
               <h3>{prof.nombre}</h3>
 
               <div className="prof-actions">
-                <button className="btn btn-secondary" onClick={() => handleVerPerfil(prof.id)}>👁️ Ver Perfil</button>
-                <button className="btn btn-primary" onClick={() => handleAgendarCita(prof.id)}><FontAwesomeIcon icon={faCalendar} /> Agendar Cita</button>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => handleVerPerfil(prof.id)}
+                >
+                  👁️ Ver Perfil
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary" 
+                  onClick={() => handleAgendarCita(prof.id)}
+                >
+                  <FontAwesomeIcon icon={faCalendar} /> Agendar Cita
+                </button>
               </div>
             </div>
           </div>
         ))}
       </div>
 
+      {/* Modal de perfil */}
       {(loadingPerfil || perfilSeleccionado || errorPerfil) && (
-        <div className="perfil-modal-overlay" onClick={cerrarPerfil}>
-          <div className="perfil-modal" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="perfil-modal-overlay" 
+          onClick={cerrarPerfil}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="perfil-modal-title"
+        >
+          <div 
+            className="perfil-modal" 
+            onClick={(e) => e.stopPropagation()}
+            ref={modalRef}
+            role="document"
+            tabIndex="-1"
+          >
             <div className="perfil-modal-header">
-              <h2>Perfil Profesional</h2>
-              <button type="button" className="btn btn-secondary" onClick={cerrarPerfil}>Cerrar</button>
+              <h2 id="perfil-modal-title">Perfil Profesional</h2>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={cerrarPerfil}
+                aria-label="Cerrar perfil"
+              >
+                <FontAwesomeIcon icon={faTimes} /> Cerrar
+              </button>
             </div>
 
             {loadingPerfil && <p>Cargando perfil...</p>}
@@ -108,7 +161,7 @@ export default function ClienteProfesionales() {
                   <img
                     className="cliente-card-img"
                     src={getAssetUrl(perfilSeleccionado.imagen)}
-                    alt={perfilSeleccionado.nombre}
+                    alt={`Foto de ${perfilSeleccionado.nombre}`}
                   />
                 </div>
 
@@ -131,7 +184,11 @@ export default function ClienteProfesionales() {
                   </div>
 
                   <div className="perfil-modal-actions">
-                    <button className="btn btn-primary" onClick={() => handleAgendarCita(perfilSeleccionado.id)}>
+                    <button 
+                      type="button" 
+                      className="btn btn-primary" 
+                      onClick={() => handleAgendarCita(perfilSeleccionado.id)}
+                    >
                       <FontAwesomeIcon icon={faCalendar} /> Agendar Cita con este profesional
                     </button>
                   </div>
@@ -144,4 +201,3 @@ export default function ClienteProfesionales() {
     </div>
   );
 }
-
