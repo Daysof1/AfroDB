@@ -213,6 +213,27 @@ export default function ProfesionalMisCitas() {
         return;
       }
 
+      if (!usarSeleccionMultiple && formData.profesionalId && formData.servicioIds.length > 0) {
+        const profesionalSeleccionado = profesionales.find((profesional) => String(profesional.id) === String(formData.profesionalId));
+        if (!profesionalSeleccionado) {
+          setError('El profesional seleccionado no existe o no está activo.');
+          return;
+        }
+
+        const especialidadesProfesional = new Set(
+          (profesionalSeleccionado.especialidades || []).map((esp) => normalizarTexto(esp.nombre))
+        );
+
+        const requiereEspecialidad = nombresEspecialidadesRequeridas.some(
+          (nombre) => !especialidadesProfesional.has(nombre)
+        );
+
+        if (requiereEspecialidad) {
+          setError('El profesional seleccionado no tiene la especialidad requerida para los servicios elegidos.');
+          return;
+        }
+      }
+
       await apiRequest('/cliente/citas', {
         method: 'POST',
         body: JSON.stringify({

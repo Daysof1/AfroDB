@@ -13,8 +13,7 @@ import Home from './pages/Home.js';
 import Login from './pages/Login.js';
 import Register from './pages/Register.js';
 import ChangePassword from './pages/ChangePassword.js';
-import Profile from './pages/Profile.js';f
-
+import Profile from './pages/Profile.js';
 
 // Páginas Admin
 import AdminDashboard from './pages/admin/AdminDashboard.js';
@@ -70,7 +69,7 @@ function App() {
     };
 
     syncSessionState();
-  }, [authChanged]); // Se ejecuta cuando authChanged cambia
+  }, []);
 
   // Escuchar evento personalizado de cambio de autenticación
   useEffect(() => {

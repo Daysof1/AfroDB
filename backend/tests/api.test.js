@@ -231,6 +231,69 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
       expect(citaCreada?.Servicios[0]).toHaveProperty('nombre');
       expect(citaCreada).toHaveProperty('notas', 'Necesito atención especial con la zona del hombro.');
     });
+
+    test('❌ No debe permitir agendar con un profesional que no tenga la especialidad requerida', async () => {
+      const serviciosResponse = await request(app)
+        .get('/api/servicios?activo=true')
+        .set('Authorization', `Bearer ${clienteToken}`);
+
+      expect(serviciosResponse.status).toBe(200);
+      expect(serviciosResponse.body.success).toBe(true);
+
+      const profesionalesResponse = await request(app)
+        .get('/api/profesionales')
+        .set('Authorization', `Bearer ${clienteToken}`);
+
+      expect(profesionalesResponse.status).toBe(200);
+      expect(profesionalesResponse.body.success).toBe(true);
+
+      const servicios = serviciosResponse.body.data?.servicios || [];
+      const profesionales = profesionalesResponse.body.data?.profesionales || [];
+
+      const normalizarTexto = (texto = '') => String(texto)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+
+      const servicio = servicios.find((item) => {
+        const subcategoriaNombre = item?.subcategoria?.nombre;
+        if (!subcategoriaNombre) return false;
+
+        return profesionales.some((profesional) => {
+          const especialidades = (profesional.especialidades || []).map((esp) => normalizarTexto(esp.nombre));
+          return !especialidades.includes(normalizarTexto(subcategoriaNombre));
+        });
+      });
+
+      expect(servicio).toBeDefined();
+
+      const profesionalInvalido = profesionales.find((profesional) => {
+        const especialidades = (profesional.especialidades || []).map((esp) => normalizarTexto(esp.nombre));
+        return !especialidades.includes(normalizarTexto(servicio.subcategoria.nombre));
+      });
+
+      expect(profesionalInvalido).toBeDefined();
+
+      const fechaFutura = new Date();
+      fechaFutura.setDate(fechaFutura.getDate() + 1);
+      const fecha = fechaFutura.toISOString().slice(0, 10);
+
+      const response = await request(app)
+        .post('/api/cliente/citas')
+        .set('Authorization', `Bearer ${clienteToken}`)
+        .send({
+          fecha,
+          hora: '11:00',
+          servicios: [servicio.id],
+          profesionalId: profesionalInvalido.id,
+          notas: 'Este profesional no tiene la especialidad requerida.'
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toMatch(/especialidad requerida/i);
+    });
   });
 
   // ==========================================

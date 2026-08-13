@@ -285,21 +285,43 @@ if (horaNum < 8 || horaNum > 20 || (horaNum === 20 && minutoNum > 0)) {
 
       let profesionalParaServicio = null;
 
-      // Prioriza profesionales preferidos (si se enviaron) que tengan la especialidad
+      // Si el cliente escogió un profesional explícito, hay que validar ese caso
+      // antes de buscar otros candidatos. Si no tiene la especialidad, se rechaza
+      // la solicitud con un mensaje preciso para la UI del cliente.
+      if (profesionalSeleccionado && especialidad) {
+        if (!profesionalTieneEspecialidad(profesionalSeleccionado, especialidad.id)) {
+          await t.rollback();
+          return res.status(400).json({
+            success: false,
+            message: `El profesional seleccionado no tiene la especialidad requerida para el servicio: ${servicio.nombre}`
+          });
+        }
+        profesionalParaServicio = profesionalSeleccionado;
+      }
+
       if (profesionalesPreferidos.length > 0 && especialidad) {
+        const profesionalesInvalidosSeleccionados = profesionalesPreferidos.filter(
+          (p) => !profesionalTieneEspecialidad(p, especialidad.id)
+        );
+
+        if (profesionalesInvalidosSeleccionados.length > 0) {
+          await t.rollback();
+          return res.status(400).json({
+            success: false,
+            message: `Uno de los profesionales seleccionados no tiene la especialidad requerida para el servicio: ${servicio.nombre}`
+          });
+        }
+      }
+
+      // Prioriza profesionales preferidos (si se enviaron) que tengan la especialidad
+      if (!profesionalParaServicio && profesionalesPreferidos.length > 0 && especialidad) {
         profesionalParaServicio = profesionalesPreferidos.find((p) => profesionalTieneEspecialidad(p, especialidad.id)) || null;
       }
 
-      // Si el cliente escogió un `profesionalId` explícito, se valida que
-      // ese profesional tenga la especialidad requerida
-      if (profesionalSeleccionado && especialidad && profesionalTieneEspecialidad(profesionalSeleccionado, especialidad.id)) {
-        profesionalParaServicio = profesionalSeleccionado;
-      } else if (especialidad) {
+      if (!profesionalParaServicio && especialidad) {
         // Si aún no hay asignación, buscar entre candidatos (preferidos o todos)
-        if (!profesionalParaServicio) {
-          const candidatos = profesionalesPreferidos.length > 0 ? profesionalesPreferidos : profesionalesDisponibles;
-          profesionalParaServicio = candidatos.find((p) => profesionalTieneEspecialidad(p, especialidad.id)) || null;
-        }
+        const candidatos = profesionalesPreferidos.length > 0 ? profesionalesPreferidos : profesionalesDisponibles;
+        profesionalParaServicio = candidatos.find((p) => profesionalTieneEspecialidad(p, especialidad.id)) || null;
       }
 
       // Si no se encuentra ningún profesional con la especialidad requerida,
