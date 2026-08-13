@@ -335,11 +335,11 @@ const eliminarItemCarrito = async (req, res) => {
 };
 
 // ==========================================
-// DELETE: Vaciar todo el carrito
+// DELETE: Vaciar el carrito
 // ==========================================
 
 /**
- * Vaciar todo el carrito
+ * Vaciar el carrito
  * Ruta: DELETE /api/cliente/carrito
  */
 const vaciarCarrito = async (req, res) => {

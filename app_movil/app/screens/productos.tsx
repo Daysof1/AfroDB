@@ -6,7 +6,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { ActivityIndicator, Alert, Dimensions, FlatList, Modal, Image, ImageBackground, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from "react-native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import catalogoService from "../../src/services/catalogoService";
 import { ThemedText } from '../../components/themed-text';
@@ -65,7 +64,7 @@ const AFRODB_IMAGE = catalogoService.buildImageUrl('uploads/fondo.png');
 const buildCategorias = (rawCategorias: any[], items: any[], tipoDeseado: string): Categoria[] => {
     const categoriasRaw = Array.isArray(rawCategorias) ? rawCategorias : [];
     const categoriasConNombre = categoriasRaw.filter((cat: any) => 
-        cat && cat.id !== undefined && cat.id !== null && cat.nombre
+        cat?.id !== undefined && cat?.id !== null && cat?.nombre
     );
 
     const tieneTipo = categoriasConNombre.some((cat: any) => cat.tipo !== undefined);
@@ -79,7 +78,7 @@ const buildCategorias = (rawCategorias: any[], items: any[], tipoDeseado: string
     const vistos = new Set<string>();
     items.forEach((item: any) => {
         const cat = item?.categoria;
-        if (cat && cat.id !== undefined && cat.id !== null && cat.nombre) {
+        if (cat?.id !== undefined && cat?.id !== null && cat?.nombre) {
             const idKey = String(cat.id);
             if (!vistos.has(idKey)) {
                 vistos.add(idKey);
@@ -514,7 +513,7 @@ export default function ProductosScreen() {
             ]}
         >
             <Image
-                source={{ uri: catalogoService.buildImageUrl(producto.imagen) }}
+                source={{ uri: catalogoService.buildImageUrl(producto.imagen || '') }}
                 style={styles.cardImage}
                 resizeMode="cover"
             />
@@ -613,7 +612,7 @@ export default function ProductosScreen() {
                         {productoDetalle && (
                             <>
                                 <Image
-                                    source={{ uri: catalogoService.buildImageUrl(productoDetalle.imagen) }}
+                                    source={{ uri: catalogoService.buildImageUrl(productoDetalle.imagen || '') }}
                                     style={styles.modalImage}
                                     resizeMode="cover"
                                 />

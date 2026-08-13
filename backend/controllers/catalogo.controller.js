@@ -128,7 +128,6 @@ const buildServicioOrder = (orden) => {
  */
 const getProductos = async (req, res) => {
   try {
-    const { Op } = require('sequelize');
     const {
       orden = 'reciente',
       pagina = 1,

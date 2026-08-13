@@ -9,7 +9,6 @@ import { FlatList, Modal, Image, ImageBackground, Pressable, RefreshControl, Scr
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import catalogoService from "../../src/services/catalogoService";
-import { useAuth } from '../../src/context/AuthContext';
 import { useAgendar } from "../../src/context/AgendarContext";
 import { ThemedText } from '../../components/themed-text';
 import { ThemedView } from '../../components/themed-view';
@@ -63,7 +62,7 @@ type Subcategoria = {
 const buildCategorias = (rawCategorias: any[], items: any[], tipoDeseado: string): Categoria[] => {
     const categoriasRaw = Array.isArray(rawCategorias) ? rawCategorias : [];
     const categoriasConNombre = categoriasRaw.filter((cat: any) => 
-        cat && cat.id !== undefined && cat.id !== null && cat.nombre
+        cat?.id !== undefined && cat?.id !== null && cat?.nombre
     );
 
     const tieneTipo = categoriasConNombre.some((cat: any) => cat.tipo !== undefined);
@@ -77,7 +76,7 @@ const buildCategorias = (rawCategorias: any[], items: any[], tipoDeseado: string
     const vistos = new Set<string>();
     items.forEach((item: any) => {
         const cat = item?.categoria;
-        if (cat && cat.id !== undefined && cat.id !== null && cat.nombre) {
+        if (cat?.id !== undefined && cat?.id !== null && cat?.nombre) {
             const idKey = String(cat.id);
             if (!vistos.has(idKey)) {
                 vistos.add(idKey);
@@ -372,7 +371,8 @@ export default function ServiciosScreen() {
                 : [];
             setServicios(serviciosData);
         } catch (error: any) {
-            // Error manejado silenciosamente
+            // ✅ Error manejado: se registra y se muestra en consola
+            console.warn('Error al cargar servicios:', error?.message || error);
         } finally {
             setLoading(false);
         }
@@ -389,7 +389,9 @@ export default function ServiciosScreen() {
             setServicios(Array.isArray(serviciosData) ? serviciosData : []);
             setCategorias(buildCategorias(categoriaData, serviciosData, 'servicio'));
         } catch (error: unknown) {
-            // Error manejado silenciosamente
+            // ✅ Error manejado: se registra y se muestra en consola
+            const errorMsg = (error as { message?: string })?.message || 'Error desconocido al cargar servicios';
+            console.warn('Error al cargar servicios:', errorMsg);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -418,6 +420,8 @@ export default function ServiciosScreen() {
                 setSubcategorias(Array.isArray(subcat) ? subcat : []);
                 setSubcategoriaActiva('all');
             } catch (error: unknown) {
+                // ✅ Error manejado: se registra y se muestra en consola
+                console.warn('Error al cargar subcategorías:', (error as { message?: string })?.message || error);
                 setSubcategorias([]);
             } finally {
                 setLoadingSubcategorias(false);
@@ -500,7 +504,7 @@ export default function ServiciosScreen() {
             ]}
         >
             <Image
-                source={{ uri: catalogoService.buildImageUrl(servicio.imagen) }}
+                source={{ uri: catalogoService.buildImageUrl(servicio.imagen || '') }}
                 style={styles.cardImage}
                 resizeMode="cover"
             />
@@ -598,7 +602,7 @@ export default function ServiciosScreen() {
                         {servicioDetalle && (
                             <>
                                 <Image
-                                    source={{ uri: catalogoService.buildImageUrl(servicioDetalle.imagen) }}
+                                    source={{ uri: catalogoService.buildImageUrl(servicioDetalle.imagen || '') }}
                                     style={styles.modalImage}
                                     resizeMode="cover"
                                 />

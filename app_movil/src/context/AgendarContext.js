@@ -37,7 +37,6 @@ export function AgendarProvider({ children }) {
         } catch (error) {
             console.error('Error al cargar citas:', error);
             setCitas([]);
-            // ✅ El error se maneja mostrando un log y dejando el estado vacío
         } finally {
             setLoading(false);
         }
@@ -55,17 +54,13 @@ export function AgendarProvider({ children }) {
      * Agenda una nueva cita con los servicios especificados
      * @param {Object} datoCita - { fecha: 'YYYY-MM-DD', hora: 'HH:MM', servicios: [id], profesionalId?, nota? }
      */
+    // ✅ Eliminado try/catch innecesario - el error se propaga automáticamente
     const crearCita = useCallback(
         async (datoCita) => {
-            try {
-                const nuevaCita = await citaService.agendarCita(datoCita);
-                // Agrega la nueva cita a la lista
-                setCitas(prev => [nuevaCita, ...prev]);
-                return nuevaCita;
-            } catch (error) {
-                // ✅ El error se relanza para que el componente lo maneje
-                throw error;
-            }
+            const nuevaCita = await citaService.agendarCita(datoCita);
+            // Agrega la nueva cita a la lista
+            setCitas(prev => [nuevaCita, ...prev]);
+            return nuevaCita;
         },
         []
     );
@@ -74,16 +69,12 @@ export function AgendarProvider({ children }) {
      * cancelarCita
      * Cancela una cita existente
      */
+    // ✅ Eliminado try/catch innecesario - el error se propaga automáticamente
     const cancelarCita = useCallback(
         async (citaId) => {
-            try {
-                await citaService.cancelarCita(citaId);
-                // Remueve la cita cancelada
-                setCitas(prev => prev.filter(c => c.id !== citaId));
-            } catch (error) {
-                // ✅ El error se relanza para que el componente lo maneje
-                throw error;
-            }
+            await citaService.cancelarCita(citaId);
+            // Remueve la cita cancelada
+            setCitas(prev => prev.filter(c => c.id !== citaId));
         },
         []
     );
@@ -99,7 +90,6 @@ export function AgendarProvider({ children }) {
             setCitas(Array.isArray(citasData) ? citasData : []);
         } catch (error) {
             console.error('Error al refrescar citas:', error);
-            // ✅ El error se maneja mostrando un log
         } finally {
             setRefreshing(false);
         }

@@ -184,8 +184,6 @@ if (horaNum < 8 || horaNum > 20 || (horaNum === 20 && minutoNum > 0)) {
       });
     }
 
-    const idsEspecialidadesRequeridas = especialidadesRequeridas.map((esp) => esp.id);
-
     // 🔥 ASIGNACIÓN DE PROFESIONALES
     // Una cita puede incluir varios servicios y cada servicio puede quedar con profesional distinto.
     const profesionalesDisponibles = await Usuario.findAll({
@@ -212,7 +210,7 @@ if (horaNum < 8 || horaNum > 20 || (horaNum === 20 && minutoNum > 0)) {
     let profesionalesPreferidos = [];
 
     if (Array.isArray(profesionalesIds) && profesionalesIds.length > 0) {
-      const idsUnicos = Array.from(new Set(profesionalesIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)));
+      const idsUnicos = Array.from(new Set(profesionalesIds.map(Number).filter((id) => Number.isFinite(id) && id > 0)));
 
       profesionalesPreferidos = idsUnicos
         .map((id) => profesionalesPorId.get(id))

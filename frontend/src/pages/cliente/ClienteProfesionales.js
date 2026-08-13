@@ -18,6 +18,7 @@ export default function ClienteProfesionales() {
   
   // Ref para el modal (para manejar el foco)
   const modalRef = useRef(null);
+  const overlayRef = useRef(null);
 
   const handleAgendarCita = (profesionalId) => {
     const userRole = getStoredRole();
@@ -124,21 +125,29 @@ export default function ClienteProfesionales() {
         ))}
       </div>
 
-      {/* Modal de perfil */}
+      {/* Modal de perfil - Usando <dialog> nativo en lugar de div con role="dialog" */}
       {(loadingPerfil || perfilSeleccionado || errorPerfil) && (
-        <div 
-          className="perfil-modal-overlay" 
-          onClick={cerrarPerfil}
-          role="dialog"
-          aria-modal="true"
+        <dialog
+          className="perfil-modal-overlay"
+          open
+          ref={modalRef}
           aria-labelledby="perfil-modal-title"
+          onClick={(e) => {
+            // Cerrar si se hace clic en el backdrop (fuera del contenido del modal)
+            if (e.target === e.currentTarget) {
+              cerrarPerfil();
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              cerrarPerfil();
+            }
+          }}
         >
           <div 
-            className="perfil-modal" 
+            className="perfil-modal"
             onClick={(e) => e.stopPropagation()}
-            ref={modalRef}
             role="document"
-            tabIndex="-1"
           >
             <div className="perfil-modal-header">
               <h2 id="perfil-modal-title">Perfil Profesional</h2>
@@ -196,7 +205,7 @@ export default function ClienteProfesionales() {
               </div>
             )}
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   );
