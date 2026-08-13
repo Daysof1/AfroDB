@@ -13,6 +13,7 @@ export default function AdminCitas() {
 
   const [filtro, setFiltro] = useState('Todos');
   const [showExportOptions, setShowExportOptions] = useState(false);
+  const [error, setError] = useState('');  //este no se elimina.
 
   // Mapa de profesionales por ID
   const profesionalesPorId = profesionales.reduce((map, prof) => {
