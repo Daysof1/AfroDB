@@ -103,6 +103,41 @@ const generarTokenRespuesta = (usuario, mensaje, status = 200) => {
     };
 };
 
+const validarEmailUnico = async (email, usuarioId) => {
+    if (!email) return { valid: true };
+    
+    const { Op } = require('sequelize');
+    const emailExistente = await Usuario.findOne({
+        where: {
+            email: email,
+            id: { [Op.ne]: usuarioId }
+        }
+    });
+    
+    if (emailExistente) {
+        return { valid: false, message: 'El email ya está registrado por otro usuario' };
+    }
+    return { valid: true };
+};  
+
+const manejarImagenPerfil = (usuario, file) => {
+    if (!file) return;
+    
+    if (String(usuario.rol) !== 'profesional') {
+        try {
+            deleteFile(file.filename);
+        } catch (err) {
+            console.error('Error eliminando archivo no autorizado:', err);
+        }
+        throw new Error('Solo los usuarios con rol profesional pueden subir imagen de perfil');
+    }
+    
+    if (usuario.imagen) {
+        deleteFile(usuario.imagen);
+    }
+    usuario.imagen = file.filename;
+};
+
 // ─────────────────────────────────────────────────────────────
 // REGISTRAR USUARIO
 // ─────────────────────────────────────────────────────────────
@@ -253,19 +288,9 @@ const updateMe = async (req, res) => {
         
         // Validar email único
         if (email !== undefined && email !== usuario.email) {
-            const { Op } = require('sequelize');
-            const emailExistente = await Usuario.findOne({
-                where: {
-                    email: email,
-                    id: { [Op.ne]: req.usuario.id }
-                }
-            });
-            
-            if (emailExistente) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'El email ya está registrado por otro usuario'
-                });
+            const emailValid = await validarEmailUnico(email, req.usuario.id);
+            if (!emailValid.valid) {
+                return res.status(400).json({ success: false, message: emailValid.message });
             }
         }
         
@@ -279,22 +304,14 @@ const updateMe = async (req, res) => {
         
         // Manejar imagen
         if (req.file) {
-            if (String(usuario.rol) !== 'profesional') {
-                try {
-                    deleteFile(req.file.filename);
-                } catch (err) {
-                    console.error('Error eliminando archivo no autorizado:', err);
-                }
+            try {
+                manejarImagenPerfil(usuario, req.file);
+            } catch (error) {
                 return res.status(403).json({
                     success: false,
-                    message: 'Solo los usuarios con rol profesional pueden subir imagen de perfil'
+                    message: error.message
                 });
             }
-            
-            if (usuario.imagen) {
-                deleteFile(usuario.imagen);
-            }
-            usuario.imagen = req.file.filename;
         }
         
         await usuario.save();

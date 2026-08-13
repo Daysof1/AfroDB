@@ -13,7 +13,7 @@ import Home from './pages/Home.js';
 import Login from './pages/Login.js';
 import Register from './pages/Register.js';
 import ChangePassword from './pages/ChangePassword.js';
-import Profile from './pages/Profile.js';
+import Profile from './pages/Profile.js';f
 
 
 // Páginas Admin
@@ -59,7 +59,6 @@ import AuxiliarPedidos from './pages/auxiliar/AuxiliarPedidos.js';
 
 function App() {
   const [userRole, setUserRole] = useState(null);
-  const [authChanged, setAuthChanged] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [globalNotice, setGlobalNotice] = useState('');
 

@@ -77,12 +77,6 @@ export default function ClienteProfesionales() {
 
     loadProfesionales();
     
-    // Agregar listener para tecla Escape
-    document.addEventListener('keydown', handleKeyDown);
-    
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
   }, []);
 
   return (
@@ -132,21 +126,9 @@ export default function ClienteProfesionales() {
           open
           ref={modalRef}
           aria-labelledby="perfil-modal-title"
-          onClick={(e) => {
-            // Cerrar si se hace clic en el backdrop (fuera del contenido del modal)
-            if (e.target === e.currentTarget) {
-              cerrarPerfil();
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              cerrarPerfil();
-            }
-          }}
         >
           <div 
             className="perfil-modal"
-            onClick={(e) => e.stopPropagation()}
             role="document"
           >
             <div className="perfil-modal-header">

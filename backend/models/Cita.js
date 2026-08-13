@@ -10,7 +10,7 @@
 
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 
 const Cita = sequelize.define('Cita', {
 

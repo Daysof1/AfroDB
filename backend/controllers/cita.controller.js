@@ -22,6 +22,34 @@ const normalizarTexto = (texto = '') =>
     .trim()
     .toLowerCase();
 
+    const validarFechaHoraCita = (fecha, hora) => {
+  if (!fecha || !hora) {
+    return { valid: false, message: 'Debe indicar fecha y hora para agendar la cita' };
+  }
+
+  const fechaHoraSeleccionada = new Date(`${fecha}T${hora}`);
+  if (Number.isNaN(fechaHoraSeleccionada.getTime())) {
+    return { valid: false, message: 'La fecha u hora ingresada no es válida' };
+  }
+
+  const ahora = new Date();
+  if (fechaHoraSeleccionada <= ahora) {
+    return { valid: false, message: 'No se puede agendar una cita en una fecha u hora que ya pasó' };
+  }
+
+  const añoActual = ahora.getFullYear();
+  const fechaSeleccionada = new Date(fecha);
+  if (fechaSeleccionada.getFullYear() !== añoActual) {
+    return { valid: false, message: `La cita debe agendarse en el año actual (${añoActual})` };
+  }
+
+  const [horaNum, minutoNum] = hora.split(':').map(Number);
+  if (horaNum < 8 || horaNum > 20 || (horaNum === 20 && minutoNum > 0)) {
+    return { valid: false, message: 'Las citas solo se pueden agendar entre las 08:00 a.m. y las 08:00 p.m.' };
+  }
+
+  return { valid: true, fechaHoraSeleccionada };
+};
 
 // ==========================================
 // 📅 CREAR CITA - CLIENTE
@@ -34,13 +62,11 @@ const crearCita = async (req, res) => {
   try {
     const { fecha, hora, servicios, profesionalId, profesionalesIds, notas } = req.body;
 
-    // VALIDACIÓN 0: fecha y hora obligatorias y en futuro
-    if (!fecha || !hora) {
+    // VALIDACIÓN DE FECHA Y HORA
+    const fechaValid = validarFechaHoraCita(fecha, hora);
+    if (!fechaValid.valid) {
       await t.rollback();
-      return res.status(400).json({
-        success: false,
-        message: 'Debe indicar fecha y hora para agendar la cita'
-      });
+      return res.status(400).json({ success: false, message: fechaValid.message });
     }
 
     const fechaHoraSeleccionada = new Date(`${fecha}T${hora}`);
@@ -562,61 +588,30 @@ const cancelarCita = async (req, res) => {
 // ==========================================
 
 const reprogramarCita = async (req, res) => {
+  const { sequelize } = require('../config/database');
+  const t = await sequelize.transaction();
+
   try {
     const { id } = req.params;
     const { fecha, hora } = req.body;
 
-    if (!fecha || !hora) {
-      return res.status(400).json({
-        success: false,
-        message: 'Debe indicar fecha y hora para reprogramar la cita'
-      });
-    }
-
-    const fechaHoraSeleccionada = new Date(`${fecha}T${hora}`);
-    if (Number.isNaN(fechaHoraSeleccionada.getTime())) {
-      return res.status(400).json({
-        success: false,
-        message: 'La fecha u hora ingresada no es válida'
-      });
-    }
-
-    const ahora = new Date();
-    if (fechaHoraSeleccionada <= ahora) {
-      return res.status(400).json({
-        success: false,
-        message: 'No se puede reprogramar una cita a una fecha u hora que ya pasó'
-      });
-    }
-     // VALIDACIÓN: La fecha debe corresponder al año actual
-    const añoActual = ahora.getFullYear();
-    const fechaSeleccionada = new Date(fecha);
-    const añoFecha = fechaSeleccionada.getFullYear();
-    if (añoFecha !== añoActual) {
-      return res.status(400).json({
-        success: false,
-        message: `La cita debe agendarse en el año actual (${añoActual})`
-      });
-    }
-
-    // VALIDACIÓN: Las citas solo se pueden agendar entre las 08:00 y las 20:00
-    const [horaNum, minutoNum] = hora.split(':').map(Number);
-
-    if (horaNum < 8 || horaNum > 20 || (horaNum === 20 && minutoNum > 0)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Las citas solo se pueden agendar entre las 08:00 a.m. y las 08:00 p.m.'
-      });
+    // VALIDACIÓN DE FECHA Y HORA
+    const fechaValid = validarFechaHoraCita(fecha, hora);
+    if (!fechaValid.valid) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: fechaValid.message });
     }
 
     const cita = await Cita.findOne({
       where: {
         id,
         usuarioId: req.usuario.id
-      }
+      },
+      transaction: t
     });
 
     if (!cita) {
+      await t.rollback();
       return res.status(404).json({
         success: false,
         message: 'Cita no encontrada'
@@ -624,6 +619,7 @@ const reprogramarCita = async (req, res) => {
     }
 
     if (!['pendiente', 'confirmada', 'cancelada'].includes(cita.estado)) {
+      await t.rollback();
       return res.status(400).json({
         success: false,
         message: 'Solo se pueden reprogramar citas pendientes, confirmadas o canceladas'
@@ -632,7 +628,8 @@ const reprogramarCita = async (req, res) => {
 
     const detalles = await CitaServicio.findAll({
       where: { citaId: cita.id },
-      attributes: ['profesionalId']
+      attributes: ['profesionalId'],
+      transaction: t
     });
 
     const profesionalesAsignados = new Set();
@@ -650,7 +647,7 @@ const reprogramarCita = async (req, res) => {
     const finNueva = new Date(inicioNueva);
     finNueva.setMinutes(finNueva.getMinutes() + cita.duracionTotal);
 
-      for (const profesionalAsignadoId of profesionalesAsignadosIds) {
+    for (const profesionalAsignadoId of profesionalesAsignados) {
       const detallesProfesional = await CitaServicio.findAll({
         where: { profesionalId: profesionalAsignadoId },
         attributes: ['citaId'],
@@ -660,49 +657,52 @@ const reprogramarCita = async (req, res) => {
       const citaIds = detallesProfesional.map((detalle) => detalle.citaId);
       if (citaIds.length === 0) continue;
 
-    const citasExistentes = await Cita.findAll({
-      where: {
-        [Op.and]: [
-          { id: citaIds },
-          { fecha: fecha },
-          { estado: { [Op.in]: ['confirmada'] } },
-          { id: { [Op.ne]: cita.id } }
-        ]
-      },
-      attributes: ['hora', 'duracionTotal'],
-      transaction: t
-    });
+      const citasExistentes = await Cita.findAll({
+        where: {
+          [Op.and]: [
+            { id: citaIds },
+            { fecha: fecha },
+            { estado: { [Op.in]: ['confirmada'] } },
+            { id: { [Op.ne]: cita.id } }
+          ]
+        },
+        attributes: ['hora', 'duracionTotal'],
+        transaction: t
+      });
 
-  
-    for (const citaIxistente of citasExistentes) {
-      const inicioExistente = new Date(`${fecha}T${citaIxistente.hora}`);
-      const finExistente = new Date(inicioExistente);
-      finExistente.setMinutes(finExistente.getMinutes() + citaIxistente.duracionTotal);
+      for (const citaExistente of citasExistentes) {
+        const inicioExistente = new Date(`${fecha}T${citaExistente.hora}`);
+        const finExistente = new Date(inicioExistente);
+        finExistente.setMinutes(finExistente.getMinutes() + citaExistente.duracionTotal);
 
-      const hayCruce = inicioNueva < finExistente && finNueva > inicioExistente;
-      if (hayCruce) {
-        await t.rollback();
-        return res.status(400).json({
-          success: false,
-          message: 'Uno de los profesionales asignados ya tiene una cita en ese horario'
-        });
+        const hayCruce = inicioNueva < finExistente && finNueva > inicioExistente;
+        if (hayCruce) {
+          await t.rollback();
+          return res.status(400).json({
+            success: false,
+            message: 'Uno de los profesionales asignados ya tiene una cita en ese horario'
+          });
+        }
       }
     }
-  }
 
     cita.fecha = fecha;
     cita.hora = hora;
     if (cita.estado === 'cancelada') {
       cita.estado = 'pendiente';
     }
-    await cita.save();
+    await cita.save({ transaction: t });
+
+    await t.commit();
 
     res.json({
       success: true,
       message: 'Cita reprogramada exitosamente',
       data: { cita }
     });
+
   } catch (error) {
+    await t.rollback();
     res.status(500).json({
       success: false,
       message: 'Error al reprogramar cita',
