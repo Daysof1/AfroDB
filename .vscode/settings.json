@@ -1,0 +1,6 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "daysof1",
+        "projectKey": "Daysof1_AfroDB"
+    }
+}

@@ -46,29 +46,48 @@ const getPaginacionParams = (pagina, limite) => {
   return { pageNum, limitNum, offset };
 };
 
-const validarCategoria = async (categoriaId) => {
-  const categoria = await Categoria.findByPk(categoriaId);
-  if (!categoria) {
-    throw new Error(`No existe una categoría con ID ${categoriaId}`);
+const validarCategoria = async (categoriaId, categoriaActual) => {
+  if (categoriaId === undefined || categoriaId === '') {
+    return undefined;
   }
-  if (!categoria.activo) {
-    throw new Error(`La categoría "${categoria.nombre}" está inactiva`);
+
+  const parsedCategoriaId = Number.parseInt(categoriaId, 10);
+  if (parsedCategoriaId === categoriaActual) {
+    return parsedCategoriaId;
   }
-  return categoria;
+
+  const categoria = await Categoria.findByPk(parsedCategoriaId);
+  if (!categoria?.activo) {
+    throw new Error('Categoría inválida o inactiva');
+  }
+
+  return parsedCategoriaId;
 };
 
-const validarSubcategoria = async (subcategoriaId, categoriaId) => {
-  const subcategoria = await Subcategoria.findByPk(subcategoriaId);
-  if (!subcategoria) {
-    throw new Error(`No existe una subcategoría con ID ${subcategoriaId}`);
+const validarSubcategoria = async (subcategoriaId, categoriaId, categoriaActual, subcategoriaActual) => {
+  if (subcategoriaId === undefined || subcategoriaId === '') {
+    return undefined;
   }
-  if (!subcategoria.activo) {
-    throw new Error(`La subcategoría "${subcategoria.nombre}" está inactiva`);
+
+  const parsedSubcategoriaId = Number.parseInt(subcategoriaId, 10);
+  if (parsedSubcategoriaId === subcategoriaActual) {
+    return parsedSubcategoriaId;
   }
-  if (subcategoria.categoriaId !== Number.parseInt(categoriaId, 10)) {
-    throw new Error(`La subcategoría "${subcategoria.nombre}" no pertenece a la categoría seleccionada`);
+
+  const subcategoria = await Subcategoria.findByPk(parsedSubcategoriaId);
+  if (!subcategoria?.activo) {
+    throw new Error('Subcategoría inválida o inactiva');
   }
-  return subcategoria;
+
+  const catId = categoriaId !== undefined && categoriaId !== '' 
+    ? Number.parseInt(categoriaId, 10) 
+    : categoriaActual;
+    
+  if (subcategoria.categoriaId !== catId) {
+    throw new Error('La subcategoría no pertenece a la categoría seleccionada');
+  }
+
+  return parsedSubcategoriaId;
 };
 
 const validarPrecio = (precio) => {
@@ -90,11 +109,50 @@ const validarStock = (stock) => {
 const limpiarImagenEnError = async (filename) => {
   if (filename) {
     try {
-      await deleteFile(filename);
+      deleteFile(filename);
     } catch (err) {
       console.error('Error al eliminar imagen:', err);
     }
   }
+};
+
+const manejarImagenProducto = async (req, producto, imagenAnterior) => {
+  let downloadedNewImage = null;
+
+  if (req.file) {
+    producto.imagen = req.file.filename;
+    if (imagenAnterior && imagenAnterior !== producto.imagen) {
+      await limpiarImagenEnError(imagenAnterior);
+    }
+  } else if (req.body?.imagenUrl) {
+    const imagenUrlStr = String(req.body.imagenUrl || '');
+    if (!imagenAnterior || !imagenUrlStr.includes(imagenAnterior)) {
+      try {
+        const filename = await downloadImage(imagenUrlStr, producto.nombre || 'imagen');
+        downloadedNewImage = filename;
+        producto.imagen = filename;
+        if (imagenAnterior && imagenAnterior !== filename) {
+          await limpiarImagenEnError(imagenAnterior);
+        }
+      } catch (err) {
+        console.warn('No se pudo descargar imagen remota:', err.message);
+      }
+    }
+  }
+
+  return downloadedNewImage;
+};
+
+const actualizarCamposProducto = (producto, campos) => {
+  const { nombre, descripcion, precio, stock, categoriaId, subcategoriaId, activo } = campos;
+  
+  if (nombre !== undefined) producto.nombre = nombre;
+  if (descripcion !== undefined) producto.descripcion = descripcion;
+  if (precio !== undefined) producto.precio = precio;
+  if (stock !== undefined) producto.stock = stock;
+  if (categoriaId !== undefined) producto.categoriaId = categoriaId;
+  if (subcategoriaId !== undefined) producto.subcategoriaId = subcategoriaId;
+  if (activo !== undefined) producto.activo = activo;
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -220,8 +278,8 @@ const crearProducto = async (req, res) => {
       });
     }
     
-    await validarCategoria(categoriaId);
-    await validarSubcategoria(subcategoriaId, categoriaId);
+    validarCategoria(categoriaId);
+    validarSubcategoria(subcategoriaId, categoriaId);
     const precioNum = validarPrecio(precio);
     const stockNum = validarStock(stock);
     
@@ -297,13 +355,6 @@ const actualizarProducto = async (req, res) => {
     const { id } = req.params;
     const { nombre, descripcion, precio, stock, categoriaId, subcategoriaId, activo } = req.body;
     
-    const parsedCategoriaId = categoriaId !== undefined && categoriaId !== '' 
-      ? Number.parseInt(categoriaId, 10) 
-      : undefined;
-    const parsedSubcategoriaId = subcategoriaId !== undefined && subcategoriaId !== '' 
-      ? Number.parseInt(subcategoriaId, 10) 
-      : undefined;
-    
     const producto = await Producto.findByPk(id);
     
     if (!producto) {
@@ -312,94 +363,63 @@ const actualizarProducto = async (req, res) => {
         message: 'Producto no encontrado'
       });
     }
-    
-    // Validar categoría
-    if (parsedCategoriaId !== undefined && parsedCategoriaId !== producto.categoriaId) {
-      const categoria = await Categoria.findByPk(parsedCategoriaId);
-      if (!categoria || !categoria.activo) {
-        return res.status(400).json({
-          success: false,
-          message: 'Categoría inválida o inactiva'
-        });
-      }
-    }
-    
-    // Validar subcategoría
-    if (parsedSubcategoriaId !== undefined && parsedSubcategoriaId !== producto.subcategoriaId) {
-      const subcategoria = await Subcategoria.findByPk(parsedSubcategoriaId);
-      if (!subcategoria || !subcategoria.activo) {
-        return res.status(400).json({
-          success: false,
-          message: 'Subcategoría inválida o inactiva'
-        });
-      }
-      
-      const catId = parsedCategoriaId !== undefined ? parsedCategoriaId : producto.categoriaId;
-      if (subcategoria.categoriaId !== catId) {
-        return res.status(400).json({
-          success: false,
-          message: 'La subcategoría no pertenece a la categoría seleccionada'
-        });
-      }
-    }
-    
-    // Validar precio y stock
-    let precioNum, stockNum;
-    if (precio !== undefined) {
-      precioNum = validarPrecio(precio);
-    }
-    if (stock !== undefined) {
-      stockNum = validarStock(stock);
-    }
-    
-    const imagenAnterior = producto.imagen;
-    let downloadedNewImage = null;
 
-    // Manejo de imagen
-    if (req.file) {
-      producto.imagen = req.file.filename;
-      if (imagenAnterior && imagenAnterior !== producto.imagen) {
-        await limpiarImagenEnError(imagenAnterior);
+    // Validar categoría y subcategoría
+    try {
+      const parsedCategoriaId = await validarCategoria(categoriaId, producto.categoriaId);
+      const parsedSubcategoriaId = await validarSubcategoria(
+        subcategoriaId, 
+        categoriaId, 
+        producto.categoriaId, 
+        producto.subcategoriaId
+      );
+      
+      // Validar precio y stock
+      let precioNum, stockNum;
+      if (precio !== undefined) {
+        precioNum = validarPrecio(precio);
       }
-    } else if (req.body?.imagenUrl) {
-      const imagenUrlStr = String(req.body.imagenUrl || '');
-      if (!imagenAnterior || !imagenUrlStr.includes(imagenAnterior)) {
-        try {
-          const filename = await downloadImage(imagenUrlStr, producto.nombre || 'imagen');
-          downloadedNewImage = filename;
-          producto.imagen = filename;
-          if (imagenAnterior && imagenAnterior !== filename) {
-            await limpiarImagenEnError(imagenAnterior);
-          }
-        } catch (err) {
-          console.warn('No se pudo descargar imagen remota:', err.message);
-        }
+      if (stock !== undefined) {
+        stockNum = validarStock(stock);
       }
+
+      const imagenAnterior = producto.imagen;
+      
+      // Manejar imagen
+      await manejarImagenProducto(req, producto, imagenAnterior);
+      
+      // Actualizar campos
+      actualizarCamposProducto(producto, {
+        nombre,
+        descripcion,
+        precio: precioNum,
+        stock: stockNum,
+        categoriaId: parsedCategoriaId,
+        subcategoriaId: parsedSubcategoriaId,
+        activo
+      });
+      
+      await producto.save();
+      
+      await producto.reload({
+        include: [
+          { model: Categoria, as: 'categoria', attributes: ['id', 'nombre'] },
+          { model: Subcategoria, as: 'subcategoria', attributes: ['id', 'nombre'] }
+        ]
+      });
+      
+      res.json({
+        success: true,
+        message: 'Producto actualizado exitosamente',
+        data: { producto }
+      });
+
+    } catch (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError.message
+      });
     }
-    
-    // Actualizar campos
-    if (nombre !== undefined) producto.nombre = nombre;
-    if (descripcion !== undefined) producto.descripcion = descripcion;
-    if (precio !== undefined) producto.precio = precioNum;
-    if (stock !== undefined) producto.stock = stockNum;
-    if (parsedCategoriaId !== undefined) producto.categoriaId = parsedCategoriaId;
-    if (parsedSubcategoriaId !== undefined) producto.subcategoriaId = parsedSubcategoriaId;
-    if (activo !== undefined) producto.activo = activo;
-    
-    await producto.save();
-    
-    await producto.reload({
-      include: [
-        { model: Categoria, as: 'categoria', attributes: ['id', 'nombre'] },
-        { model: Subcategoria, as: 'subcategoria', attributes: ['id', 'nombre'] }
-      ]
-    });
-    
-    res.json({
-      success: true,
-      message: 'Producto actualizado exitosamente',
-      data: { producto }
-    });
     
   } catch (error) {
     console.error('Error en actualizarProducto:', error);
@@ -559,9 +579,14 @@ const actualizarStock = async (req, res) => {
     producto.stock = nuevoStock;
     await producto.save();
     
-    const stockAnterior = operacion === 'establecer' 
-      ? null 
-      : (operacion === 'aumentar' ? producto.stock - cantidadNum : producto.stock + cantidadNum);
+    let stockAnterior;
+    if (operacion === 'establecer') {
+      stockAnterior = null;
+    } else if (operacion === 'aumentar') {
+      stockAnterior = producto.stock - cantidadNum;
+    } else {
+      stockAnterior = producto.stock + cantidadNum;
+    }
     
     res.json({
       success: true,

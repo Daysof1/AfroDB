@@ -46,35 +46,15 @@ const buildServicioWhere = (filtros) => {
   return where;
 };
 
-const validarCategoriaServicio = async (categoriaId) => {
-  const categoria = await Categoria.findByPk(categoriaId);
-  if (!categoria) {
-    throw new Error(`No existe una categoría con ID ${categoriaId}`);
+const validarCategoriaYSubcategoriaServicio = async (parsedCategoriaId, parsedSubcategoriaId, servicio) => {
+  if (parsedCategoriaId !== undefined) {
+    await validarCategoriaServicio(parsedCategoriaId);
   }
-  if (!categoria.activo) {
-    throw new Error(`La categoría "${categoria.nombre}" está inactiva`);
+  
+  if (parsedSubcategoriaId !== undefined) {
+    const categoriaDeServicio = parsedCategoriaId !== undefined ? parsedCategoriaId : servicio.categoriaId;
+    await validarSubcategoriaServicio(parsedSubcategoriaId, categoriaDeServicio);
   }
-  if (categoria.tipo !== 'servicio') {
-    throw new Error('La categoría no corresponde a servicios');
-  }
-  return categoria;
-};
-
-const validarSubcategoriaServicio = async (subcategoriaId, categoriaId) => {
-  const subcategoria = await Subcategoria.findByPk(subcategoriaId);
-  if (!subcategoria) {
-    throw new Error(`No existe una subcategoría con ID ${subcategoriaId}`);
-  }
-  if (!subcategoria.activo) {
-    throw new Error(`La subcategoría "${subcategoria.nombre}" está inactiva`);
-  }
-  if (subcategoria.categoriaId !== Number.parseInt(categoriaId, 10)) {
-    throw new Error('La subcategoría no pertenece a la categoría seleccionada');
-  }
-  if (subcategoria.tipo !== 'servicio') {
-    throw new Error('La subcategoría no corresponde a servicios');
-  }
-  return subcategoria;
 };
 
 const validarPrecioServicio = (precio) => {
@@ -96,13 +76,77 @@ const validarDuracionServicio = (duracion) => {
 const limpiarImagenEnError = async (filename) => {
   if (filename) {
     try {
-      await deleteFile(filename);
+      deleteFile(filename);
     } catch (err) {
       console.error('Error al eliminar imagen:', err);
     }
   }
 };
 
+const parsearCamposServicio = (body) => {
+  const { nombre, descripcion, precio, duracion, categoriaId, subcategoriaId, activo } = body;
+  
+  const parsedPrecio = precio !== undefined ? validarPrecioServicio(precio) : undefined;
+  const parsedDuracion = duracion !== undefined ? validarDuracionServicio(duracion) : undefined;
+  const parsedCategoriaId = categoriaId !== undefined && categoriaId !== '' 
+    ? Number.parseInt(categoriaId, 10) 
+    : undefined;
+  const parsedSubcategoriaId = subcategoriaId !== undefined && subcategoriaId !== '' 
+    ? Number.parseInt(subcategoriaId, 10) 
+    : undefined;
+  const parsedActivo = activo !== undefined ? activo === 'true' || activo === true : undefined;
+
+  return {
+    nombre,
+    descripcion,
+    parsedPrecio,
+    parsedDuracion,
+    parsedCategoriaId,
+    parsedSubcategoriaId,
+    parsedActivo
+  };
+};
+
+const actualizarCamposServicio = (servicio, campos) => {
+  const { nombre, descripcion, parsedPrecio, parsedDuracion, parsedCategoriaId, parsedSubcategoriaId, parsedActivo } = campos;
+  
+  if (nombre !== undefined) servicio.nombre = nombre;
+  if (descripcion !== undefined) servicio.descripcion = descripcion;
+  if (parsedPrecio !== undefined) servicio.precio = parsedPrecio;
+  if (parsedDuracion !== undefined) servicio.duracion = parsedDuracion;
+  if (parsedCategoriaId !== undefined) servicio.categoriaId = parsedCategoriaId;
+  if (parsedSubcategoriaId !== undefined) servicio.subcategoriaId = parsedSubcategoriaId;
+  if (parsedActivo !== undefined) servicio.activo = parsedActivo;
+};
+
+const manejarImagenServicio = async (req, servicio, imagenAnterior) => {
+  let downloadedNewImageService = null;
+
+  if (req.file) {
+    servicio.imagen = req.file.filename;
+    if (imagenAnterior && imagenAnterior !== servicio.imagen) {
+      await limpiarImagenEnError(imagenAnterior);
+    }
+  } else if (req.body?.imagenUrl) {
+    try {
+      const imagenUrlStr = String(req.body.imagenUrl || '');
+      if (!imagenAnterior || !imagenUrlStr.includes(imagenAnterior)) {
+        const filename = await downloadImage(imagenUrlStr, servicio.nombre || 'imagen');
+        downloadedNewImageService = filename;
+        servicio.imagen = filename;
+        if (imagenAnterior && imagenAnterior !== filename) {
+          await limpiarImagenEnError(imagenAnterior);
+        }
+      }
+    } catch (err) {
+      console.warn('No se pudo descargar imagen remota:', err.message);
+    }
+  } else if (servicio.imagen && !esNombreImagenValido(servicio.imagen)) {
+    servicio.imagen = null;
+  }
+
+  return downloadedNewImageService;
+};
 // ─────────────────────────────────────────────────────────────
 // GET: Obtener servicios
 // ─────────────────────────────────────────────────────────────
@@ -283,17 +327,16 @@ const crearServicio = async (req, res) => {
 const actualizarServicio = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, descripcion, precio, duracion, categoriaId, subcategoriaId, activo } = req.body;
-    
-    const parsedPrecio = precio !== undefined ? validarPrecioServicio(precio) : undefined;
-    const parsedDuracion = duracion !== undefined ? validarDuracionServicio(duracion) : undefined;
-    const parsedCategoriaId = categoriaId !== undefined && categoriaId !== '' 
-      ? Number.parseInt(categoriaId, 10) 
-      : undefined;
-    const parsedSubcategoriaId = subcategoriaId !== undefined && subcategoriaId !== '' 
-      ? Number.parseInt(subcategoriaId, 10) 
-      : undefined;
-    const parsedActivo = activo !== undefined ? activo === 'true' || activo === true : undefined;
+    const campos = parsearCamposServicio(req.body);
+    const { 
+      nombre, 
+      descripcion, 
+      parsedPrecio, 
+      parsedDuracion, 
+      parsedCategoriaId, 
+      parsedSubcategoriaId, 
+      parsedActivo 
+    } = campos;
     
     const servicio = await Servicio.findByPk(id);
     
@@ -304,52 +347,23 @@ const actualizarServicio = async (req, res) => {
       });
     }
     
-    // Validar categoría
-    if (parsedCategoriaId !== undefined) {
-      await validarCategoriaServicio(parsedCategoriaId);
-    }
+    // Validar categoría y subcategoría
+    await validarCategoriaYSubcategoriaServicio(parsedCategoriaId, parsedSubcategoriaId, servicio);
     
-    // Validar subcategoría
-    if (parsedSubcategoriaId !== undefined) {
-      const categoriaDeServicio = parsedCategoriaId !== undefined ? parsedCategoriaId : servicio.categoriaId;
-      await validarSubcategoriaServicio(parsedSubcategoriaId, categoriaDeServicio);
-    }
-    
+    // Manejar imagen
     const imagenAnterior = servicio.imagen;
-    let downloadedNewImageService = null;
-    
-    // Manejo de imagen
-    if (req.file) {
-      servicio.imagen = req.file.filename;
-      if (imagenAnterior && imagenAnterior !== servicio.imagen) {
-        await limpiarImagenEnError(imagenAnterior);
-      }
-    } else if (req.body?.imagenUrl) {
-      try {
-        const imagenUrlStr = String(req.body.imagenUrl || '');
-        if (!imagenAnterior || !imagenUrlStr.includes(imagenAnterior)) {
-          const filename = await downloadImage(imagenUrlStr, servicio.nombre || 'imagen');
-          downloadedNewImageService = filename;
-          servicio.imagen = filename;
-          if (imagenAnterior && imagenAnterior !== filename) {
-            await limpiarImagenEnError(imagenAnterior);
-          }
-        }
-      } catch (err) {
-        console.warn('No se pudo descargar imagen remota:', err.message);
-      }
-    } else if (servicio.imagen && !esNombreImagenValido(servicio.imagen)) {
-      servicio.imagen = null;
-    }
+    await manejarImagenServicio(req, servicio, imagenAnterior);
     
     // Actualizar campos
-    if (nombre !== undefined) servicio.nombre = nombre;
-    if (descripcion !== undefined) servicio.descripcion = descripcion;
-    if (parsedPrecio !== undefined) servicio.precio = parsedPrecio;
-    if (parsedDuracion !== undefined) servicio.duracion = parsedDuracion;
-    if (parsedCategoriaId !== undefined) servicio.categoriaId = parsedCategoriaId;
-    if (parsedSubcategoriaId !== undefined) servicio.subcategoriaId = parsedSubcategoriaId;
-    if (parsedActivo !== undefined) servicio.activo = parsedActivo;
+    actualizarCamposServicio(servicio, {
+      nombre,
+      descripcion,
+      parsedPrecio,
+      parsedDuracion,
+      parsedCategoriaId,
+      parsedSubcategoriaId,
+      parsedActivo
+    });
     
     await servicio.save();
     

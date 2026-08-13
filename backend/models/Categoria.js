@@ -11,6 +11,52 @@
 const { DataTypes } = require ('sequelize');
 const { sequelize } = require('../config/database');
 
+// Funciones auxiliares para el hook afterUpdate
+const desactivarSubcategorias = async (categoriaId, transaction) => {
+  const Subcategoria = require('./Subcategoria');
+  const subcategorias = await Subcategoria.findAll({
+    where: { categoriaId }
+  });
+
+  for (const subcategoria of subcategorias) {
+    await subcategoria.update(
+      { activo: false },
+      { transaction }
+    );
+    console.log(`  ↳ Subcategoría desactivada: ${subcategoria.nombre}`);
+  }
+};
+
+const desactivarProductos = async (categoriaId, transaction) => {
+  const Producto = require('./Producto');
+  const productos = await Producto.findAll({
+    where: { categoriaId }
+  });
+
+  for (const producto of productos) {
+    await producto.update(
+      { activo: false },
+      { transaction }
+    );
+    console.log(`  ↳ Producto desactivado: ${producto.nombre}`);
+  }
+};
+
+const desactivarServicios = async (categoriaId, transaction) => {
+  const Servicio = require('./Servicio');
+  const servicios = await Servicio.findAll({
+    where: { categoriaId }
+  });
+
+  for (const servicio of servicios) {
+    await servicio.update(
+      { activo: false },
+      { transaction }
+    );
+    console.log(`  ↳ Servicio desactivado: ${servicio.nombre}`);
+  }
+};
+
 const Categoria = sequelize.define('Categoria', {
 
   // ==========================================
@@ -91,64 +137,31 @@ const Categoria = sequelize.define('Categoria', {
      */
     afterUpdate: async (categoria, options) => {
 
-      if (categoria.changed('activo') && !categoria.activo) {
+      if (categoria.changed('activo') || categoria.activo) {
+        return;
+      }
+
         console.log(`⚠️ Desactivando categoría: ${categoria.nombre}`);
 
-        const Subcategoria = require('./Subcategoria');
-        const Producto = require('./Producto');
-        const Servicio = require('./Servicio'); // 🔥 NUEVO
+         try {
+        // Desactivar subcategorías (siempre)
+        await desactivarSubcategorias(categoria.id, options.transaction);
 
-        try {
-
-          // 🔹 Subcategorías
-          const subcategorias = await Subcategoria.findAll({
-            where: { categoriaId: categoria.id }
-          });
-
-          for (const subcategoria of subcategorias) {
-            await subcategoria.update(
-              { activo: false },
-              { transaction: options.transaction }
-            );
-            console.log(`  ↳ Subcategoría desactivada: ${subcategoria.nombre}`);
-          }
-
-          // 🔹 Productos (solo si aplica)
-          if (categoria.tipo === 'producto') {
-            const productos = await Producto.findAll({
-              where: { categoriaId: categoria.id }
-            });
-
-            for (const producto of productos) {
-              await producto.update(
-                { activo: false },
-                { transaction: options.transaction }
-              );
-              console.log(`  ↳ Producto desactivado: ${producto.nombre}`);
-            }
-          }
-
-          // 🔥 🔹 Servicios (NUEVO)
-          if (categoria.tipo === 'servicio') {
-            const servicios = await Servicio.findAll({
-              where: { categoriaId: categoria.id }
-            });
-
-            for (const servicio of servicios) {
-              await servicio.update(
-                { activo: false },
-                { transaction: options.transaction }
-              );
-              console.log(`  ↳ Servicio desactivado: ${servicio.nombre}`);
-            }
-          }
-
-          console.log(`✅ Categoría y elementos relacionados desactivados correctamente`);
-
-        } catch (error) {
-          console.error('❌ Error al desactivar elementos relacionados:', error.message);
-          throw error;
+        // Desactivar productos (solo si tipo es 'producto')
+        if (categoria.tipo === 'producto') {
+          await desactivarProductos(categoria.id, options.transaction);
         }
+
+        // Desactivar servicios (solo si tipo es 'servicio')
+        if (categoria.tipo === 'servicio') {
+          await desactivarServicios(categoria.id, options.transaction);
+        }
+
+        console.log(`✅ Categoría y elementos relacionados desactivados correctamente`);
+
+      } catch (error) {
+        console.error('❌ Error al desactivar elementos relacionados:', error.message);
+        throw error;
       }
     }
   }
