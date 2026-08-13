@@ -106,9 +106,9 @@ const verifyToken = (token) => {
  * @returns {String|null} - El token extraído, o null si no hay header o formato incorrecto
  */
 const extractToken = (authHeader) => {
-  // Verifica que: 1) el header existe (no es undefined/null)
-  // y 2) comienza con la palabra "Bearer " (estándar de autenticación)
-  if (authHeader && authHeader.startsWith('Bearer ')) {
+  // ✅ Línea 111: Usando optional chaining para verificar el header
+  // Verifica que: 1) el header existe y 2) comienza con "Bearer " (estándar de autenticación)
+  if (authHeader?.startsWith('Bearer ')) {
     // substring(7) extrae todo después de "Bearer " (7 caracteres)
     // Ejemplo: "Bearer abc123" -> "abc123"
     return authHeader.substring(7);

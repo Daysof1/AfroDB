@@ -35,8 +35,9 @@ export function AgendarProvider({ children }) {
             const citasData = await citaService.obtenerMisCitas();
             setCitas(Array.isArray(citasData) ? citasData : []);
         } catch (error) {
-            console.log('Error al cargar citas:', error);
+            console.error('Error al cargar citas:', error);
             setCitas([]);
+            // ✅ El error se maneja mostrando un log y dejando el estado vacío
         } finally {
             setLoading(false);
         }
@@ -62,6 +63,7 @@ export function AgendarProvider({ children }) {
                 setCitas(prev => [nuevaCita, ...prev]);
                 return nuevaCita;
             } catch (error) {
+                // ✅ El error se relanza para que el componente lo maneje
                 throw error;
             }
         },
@@ -79,6 +81,7 @@ export function AgendarProvider({ children }) {
                 // Remueve la cita cancelada
                 setCitas(prev => prev.filter(c => c.id !== citaId));
             } catch (error) {
+                // ✅ El error se relanza para que el componente lo maneje
                 throw error;
             }
         },
@@ -95,7 +98,8 @@ export function AgendarProvider({ children }) {
             const citasData = await citaService.obtenerMisCitas();
             setCitas(Array.isArray(citasData) ? citasData : []);
         } catch (error) {
-            console.log('Error al refrescar citas:', error);
+            console.error('Error al refrescar citas:', error);
+            // ✅ El error se maneja mostrando un log
         } finally {
             setRefreshing(false);
         }
@@ -134,4 +138,3 @@ export function useAgendar() {
     }
     return context;
 }
-    

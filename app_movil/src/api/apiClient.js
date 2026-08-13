@@ -1,7 +1,7 @@
 // Este archivo centraliza axios para todas las peticiones HTTP al back
 //Configura la URL base y ek tiempo maximo de espera dese las constates
 //Interceptor de petición: adjunta automaticamente el token JWT si existe
-//Interceptos de respuesta: normaliza los errores para que todo el codigo reciba
+//Interceptos de respuesta: normaliza los errores para que el codigo reciba
 //siempre un objeto Error con un mensaje legible
 
 import axios from 'axios';

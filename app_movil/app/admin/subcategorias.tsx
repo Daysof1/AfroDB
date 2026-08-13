@@ -1,5 +1,5 @@
 // Página: subcategorias.tsx. vista de subcategorias del sistema.
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -152,10 +152,11 @@ export default function AdminSubcategoriasScreen() {
     fetchSubcategorias();
   }, []);
 
+  // ✅ Línea 158: Optional chaining agregado
   useEffect(() => {
     if (categoriaId) {
       const categoriaSeleccionada = categorias.find(cat => String(cat.id) === categoriaId);
-      if (!categoriaSeleccionada || categoriaSeleccionada.tipo !== tipo) {
+      if (!categoriaSeleccionada || categoriaSeleccionada?.tipo !== tipo) {
         setCategoriaId('');
       }
     }

@@ -68,7 +68,7 @@ const createDatabase = async () => {
     // Es importante cerrar conexiones cuando ya no se necesitan
     await connection.end();
     
-    // Mensaje final indicando que todo salió bien
+    // Mensaje final indicando de que salió bien
     console.log('🎉 ¡Proceso completado! Ahora puedes iniciar el servidor con: npm run dev\n');
     
   } catch (error) {
