@@ -5,6 +5,23 @@ import { faBox, faEye } from '@fortawesome/free-solid-svg-icons';
 import '../Cliente.css';
 import { apiRequest, getStoredRole } from '../../api/client.js';
 
+const getBadgeClassPedido = (estado) => {
+  const estadoLower = (estado || '').toLowerCase();
+  
+  switch (estadoLower) {
+    case 'pendiente':
+      return 'badge-warning';
+    case 'enviado':
+      return 'badge-info';
+    case 'entregado':
+      return 'badge-success';
+    case 'cancelado':
+      return 'badge-danger';
+    default:
+      return 'badge-secondary';
+  }
+};
+
 // Renderiza la vista principal de este componente.
 export default function ClientePedidos() {
   const [pedidos, setPedidos] = useState([]);
@@ -60,15 +77,6 @@ export default function ClientePedidos() {
   return coincideBusqueda && coincideEstado;
 });
 
-  const formatEstado = (estado) => {
-    const value = (estado || '').toLowerCase();
-    if (value === 'pendiente') return 'Pendiente';
-    if (value === 'enviado') return 'En tránsito';
-    if (value === 'entregado') return 'Entregado';
-    if (value === 'cancelado') return 'Cancelado';
-    return estado || 'Sin estado';
-  };
-
   return (
     <div className="cliente-page">
       <div className="page-header">
@@ -88,12 +96,14 @@ export default function ClientePedidos() {
         />
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todas ({pedidos.length})
         </button>
          <button
+          type="button"
           className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
           onClick={() => setFiltro('Pendiente')}
         >
@@ -101,6 +111,7 @@ export default function ClientePedidos() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Enviado' ? 'active' : ''}`}
           onClick={() => setFiltro('Enviado')}
         >
@@ -108,6 +119,7 @@ export default function ClientePedidos() {
         </button>
 
          <button
+          type="button"
           className={`filter-btn ${filtro === 'Entregado' ? 'active' : ''}`}
           onClick={() => setFiltro('Entregado')}
         >
@@ -115,6 +127,7 @@ export default function ClientePedidos() {
         </button>
 
          <button
+          type="button"
           className={`filter-btn ${filtro === 'Cancelado' ? 'active' : ''}`}
           onClick={() => setFiltro('Cancelado')}
         >
@@ -129,27 +142,14 @@ export default function ClientePedidos() {
             {pedidos.length === 0 && <a href="/cliente/catalogo" className="btn btn-primary">Hacer mi Primer Compra</a>}
           </div>
         ) : (
-          <div className="pedidos-grid">
+          <div className="cards-grid">
             {pedidosFiltrados.map((pedido) => (
-              <div key={pedido.id} className="pedido-card">
-                {/** Resumen corto por defecto */}
-                <div className="pedido-header">
-                  <h3>{(pedido.detalles || []).map((detalle) => ` ${detalle?.producto?.nombre || 'Producto'}`).join(', ')}</h3>
-                  <span
-                  className={`badge ${
-                    (pedido.estado || '').toLowerCase() === 'pendiente'
-                    ? 'badge-warning'
-                    : (pedido.estado || '').toLowerCase() === 'enviado'
-                    ? 'badge-info'
-                    : (pedido.estado || '').toLowerCase() === 'entregado'
-                    ? 'badge-success'
-                    : (pedido.estado || '').toLowerCase() === 'cancelado'
-                    ? 'badge-danger'
-                    : 'badge-secondary'
-                  }`}
-                >
-                {pedido.estado}
-                </span>
+              <div key={pedido.id} className="cita-card-prof">
+                <div className="cita-header-prof">
+                  <h3>{pedido?.usuario?.nombre || 'Cliente'}</h3>
+                  <span className={`badge ${getBadgeClassPedido(pedido.estado)}`}>
+                    {pedido.estado}
+                  </span>
                 </div>
 
                 <div className="pedido-info">
@@ -159,21 +159,19 @@ export default function ClientePedidos() {
                 </div>
 
                 {pedidoExpandidoId === pedido.id && (
-                  <>
-                    <div className="pedido-info">
-                      <p><strong>Dirección:</strong> {pedido.direccionEnvio || 'Sin dirección'}</p>
-                      <p><strong>Teléfono:</strong> {pedido.telefono || 'Sin teléfono'}</p>
-                      <p><strong>Método de pago:</strong> {pedido.metodoPago || 'efectivo'}</p>
-                      <p><strong>Notas:</strong> {pedido.notas || 'Sin notas'}</p>
-                      <p><strong>Envío:</strong> {pedido.fechaEnvio ? new Date(pedido.fechaEnvio).toLocaleString() : 'Pendiente'}</p>
-                      <p><strong>Entrega:</strong> {pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toLocaleString() : 'Pendiente'}</p>
-                    </div>
-
-                  </>
+                  <div className="pedido-info">
+                    <p><strong>Dirección:</strong> {pedido.direccionEnvio || 'Sin dirección'}</p>
+                    <p><strong>Teléfono:</strong> {pedido.telefono || 'Sin teléfono'}</p>
+                    <p><strong>Método de pago:</strong> {pedido.metodoPago || 'efectivo'}</p>
+                    <p><strong>Notas:</strong> {pedido.notas || 'Sin notas'}</p>
+                    <p><strong>Envío:</strong> {pedido.fechaEnvio ? new Date(pedido.fechaEnvio).toLocaleString() : 'Pendiente'}</p>
+                    <p><strong>Entrega:</strong> {pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toLocaleString() : 'Pendiente'}</p>
+                  </div>
                 )}
 
                 <div className="pedido-actions">
                   <button
+                    type="button"
                     className="btn btn-sm btn-secondary"
                     onClick={() => setPedidoExpandidoId(pedidoExpandidoId === pedido.id ? null : pedido.id)}
                   >
@@ -181,6 +179,7 @@ export default function ClientePedidos() {
                   </button>
                   {['cliente', 'profesional'].includes(role) && (pedido.estado || '').toLowerCase() === 'pendiente' && (
                     <button
+                      type="button"
                       className="btn btn-sm btn-danger"
                       onClick={() => handleCancelarPedido(pedido.id)}
                     >

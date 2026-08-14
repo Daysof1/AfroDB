@@ -1,7 +1,7 @@
 // Página: AuxiliarServicios.js. gesti?n de servicios por auxiliar.
 import { useEffect, useMemo, useState } from 'react';
 import '../Admin.css';
-import { apiRequest, fetchImageAsFile, getAssetUrl } from '../../api/client.js';
+import { apiRequest, getAssetUrl } from '../../api/client.js';
 import Select from "react-select";
 import { exportarServiciosAPDF, exportarServiciosAExcel } from '../../utils/exportUtils.js';
 
@@ -200,6 +200,7 @@ export default function AuxiliarServicios() {
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <button 
+              type="button"
               className="btn btn-primary"
               onClick={() => setShowExportOptions(!showExportOptions)}
             >
@@ -219,6 +220,7 @@ export default function AuxiliarServicios() {
                 marginTop: '5px'
               }}>
                 <button 
+                  type="button"
                   className="btn btn-sm"
                   onClick={() => {
                     exportarServiciosAPDF(serviciosFiltrados);
@@ -240,6 +242,7 @@ export default function AuxiliarServicios() {
                   📄 Exportar a PDF
                 </button>
                 <button 
+                  type="button"
                   className="btn btn-sm"
                   onClick={async () => {
                     await exportarServiciosAExcel(serviciosFiltrados);
@@ -264,6 +267,7 @@ export default function AuxiliarServicios() {
           </div>
 
         <button
+          type="button"
           className="btn btn-primary"
           onClick={() => {
             if (isFormOpen) {
@@ -334,12 +338,14 @@ export default function AuxiliarServicios() {
         />
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todos ({servicios.length})
         </button>
          <button
+          type="button"
           className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
           onClick={() => setFiltro('True')}
         >
@@ -347,6 +353,7 @@ export default function AuxiliarServicios() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
           onClick={() => setFiltro('False')}
         >
@@ -358,13 +365,14 @@ export default function AuxiliarServicios() {
         <div className="form-container">
           <h2>{editingServicioId ? 'Editar Servicio' : 'Agregar Nuevo Servicio'}</h2>
           <form onSubmit={handleCrearServicio}>
-            <div className="form-group"><label>Nombre</label><input value={newServicio.nombre} onChange={(e) => setNewServicio({ ...newServicio, nombre: e.target.value })} required /></div>
-            <div className="form-group"><label>Descripción</label><textarea rows="4" value={newServicio.descripcion} onChange={(e) => setNewServicio({ ...newServicio, descripcion: e.target.value })} /></div>
-            <div className="form-group"><label>Precio</label><input type="number" min="1" value={newServicio.precio} onChange={(e) => setNewServicio({ ...newServicio, precio: e.target.value })} required /></div>
-            <div className="form-group"><label>Duración (min)</label><input type="number" min="1" value={newServicio.duracion} onChange={(e) => setNewServicio({ ...newServicio, duracion: e.target.value })} required /></div>
+            <div className="form-group"><label htmlFor="servicio-nombre">Nombre</label><input id="servicio-nombre" value={newServicio.nombre} onChange={(e) => setNewServicio({ ...newServicio, nombre: e.target.value })} required /></div>
+            <div className="form-group"><label htmlFor="servicio-descripcion">Descripción</label><textarea id="servicio-descripcion" rows="4" value={newServicio.descripcion} onChange={(e) => setNewServicio({ ...newServicio, descripcion: e.target.value })} /></div>
+            <div className="form-group"><label htmlFor="servicio-precio">Precio</label><input id="servicio-precio" type="number" min="1" value={newServicio.precio} onChange={(e) => setNewServicio({ ...newServicio, precio: e.target.value })} required /></div>
+            <div className="form-group"><label htmlFor="servicio-duracion">Duración (min)</label><input id="servicio-duracion" type="number" min="1" value={newServicio.duracion} onChange={(e) => setNewServicio({ ...newServicio, duracion: e.target.value })} required /></div>
             <div className="form-group">
-              <label>Categoría</label>
+              <label htmlFor="servicio-categoria">Categoría</label>
               <Select
+                id="servicio-categoria"
                 value={
                   categorias
                     .map((categoria) => ({
@@ -406,9 +414,10 @@ export default function AuxiliarServicios() {
 
             <div className="form-group">
 
-              <label>Subcategoría</label>
+              <label htmlFor="servicio-subcategoria">Subcategoría</label>
 
               <Select
+                id="servicio-subcategoria"
                 value={
                   subcategorias
                     .map((subcategoria) => ({
@@ -443,8 +452,9 @@ export default function AuxiliarServicios() {
               />
             </div>
             <div className="form-group">
-              <label>URL de imagen</label>
+              <label htmlFor="servicio-imagen">URL de imagen</label>
               <input
+                id="servicio-imagen"
                 type="url"
                 placeholder="https://..."
                 value={newServicio.imagenUrl}
@@ -480,8 +490,9 @@ export default function AuxiliarServicios() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEditarServicio(servicio)}>✏️ Editar</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleEditarServicio(servicio)}>✏️ Editar</button>
               <button
+                type="button"
                 className={`btn btn-sm ${servicio.activo ? 'btn-warning' : 'btn-success'}`}
                 onClick={() => handleToggleServicio(servicio.id, servicio.activo)}
                 title={servicio.activo ? 'Desactivar' : 'Activar'}
@@ -502,6 +513,7 @@ export default function AuxiliarServicios() {
       {totalPaginas > 1 && (
         <div className="pagination">
           <button
+            type="button"
             disabled={pagina === 1}
             onClick={() => setPagina(pagina - 1)}
             className="btn btn-secondary"
@@ -512,6 +524,7 @@ export default function AuxiliarServicios() {
             Página {pagina} de {totalPaginas}
           </span>
           <button
+            type="button"
             disabled={pagina === totalPaginas}
             onClick={() => setPagina(pagina + 1)}
             className="btn btn-secondary"

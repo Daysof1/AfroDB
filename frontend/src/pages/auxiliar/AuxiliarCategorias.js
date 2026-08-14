@@ -35,8 +35,8 @@ export default function AuxiliarCategorias() {
 
     const filtered = categorias.filter((cat) => {
     const coincideBusqueda =
-      (cat.nombre && cat.nombre.toLowerCase().includes(lowercasedFilter)) ||
-      (cat.descripcion && cat.descripcion.toLowerCase().includes(lowercasedFilter));
+      cat.nombre?.toLowerCase().includes(lowercasedFilter) || 
+      cat.descripcion?.toLowerCase().includes(lowercasedFilter);
 
     const coincideEstado =
       filtro === 'Todos' ||
@@ -105,6 +105,7 @@ export default function AuxiliarCategorias() {
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <button 
+              type="button"
               className="btn btn-primary"
               onClick={() => setShowExportOptions(!showExportOptions)}
             >
@@ -124,6 +125,7 @@ export default function AuxiliarCategorias() {
                 marginTop: '5px'
               }}>
                 <button 
+                  type="button"
                   className="btn btn-sm"
                   onClick={() => {
                     exportarCategoriasAPDF(filteredCategorias);
@@ -145,6 +147,7 @@ export default function AuxiliarCategorias() {
                   📄 Exportar a PDF
                 </button>
                 <button 
+                  type="button"
                   className="btn btn-sm"
                   onClick={async () => {
                     await exportarCategoriasAExcel(filteredCategorias);
@@ -168,7 +171,7 @@ export default function AuxiliarCategorias() {
             )}
           </div>
 
-        <button className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
+        <button type="button" className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
           {isFormOpen ? 'Cancelar' : '➕ Nueva Categoría'}
         </button>
       </div>
@@ -183,12 +186,14 @@ export default function AuxiliarCategorias() {
           className="search-input"
         />
       <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todas ({categorias.length})
         </button>
          <button
+          type="button"
           className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
           onClick={() => setFiltro('True')}
         >
@@ -196,6 +201,7 @@ export default function AuxiliarCategorias() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
           onClick={() => setFiltro('False')}
         >
@@ -211,24 +217,27 @@ export default function AuxiliarCategorias() {
           <h2>{editingCategoriaId ? 'Editar Categoría' : 'Crear Categoría'}</h2>
           <form onSubmit={handleCrear}>
             <div className="form-group">
-              <label>Nombre</label>
+              <label htmlFor="categoria_nombre">Nombre</label>
               <input
+                id="categoria_nombre"
                 value={newCategoria.nombre}
                 onChange={(e) => setNewCategoria({ ...newCategoria, nombre: e.target.value })}
                 required
               />
             </div>
             <div className="form-group">
-              <label>Descripción</label>
+              <label htmlFor="categoria_descripcion">Descripción</label>
               <textarea
+                id="categoria_descripcion"
                 rows="3"
                 value={newCategoria.descripcion}
                 onChange={(e) => setNewCategoria({ ...newCategoria, descripcion: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label>Tipo</label>
+              <label htmlFor="categoria_tipo">Tipo</label>
               <select
+                id="categoria_tipo"
                 value={newCategoria.tipo}
                 onChange={(e) => setNewCategoria({ ...newCategoria, tipo: e.target.value })}
               >
@@ -253,8 +262,8 @@ export default function AuxiliarCategorias() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(cat)}>✏️ Editar</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => handleToggle(cat.id)}>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleEdit(cat)}>✏️ Editar</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleToggle(cat.id)}>
                 {cat.activo ? '⊘ Desactivar' : '✓ Activar'}
               </button>
             </div>

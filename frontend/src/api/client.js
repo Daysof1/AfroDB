@@ -165,23 +165,36 @@ export async function fetchImageAsFile(imageUrl, fileNameHint = 'imagen') {
 
   const blob = await response.blob();
   const contentType = blob.type || response.headers.get('content-type') || 'image/jpeg';
-  const extension = contentType.includes('png')
-    ? 'png'
-    : contentType.includes('gif')
-      ? 'gif'
-      : contentType.includes('webp')
-        ? 'webp'
-        : 'jpg';
-  const safeName = String(fileNameHint).replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || 'imagen';
+  let extension = 'jpg';
+  if (contentType.includes('png')) {
+    extension = 'png';
+  } else if (contentType.includes('gif')) {
+    extension = 'gif';
+  } else if (contentType.includes('webp')) {
+    extension = 'webp';
+  }
+  let safeName = String(fileNameHint).replace(/[^a-z0-9_-]/gi, '_');
+
+  // Eliminar _ del inicio
+  while (safeName.startsWith('_')) {
+    safeName = safeName.substring(1);
+  }
+
+  // Eliminar _ del final
+  while (safeName.endsWith('_')) {
+    safeName = safeName.substring(0, safeName.length - 1);
+  }
+
+  safeName = safeName || 'imagen';
 
   return new File([blob], `${safeName}.${extension}`, { type: contentType });
 }
 
-export async function apiRequest(path, options = {}) {
-  const token = getToken();
-  const hadToken = Boolean(token);
-  const isAuthAction = path.startsWith('/auth/login') || path.startsWith('/auth/register');
-  const isFormData = options.body instanceof FormData;
+// ==========================================
+// FUNCIONES AUXILIARES
+// ==========================================
+
+const buildHeaders = (options, token, isFormData) => {
   const headers = {
     ...(options.headers || {}),
   };
@@ -194,55 +207,80 @@ export async function apiRequest(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
+  return headers;
+};
+
+const createSafePayload = (data) => {
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+    return null;
+  }
+
+  return {
+    success: typeof data.success === 'boolean' ? data.success : false,
+    message: typeof data.message === 'string' ? data.message : '',
+    data: data.data ?? null,
+    errors: Array.isArray(data.errors) ? data.errors : null,
+    token: typeof data.token === 'string' ? data.token : null,
+  };
+};
+
+const parseResponsePayload = async (response) => {
+  try {
+    const contentType = response.headers.get('content-type') || '';
+
+    if (!contentType.includes('application/json')) {
+      return null;
+    }
+
+    const data = await response.json();
+    return createSafePayload(data);
+
+  } catch {
+    // Si falla el parseo, retorna null
+    return null;
+  }
+};
+
+const handleHttpError = (response, payload, hadToken, isAuthAction) => {
+  let message = payload?.message || `Error HTTP ${response.status}`;
+
+  if (response.status === 401 && hadToken && !isAuthAction) {
+    clearSession();
+    window.dispatchEvent(new Event('authChange'));
+    message = 'Tu sesion expiro. Inicia sesion nuevamente.';
+    window.dispatchEvent(
+      new CustomEvent('sessionExpired', {
+        detail: { message },
+      }),
+    );
+  } else if (response.status === 403) {
+    message = payload?.message || 'No tienes permisos para realizar esta accion.';
+  }
+
+  throw new ApiError(message, response.status, payload);
+};
+
+// ==========================================
+// FUNCIÓN PRINCIPAL (REFACTORIZADA)
+// ==========================================
+
+export async function apiRequest(path, options = {}) {
+  const token = getToken();
+  const hadToken = Boolean(token);
+  const isAuthAction = path.startsWith('/auth/login') || path.startsWith('/auth/register');
+  const isFormData = options.body instanceof FormData;
+
+  const headers = buildHeaders(options, token, isFormData);
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers,
   });
 
- let payload = null;
-
-  try {
-    const contentType = response.headers.get('content-type') || '';
-
-    if (contentType.includes('application/json')) {
-      const data = await response.json();
-
-      // Validación estricta contra datos maliciosos del servidor
-      if (data !== null && typeof data === 'object' && !Array.isArray(data)) {
-        
-        // Creamos un objeto seguro con SOLO los campos que esperamos
-        const safePayload = {
-          success: typeof data.success === 'boolean' ? data.success : false,
-          message: typeof data.message === 'string' ? data.message : '',
-          data: data.data ?? null,
-          errors: Array.isArray(data.errors) ? data.errors : null,
-          token: typeof data.token === 'string' ? data.token : null,
-        };
-
-        payload = safePayload;
-      }
-    }
-  } catch {
-    payload = null;
-  }
+  const payload = await parseResponsePayload(response);
 
   if (!response.ok || payload?.success === false) {
-    let message = payload?.message || `Error HTTP ${response.status}`;
-
-    if (response.status === 401 && hadToken && !isAuthAction) {
-      clearSession();
-      window.dispatchEvent(new Event('authChange'));
-      message = 'Tu sesion expiro. Inicia sesion nuevamente.';
-      window.dispatchEvent(
-        new CustomEvent('sessionExpired', {
-          detail: { message },
-        }),
-      );
-    } else if (response.status === 403) {
-      message = payload?.message || 'No tienes permisos para realizar esta accion.';
-    }
-
-    throw new ApiError(message, response.status, payload);
+    handleHttpError(response, payload, hadToken, isAuthAction);
   }
 
   return payload;

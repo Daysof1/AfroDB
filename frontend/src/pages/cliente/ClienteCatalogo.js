@@ -9,13 +9,11 @@ import {
   addItemToLocalCart,
   getAssetUrl,
   isAuthenticated,
-  getStoredRole,
 } from '../../api/client.js';
 
 // Renderiza la vista principal de este componente.
 export default function ClienteCatalogo() {
   const authenticated = isAuthenticated();
-  const userRole = getStoredRole();
   const useServerCart = authenticated;
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -243,7 +241,7 @@ export default function ClienteCatalogo() {
             <p className="descripcion">{producto.descripcion || 'Sin descripción'}</p>
             <p className="precio">${Number(producto.precio || 0).toLocaleString()}</p>
             <div className="card-actions">
-              <button className="btn btn-secondary" onClick={() => handleAgregarAlCarrito(producto.id)}>
+              <button type="button" className="btn btn-secondary" onClick={() => handleAgregarAlCarrito(producto.id)}>
                 <FontAwesomeIcon icon={faCartShopping} /> Agregar al Carrito
               </button>
             </div>
@@ -254,6 +252,7 @@ export default function ClienteCatalogo() {
       {totalPaginas > 1 && (
         <div className="pagination">
           <button
+            type="button"
             disabled={pagina === 1}
             onClick={() => setPagina(pagina - 1)}
             className="btn btn-secondary"
@@ -264,6 +263,7 @@ export default function ClienteCatalogo() {
             Página {pagina} de {totalPaginas}
           </span>
           <button
+            type="button"
             disabled={pagina === totalPaginas}
             onClick={() => setPagina(pagina + 1)}
             className="btn btn-secondary"

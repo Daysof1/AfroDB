@@ -27,11 +27,17 @@ export default function ClienteCarrito() {
     if (userRole === 'auxiliar') return '/auxiliar/pedidos';
     return '/cliente/pedidos';
   };
-  const pageTitle = userRole === 'admin'
-    ? 'Carrito de Administración'
-    : userRole === 'auxiliar'
-      ? 'Carrito del Auxiliar'
-      : 'Mi Carrito';
+  let pageTitle;
+  switch (userRole) {
+    case 'admin':
+      pageTitle = 'Carrito de Administración';
+      break;
+    case 'auxiliar':
+      pageTitle = 'Carrito del Auxiliar';
+      break;
+    default:
+      pageTitle = 'Mi Carrito';
+  }
   const [carrito, setCarrito] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -248,14 +254,14 @@ export default function ClienteCarrito() {
                     <td>${Number(item.precioUnitario || 0).toLocaleString()}</td>
                     <td>
                       <div className="cantidad-control">
-                        <button onClick={() => handleActualizarCantidad(item.id, item.cantidad - 1)}>-</button>
+                        <button type="button" onClick={() => handleActualizarCantidad(item.id, item.cantidad - 1)}>-</button>
                         <input type="number" value={item.cantidad} readOnly />
-                        <button onClick={() => handleActualizarCantidad(item.id, item.cantidad + 1)}>+</button>
+                        <button type="button" onClick={() => handleActualizarCantidad(item.id, item.cantidad + 1)}>+</button>
                       </div>
                     </td>
                     <td>${(Number(item.precioUnitario || 0) * Number(item.cantidad || 0)).toLocaleString()}</td>
                     <td>
-                      <button className="btn btn-sm btn-danger" onClick={() => handleEliminar(item.id)}>🗑️ Eliminar</button>
+                      <button type="button" className="btn btn-sm btn-danger" onClick={() => handleEliminar(item.id)}>🗑️ Eliminar</button>
                     </td>
                   </tr>
                 ))}
@@ -280,10 +286,11 @@ export default function ClienteCarrito() {
             </div>
 
             <div className="form-group" style={{ marginTop: '1rem' }}>
-              <label>Dirección de envío</label>
+              <label htmlFor="direccionEnvio">Dirección de envío</label>
               <input
                 type="text"
                 className="form-input"
+                id="direccionEnvio"
                 value={checkoutData.direccionEnvio}
                 onChange={(e) => handleCheckoutChange('direccionEnvio', e.target.value)}
                 placeholder="Ingresa tu dirección"
@@ -291,8 +298,9 @@ export default function ClienteCarrito() {
             </div>
 
             <div className="form-group">
-              <label>Teléfono de contacto</label>
+              <label htmlFor="telefono-contacto">Teléfono de contacto</label>
               <input
+                id="telefono-contacto"
                 type="text"
                 className="form-input"
                 value={checkoutData.telefono}
@@ -302,8 +310,9 @@ export default function ClienteCarrito() {
             </div>
 
             <div className="form-group">
-              <label>Método de pago</label>
+              <label htmlFor="metodoPago">Método de pago</label>
               <select
+                id="metodoPago"
                 className="form-input"
                 value={checkoutData.metodoPago}
                 onChange={(e) => handleCheckoutChange('metodoPago', e.target.value)}
@@ -315,8 +324,9 @@ export default function ClienteCarrito() {
             </div>
 
             <div className="form-group">
-              <label>Notas adicionales (opcional)</label>
+              <label htmlFor="notasAdicionales">Notas adicionales (opcional)</label>
               <textarea
+                id="notasAdicionales"
                 className="form-input"
                 value={checkoutData.notasAdicionales}
                 onChange={(e) => handleCheckoutChange('notasAdicionales', e.target.value)}
@@ -327,6 +337,7 @@ export default function ClienteCarrito() {
 
             {canCheckout ? (
               <button
+                type="button"
                 className="btn btn-primary btn-block"
                 onClick={handleGenerarPago}
                 disabled={processingPayment}
@@ -338,7 +349,7 @@ export default function ClienteCarrito() {
                 Iniciar sesión para pagar
               </Link>
             )}
-            <button className="btn btn-danger btn-block" onClick={handleVaciarCarrito} disabled={processingPayment}>
+            <button type="button" className="btn btn-danger btn-block" onClick={handleVaciarCarrito} disabled={processingPayment}>
               Vaciar Carrito
             </button>
             <Link to="/cliente/catalogo" className="btn btn-secondary btn-block">Continuar Comprando</Link>

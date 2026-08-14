@@ -1,4 +1,4 @@
-// Página: AdminSubcategorias.js. gesti?n de subcategor?as del cat?logo.
+// Página: AdminSubcategorias.js. gestión de subcategorías del catálogo.
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
@@ -38,23 +38,23 @@ export default function AdminSubcategorias() {
   }, []);
 
   useEffect(() => {
-  const lowercasedFilter = searchTerm.toLowerCase();
+    const lowercasedFilter = searchTerm.toLowerCase();
 
-  const filtered = subcategorias.filter((sub) => {
-    const coincideBusqueda =
-      (sub.nombre && sub.nombre.toLowerCase().includes(lowercasedFilter)) ||
-      (sub.descripcion && sub.descripcion.toLowerCase().includes(lowercasedFilter));
+    const filtered = subcategorias.filter((sub) => {
+      const coincideBusqueda =
+        sub.nombre?.toLowerCase().includes(lowercasedFilter) ||
+        sub.descripcion?.toLowerCase().includes(lowercasedFilter);
 
-    const coincideEstado =
-      filtro === 'Todos' ||
-      (filtro === 'True' && sub.activo) ||
-      (filtro === 'False' && !sub.activo);
+      const coincideEstado =
+        filtro === 'Todos' ||
+        (filtro === 'True' && sub.activo) ||
+        (filtro === 'False' && !sub.activo);
 
-    return coincideBusqueda && coincideEstado;
-  });
+      return coincideBusqueda && coincideEstado;
+    });
 
-  setFilteredSubcategorias(filtered);
-}, [searchTerm, subcategorias, filtro]);
+    setFilteredSubcategorias(filtered);
+  }, [searchTerm, subcategorias, filtro]);
 
   const handleCrear = async (e) => {
     e.preventDefault();
@@ -121,6 +121,7 @@ export default function AdminSubcategorias() {
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <button 
+              type="button"
               className="btn btn-primary"
               onClick={() => setShowExportOptions(!showExportOptions)}
             >
@@ -140,6 +141,7 @@ export default function AdminSubcategorias() {
                 marginTop: '5px'
               }}>
                 <button 
+                  type="button"
                   className="btn btn-sm"
                   onClick={() => {
                     exportarSubcategoriasAPDF(filteredSubcategorias, categorias);
@@ -161,6 +163,7 @@ export default function AdminSubcategorias() {
                   📄 Exportar a PDF
                 </button>
                 <button 
+                  type="button"
                   className="btn btn-sm"
                   onClick={async () => {
                     await exportarSubcategoriasAExcel(filteredSubcategorias, categorias);
@@ -184,10 +187,14 @@ export default function AdminSubcategorias() {
             )}
           </div>
           
-        <button className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
-          {isFormOpen ? 'Cancelar' : '➕ Nueva Subcategoría'}
-        </button>
-      </div>
+          <button 
+            type="button"
+            className="btn btn-primary" 
+            onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}
+          >
+            {isFormOpen ? 'Cancelar' : '➕ Nueva Subcategoría'}
+          </button>
+        </div>
       </div>
 
       <div className="search-container">
@@ -200,12 +207,14 @@ export default function AdminSubcategorias() {
         />
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todas ({subcategorias.length})
         </button>
-         <button
+        <button
+          type="button"
           className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
           onClick={() => setFiltro('True')}
         >
@@ -213,6 +222,7 @@ export default function AdminSubcategorias() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
           onClick={() => setFiltro('False')}
         >
@@ -227,11 +237,27 @@ export default function AdminSubcategorias() {
         <div className="form-container">
           <h2>{editingSubcategoriaId ? 'Editar Subcategoría' : 'Crear Subcategoría'}</h2>
           <form onSubmit={handleCrear}>
-            <div className="form-group"><label>Nombre</label><input value={newSubcategoria.nombre} onChange={(e) => setNewSubcategoria({ ...newSubcategoria, nombre: e.target.value })} required /></div>
-            <div className="form-group"><label>Descripción</label><textarea value={newSubcategoria.descripcion} onChange={(e) => setNewSubcategoria({ ...newSubcategoria, descripcion: e.target.value })} /></div>
             <div className="form-group">
-              <label>Categoría</label>
+              <label htmlFor="subcategoria-nombre">Nombre</label>
+              <input 
+                id="subcategoria-nombre"
+                value={newSubcategoria.nombre} 
+                onChange={(e) => setNewSubcategoria({ ...newSubcategoria, nombre: e.target.value })} 
+                required 
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="subcategoria-descripcion">Descripción</label>
+              <textarea 
+                id="subcategoria-descripcion"
+                value={newSubcategoria.descripcion} 
+                onChange={(e) => setNewSubcategoria({ ...newSubcategoria, descripcion: e.target.value })} 
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="subcategoria-categoria">Categoría</label>
               <Select
+                inputId="subcategoria-categoria"
                 value={
                   categorias
                     .map((categoria) => ({
@@ -240,28 +266,29 @@ export default function AdminSubcategorias() {
                     }))
                     .find((opcion) => opcion.value === newSubcategoria.categoriaId)
                 }
-
                 onChange={(opcion) =>
                   setNewSubcategoria({
                     ...newSubcategoria,
                     categoriaId: opcion.value
                   })
                 }
-
                 options={
                   categorias.map((categoria) => ({
                     value: categoria.id,
                     label: categoria.nombre
                   }))
                 }
-
                 placeholder="Selecciona categoría..."
                 isSearchable
               />
             </div>
             <div className="form-group">
-              <label>Tipo</label>
-              <select value={newSubcategoria.tipo} onChange={(e) => setNewSubcategoria({ ...newSubcategoria, tipo: e.target.value })}>
+              <label htmlFor="subcategoria-tipo">Tipo</label>
+              <select 
+                id="subcategoria-tipo"
+                value={newSubcategoria.tipo} 
+                onChange={(e) => setNewSubcategoria({ ...newSubcategoria, tipo: e.target.value })}
+              >
                 <option value="producto">Producto</option>
                 <option value="servicio">Servicio</option>
               </select>
@@ -286,9 +313,27 @@ export default function AdminSubcategorias() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(subcategoria)}>✏️ Editar</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => handleToggle(subcategoria.id)}>{subcategoria.activo ? '⊘ Desactivar' : '✓ Activar'}</button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete(subcategoria.id)}>🗑️ Eliminar</button>
+              <button 
+                type="button"
+                className="btn btn-sm btn-secondary" 
+                onClick={() => handleEdit(subcategoria)}
+              >
+                ✏️ Editar
+              </button>
+              <button 
+                type="button"
+                className="btn btn-sm btn-secondary" 
+                onClick={() => handleToggle(subcategoria.id)}
+              >
+                {subcategoria.activo ? '⊘ Desactivar' : '✓ Activar'}
+              </button>
+              <button 
+                type="button"
+                className="btn btn-sm btn-danger" 
+                onClick={() => handleDelete(subcategoria.id)}
+              >
+                🗑️ Eliminar
+              </button>
             </div>
           </div>
         ))}

@@ -18,7 +18,6 @@ export default function ClienteProfesionales() {
   
   // Ref para el modal (para manejar el foco)
   const modalRef = useRef(null);
-  const overlayRef = useRef(null);
 
   const handleAgendarCita = (profesionalId) => {
     const userRole = getStoredRole();
@@ -52,13 +51,6 @@ export default function ClienteProfesionales() {
     // Devolver el foco al botón que abrió el modal
     if (modalRef.current) {
       modalRef.current.focus();
-    }
-  };
-
-  // Manejar tecla Escape para cerrar el modal
-  const handleKeyDown = (event) => {
-    if (event.key === 'Escape' && perfilSeleccionado) {
-      cerrarPerfil();
     }
   };
 
@@ -129,7 +121,6 @@ export default function ClienteProfesionales() {
         >
           <div 
             className="perfil-modal"
-            role="document"
           >
             <div className="perfil-modal-header">
               <h2 id="perfil-modal-title">Perfil Profesional</h2>

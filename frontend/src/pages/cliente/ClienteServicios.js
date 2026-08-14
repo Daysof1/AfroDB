@@ -235,7 +235,7 @@ export default function ClienteServicios() {
               <span><FontAwesomeIcon icon={faSackDollar} /> ${Number(servicio.precio || 0).toLocaleString()}</span>
             </div>
 
-            <button onClick={() => handleAgendarCita(servicio.id)} className="btn btn-primary"><FontAwesomeIcon icon={faCalendar} /> Agendar Cita</button>
+            <button type="button" onClick={() => handleAgendarCita(servicio.id)} className="btn btn-primary"><FontAwesomeIcon icon={faCalendar} /> Agendar Cita</button>
           </div>
         ))}
       </div>
@@ -243,6 +243,7 @@ export default function ClienteServicios() {
       {totalPaginas > 1 && (
         <div className="pagination">
           <button
+            type="button"
             disabled={pagina === 1}
             onClick={() => setPagina(pagina - 1)}
             className="btn btn-secondary"
@@ -253,6 +254,7 @@ export default function ClienteServicios() {
             Página {pagina} de {totalPaginas}
           </span>
           <button
+            type="button"
             disabled={pagina === totalPaginas}
             onClick={() => setPagina(pagina + 1)}
             className="btn btn-secondary"

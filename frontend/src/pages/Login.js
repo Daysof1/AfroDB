@@ -12,80 +12,111 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+
+  // ==========================================
+// FUNCIONES AUXILIARES
+// ==========================================
+
+  const validateLoginForm = (email, password) => {
     const emailNormalizado = email.trim().toLowerCase();
     
     if (!emailNormalizado || !password) {
-      setError('Por favor completa todos los campos');
-      return;
+      return { valid: false, error: 'Por favor completa todos los campos', emailNormalizado };
     }
 
     if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+      return { valid: false, error: 'La contraseña debe tener al menos 6 caracteres', emailNormalizado };
+    }
+
+    return { valid: true, error: '', emailNormalizado };
+  };
+
+  const migrateLocalCart = async () => {
+    const localItems = getLocalCartItems();
+    if (!Array.isArray(localItems) || localItems.length === 0) {
       return;
     }
 
-    try {
-      setLoading(true);
-      setError('');
-
-      const response = await apiRequest('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email: emailNormalizado, password }),
-      });
-
-      const usuario = response?.data?.usuario;
-      const token = response?.data?.token;
-
-      if (!usuario || !token) {
-        throw new Error('Respuesta inválida del servidor');
+    for (const item of localItems) {
+      try {
+        await apiRequest('/cliente/carrito', {
+          method: 'POST',
+          body: JSON.stringify({ productoId: item.productoId, cantidad: item.cantidad }),
+        });
+      } catch (err) {
+        console.warn('No se pudo migrar item al carrito:', item, err.message || err);
       }
-
-      saveSession({ token, usuario });
-      // Migrar carrito local al carrito del usuario autenticado
-      const localItems = getLocalCartItems();
-      if (Array.isArray(localItems) && localItems.length > 0) {
-        try {
-          for (const item of localItems) {
-            // Intentar agregar cada producto al carrito del servidor
-            // Se ignoran errores individuales para no bloquear el login
-            try {
-              await apiRequest('/cliente/carrito', {
-                method: 'POST',
-                body: JSON.stringify({ productoId: item.productoId, cantidad: item.cantidad }),
-              });
-            } catch (err) {
-              // Loguear y continuar con el siguiente item
-              console.warn('No se pudo migrar item al carrito:', item, err.message || err);
-            }
-          }
-        } catch (err) {
-          console.warn('Error migrando carrito local:', err.message || err);
-        } finally {
-          // Limpiar el carrito local una vez intentada la migración
-          clearLocalCart();
-        }
-      }
-
-      window.dispatchEvent(new Event('authChange'));
-
-      const role = normalizeRole(usuario.rol);
-      if (role === 'admin') {
-        navigate('/admin/dashboard');
-      } else if (role === 'auxiliar') {
-        navigate('/auxiliar/dashboard');
-      } else if (role === 'profesional') {
-        navigate('/profesional/dashboard');
-      } else {
-        navigate('/cliente/catalogo');
-      }
-    } catch (err) {
-      setError(err.message || 'Correo o contraseña incorrectos');
-    } finally {
-      setLoading(false);
     }
   };
+
+  const redirectByRole = (role, navigate) => {
+    const normalizedRole = normalizeRole(role);
+    
+    switch (normalizedRole) {
+      case 'admin':
+        navigate('/admin/dashboard');
+        break;
+      case 'auxiliar':
+        navigate('/auxiliar/dashboard');
+        break;
+      case 'profesional':
+        navigate('/profesional/dashboard');
+        break;
+      default:
+        navigate('/cliente/catalogo');
+    }
+  };
+
+// ==========================================
+// HANDLE LOGIN (REFACTORIZADO)
+// ==========================================
+
+const handleLogin = async (e) => {
+  e.preventDefault();
+  
+  const validation = validateLoginForm(email, password);
+  if (!validation.valid) {
+    setError(validation.error);
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    const response = await apiRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: validation.emailNormalizado, password }),
+    });
+
+    const usuario = response?.data?.usuario;
+    const token = response?.data?.token;
+
+    if (!usuario || !token) {
+      throw new Error('Respuesta inválida del servidor');
+    }
+
+    saveSession({ token, usuario });
+
+    // Migrar carrito local
+    try {
+      await migrateLocalCart();
+    } catch (err) {
+      console.warn('Error migrando carrito local:', err.message || err);
+    } finally {
+      clearLocalCart();
+    }
+
+    window.dispatchEvent(new Event('authChange'));
+
+    redirectByRole(usuario.rol, navigate);
+
+  } catch (err) {
+    setError(err.message || 'Correo o contraseña incorrectos');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="login-page">
@@ -104,8 +135,9 @@ export default function Login() {
 
             <form onSubmit={handleLogin}>
               <div className="form-group">
-                <label>Correo Electrónico</label>
+                <label htmlFor="email">Correo Electrónico</label>
                 <input
+                  id="email"
                   type="email"
                   value={email}
                   onChange={(e) => {
@@ -118,8 +150,9 @@ export default function Login() {
               </div>
 
               <div className="form-group">
-                <label>Contraseña</label>
+                <label htmlFor="password">Contraseña</label>
                 <input
+                  id="password"
                   type="password"
                   value={password}
                   onChange={(e) => {

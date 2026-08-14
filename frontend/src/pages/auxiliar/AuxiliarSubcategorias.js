@@ -42,8 +42,8 @@ export default function AuxiliarSubcategorias() {
 
     const filtered = subcategorias.filter((sub) => {
     const coincideBusqueda =
-      (sub.nombre && sub.nombre.toLowerCase().includes(lowercasedFilter)) ||
-      (sub.descripcion && sub.descripcion.toLowerCase().includes(lowercasedFilter));
+      sub.nombre?.toLowerCase().includes(lowercasedFilter) ||
+      sub.descripcion?.toLowerCase().includes(lowercasedFilter);
 
     const coincideEstado =
       filtro === 'Todos' ||
@@ -113,6 +113,7 @@ export default function AuxiliarSubcategorias() {
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <button 
+              type="button"
               className="btn btn-primary"
               onClick={() => setShowExportOptions(!showExportOptions)}
             >
@@ -132,6 +133,7 @@ export default function AuxiliarSubcategorias() {
                 marginTop: '5px'
               }}>
                 <button 
+                  type="button"
                   className="btn btn-sm"
                   onClick={() => {
                     exportarSubcategoriasAPDF(filteredSubcategorias, categorias);
@@ -153,6 +155,7 @@ export default function AuxiliarSubcategorias() {
                   📄 Exportar a PDF
                 </button>
                 <button 
+                  type="button"
                   className="btn btn-sm"
                   onClick={async () => {
                     await exportarSubcategoriasAExcel(filteredSubcategorias, categorias);
@@ -176,7 +179,7 @@ export default function AuxiliarSubcategorias() {
             )}
           </div>
 
-        <button className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
+        <button type="button" className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
           {isFormOpen ? 'Cancelar' : '➕ Nueva Subcategoría'}
         </button>
       </div>
@@ -191,12 +194,14 @@ export default function AuxiliarSubcategorias() {
           className="search-input"
         />
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todas ({subcategorias.length})
         </button>
          <button
+          type="button"
           className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
           onClick={() => setFiltro('True')}
         >
@@ -204,6 +209,7 @@ export default function AuxiliarSubcategorias() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
           onClick={() => setFiltro('False')}
         >
@@ -218,11 +224,12 @@ export default function AuxiliarSubcategorias() {
         <div className="form-container">
           <h2>{editingSubcategoriaId ? 'Editar Subcategoría' : 'Crear Subcategoría'}</h2>
           <form onSubmit={handleCrear}>
-            <div className="form-group"><label>Nombre</label><input value={newSubcategoria.nombre} onChange={(e) => setNewSubcategoria({ ...newSubcategoria, nombre: e.target.value })} required /></div>
-            <div className="form-group"><label>Descripción</label><textarea value={newSubcategoria.descripcion} onChange={(e) => setNewSubcategoria({ ...newSubcategoria, descripcion: e.target.value })} /></div>
+            <div className="form-group"><label htmlFor="subcategoria-nombre">Nombre</label><input id="subcategoria-nombre" value={newSubcategoria.nombre} onChange={(e) => setNewSubcategoria({ ...newSubcategoria, nombre: e.target.value })} required /></div>
+            <div className="form-group"><label htmlFor="subcategoria-descripcion">Descripción</label><textarea id="subcategoria-descripcion" value={newSubcategoria.descripcion} onChange={(e) => setNewSubcategoria({ ...newSubcategoria, descripcion: e.target.value })} /></div>
             <div className="form-group">
-              <label>Categoría</label>
+              <label htmlFor="subcategoria-categoria">Categoría</label>
               <Select
+                id="subcategoria-categoria"
                 value={
                   categorias
                     .map((categoria) => ({
@@ -251,8 +258,8 @@ export default function AuxiliarSubcategorias() {
               />
             </div>
             <div className="form-group">
-              <label>Tipo</label>
-              <select value={newSubcategoria.tipo} onChange={(e) => setNewSubcategoria({ ...newSubcategoria, tipo: e.target.value })}>
+              <label htmlFor="subcategoria-tipo">Tipo</label>
+              <select id="subcategoria-tipo" value={newSubcategoria.tipo} onChange={(e) => setNewSubcategoria({ ...newSubcategoria, tipo: e.target.value })}>
                 <option value="producto">Producto</option>
                 <option value="servicio">Servicio</option>
               </select>
@@ -275,8 +282,8 @@ export default function AuxiliarSubcategorias() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(subcategoria)}>✏️ Editar</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => handleToggle(subcategoria.id)}>{subcategoria.activo ? '⊘ Desactivar' : '✓ Activar'}</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleEdit(subcategoria)}>✏️ Editar</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleToggle(subcategoria.id)}>{subcategoria.activo ? '⊘ Desactivar' : '✓ Activar'}</button>
             </div>
           </div>
         ))}

@@ -1,4 +1,4 @@
-// Página: AdminServicios.js. gesti?n de servicios del sistema.
+// Página: AdminServicios.js. gestión de servicios del sistema.
 import { useEffect, useMemo, useState } from 'react';
 import '../Admin.css';
 import { apiRequest, getAssetUrl } from '../../api/client.js';
@@ -126,7 +126,6 @@ export default function AdminServicios() {
       (servicio?.categoria?.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (servicio?.subcategoria?.nombre || '').toLowerCase().includes(textoBusqueda);
 
-          // Filtro por estado activo/inactivo
     const coincideEstado =
       filtro === 'Todos' ||
       (filtro === 'True' && servicio.activo === true) ||
@@ -146,7 +145,6 @@ export default function AdminServicios() {
       setError('');
       setSuccess('');
       const isEditing = Boolean(editingServicioId);
-      // Si se proporcionó una URL de imagen, convertirla a File y enviar multipart/form-data
       const payload = {
         nombre: newServicio.nombre,
         descripcion: newServicio.descripcion || '',
@@ -219,83 +217,87 @@ export default function AdminServicios() {
         <h1>Gestión de Servicios</h1>
 
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative' }}>
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowExportOptions(!showExportOptions)}
-              >
-                📊 Exportar
-              </button>
-              {showExportOptions && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  backgroundColor: '#fff',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  zIndex: 10,
-                  minWidth: '150px',
-                  marginTop: '5px'
-                }}>
-                  <button 
-                    className="btn btn-sm"
-                    onClick={() => {
-                      exportarServiciosAPDF(serviciosFiltrados);
-                      setShowExportOptions(false);
-                    }}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '10px 15px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      cursor: 'pointer',
-                      borderBottom: '1px solid #eee'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  >
-                    📄 Exportar a PDF
-                  </button>
-                  <button 
-                    className="btn btn-sm"
-                    onClick={async () => {
-                      await exportarServiciosAExcel(serviciosFiltrados);
-                      setShowExportOptions(false);
-                    }}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '10px 15px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  >
-                    📊 Exportar a Excel
-                  </button>
-                </div>
-              )}
-            </div>
+          <div style={{ position: 'relative' }}>
+            <button 
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setShowExportOptions(!showExportOptions)}
+            >
+              📊 Exportar
+            </button>
+            {showExportOptions && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                backgroundColor: '#fff',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                zIndex: 10,
+                minWidth: '150px',
+                marginTop: '5px'
+              }}>
+                <button 
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => {
+                    exportarServiciosAPDF(serviciosFiltrados);
+                    setShowExportOptions(false);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 15px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #eee'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  📄 Exportar a PDF
+                </button>
+                <button 
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={async () => {
+                    await exportarServiciosAExcel(serviciosFiltrados);
+                    setShowExportOptions(false);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 15px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  📊 Exportar a Excel
+                </button>
+              </div>
+            )}
+          </div>
 
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            if (isFormOpen) {
-              resetForm();
-            }
-            setIsFormOpen(!isFormOpen);
-          }}
-        >
-          {isFormOpen ? 'Cancelar' : '➕ Nuevo Servicio'}
-        </button>
-      </div>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              if (isFormOpen) {
+                resetForm();
+              }
+              setIsFormOpen(!isFormOpen);
+            }}
+          >
+            {isFormOpen ? 'Cancelar' : '➕ Nuevo Servicio'}
+          </button>
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -309,58 +311,49 @@ export default function AdminServicios() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
+
         <Select
+          inputId="filtro-categoria"
           value={{
             value: filtroCategoria,
             label: `Categoría: ${filtroCategoria}`
           }}
-
-          onChange={(opcion) =>
-            setFiltroCategoria(opcion.value)
-          }
-
-          options={
-            categoriasFiltro.map((categoria) => ({
-              value: categoria,
-              label: `Categoría: ${categoria}`
-            }))
-          }
-
+          onChange={(opcion) => setFiltroCategoria(opcion.value)}
+          options={categoriasFiltro.map((categoria) => ({
+            value: categoria,
+            label: `Categoría: ${categoria}`
+          }))}
           className="search-input"
           placeholder="Filtrar categoría..."
           isSearchable
         />
 
-
         <Select
+          inputId="filtro-subcategoria"
           value={{
             value: filtroSubcategoria,
             label: `Subcategoría: ${filtroSubcategoria}`
           }}
-
-          onChange={(opcion) =>
-            setFiltroSubcategoria(opcion.value)
-          }
-
-          options={
-            subcategoriasFiltro.map((subcategoria) => ({
-              value: subcategoria,
-              label: `Subcategoría: ${subcategoria}`
-            }))
-          }
-
+          onChange={(opcion) => setFiltroSubcategoria(opcion.value)}
+          options={subcategoriasFiltro.map((subcategoria) => ({
+            value: subcategoria,
+            label: `Subcategoría: ${subcategoria}`
+          }))}
           className="search-input"
           placeholder="Filtrar subcategoría..."
           isSearchable
         />
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todos ({servicios.length})
         </button>
-         <button
+
+        <button
+          type="button"
           className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
           onClick={() => setFiltro('True')}
         >
@@ -368,12 +361,12 @@ export default function AdminServicios() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
           onClick={() => setFiltro('False')}
         >
           Inactivos ({servicios.filter((s) => s.activo === false).length})
         </button>
-
       </div>
 
       {isFormOpen && (
@@ -381,8 +374,9 @@ export default function AdminServicios() {
           <h2>{editingServicioId ? 'Editar Servicio' : 'Agregar Nuevo Servicio'}</h2>
           <form onSubmit={handleCrearServicio}>
             <div className="form-group">
-              <label>Nombre</label>
+              <label htmlFor="servicio-nombre">Nombre</label>
               <input
+                id="servicio-nombre"
                 type="text"
                 placeholder="Nombre del servicio"
                 value={newServicio.nombre}
@@ -392,18 +386,20 @@ export default function AdminServicios() {
             </div>
 
             <div className="form-group">
-              <label>Descripción</label>
+              <label htmlFor="servicio-descripcion">Descripción</label>
               <textarea
+                id="servicio-descripcion"
                 placeholder="Descripción del servicio"
                 rows="4"
                 value={newServicio.descripcion}
                 onChange={(e) => setNewServicio({ ...newServicio, descripcion: e.target.value })}
-              ></textarea>
+              />
             </div>
 
             <div className="form-group">
-              <label>Precio</label>
+              <label htmlFor="servicio-precio">Precio</label>
               <input
+                id="servicio-precio"
                 type="number"
                 placeholder="Precio"
                 min="1"
@@ -414,8 +410,9 @@ export default function AdminServicios() {
             </div>
 
             <div className="form-group">
-              <label>Duración (min)</label>
+              <label htmlFor="servicio-duracion">Duración (min)</label>
               <input
+                id="servicio-duracion"
                 type="number"
                 placeholder="Duración"
                 min="1"
@@ -426,10 +423,9 @@ export default function AdminServicios() {
             </div>
 
             <div className="form-group">
-              <label>Categoría</label>
-              <div className="form-group">
-
+              <label htmlFor="servicio-categoria">Categoría</label>
               <Select
+                inputId="servicio-categoria"
                 value={
                   categorias
                     .map((categoria) => ({
@@ -440,40 +436,29 @@ export default function AdminServicios() {
                       (opcion) => opcion.value === newServicio.categoriaId
                     ) || null
                 }
-
                 onChange={(opcion) => {
-
                   const categoriaId = opcion ? opcion.value : "";
-
                   setNewServicio({
                     ...newServicio,
                     categoriaId: categoriaId,
                     subcategoriaId: ""
                   });
-
                   loadSubcategorias(categoriaId);
                 }}
-
-                options={
-                  categorias.map((categoria) => ({
-                    value: categoria.id,
-                    label: categoria.nombre
-                  }))
-                }
-
+                options={categorias.map((categoria) => ({
+                  value: categoria.id,
+                  label: categoria.nombre
+                }))}
                 placeholder="Selecciona categoría..."
                 isSearchable
                 noOptionsMessage={() => "No hay categorías"}
               />
-
             </div>
 
-
             <div className="form-group">
-
-              <label>Subcategoría</label>
-
+              <label htmlFor="servicio-subcategoria">Subcategoría</label>
               <Select
+                inputId="servicio-subcategoria"
                 value={
                   subcategorias
                     .map((subcategoria) => ({
@@ -484,35 +469,27 @@ export default function AdminServicios() {
                       (opcion) => opcion.value === newServicio.subcategoriaId
                     ) || null
                 }
-
                 onChange={(opcion) => {
-
                   setNewServicio({
                     ...newServicio,
                     subcategoriaId: opcion ? opcion.value : ""
                   });
-
                 }}
-
-                options={
-                  subcategorias.map((subcategoria) => ({
-                    value: subcategoria.id,
-                    label: subcategoria.nombre
-                  }))
-                }
-
+                options={subcategorias.map((subcategoria) => ({
+                  value: subcategoria.id,
+                  label: subcategoria.nombre
+                }))}
                 placeholder="Selecciona subcategoría..."
                 isSearchable
                 isDisabled={!newServicio.categoriaId}
                 noOptionsMessage={() => "No hay subcategorías"}
               />
-
-            </div>
             </div>
 
             <div className="form-group">
-              <label>URL de imagen</label>
+              <label htmlFor="servicio-imagen">URL de imagen</label>
               <input
+                id="servicio-imagen"
                 type="url"
                 placeholder="https://..."
                 value={newServicio.imagenUrl}
@@ -549,17 +526,26 @@ export default function AdminServicios() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEditarServicio(servicio)}>
+              <button 
+                type="button"
+                className="btn btn-sm btn-secondary" 
+                onClick={() => handleEditarServicio(servicio)}
+              >
                 ✏️ Editar
               </button>
               <button
+                type="button"
                 className={`btn btn-sm ${servicio.activo ? 'btn-warning' : 'btn-success'}`}
                 onClick={() => handleToggleServicio(servicio.id, servicio.activo)}
                 title={servicio.activo ? 'Desactivar' : 'Activar'}
               >
                 {servicio.activo ? '⊘ Desactivar' : '✓ Activar'}
               </button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleEliminar(servicio.id)}>
+              <button 
+                type="button"
+                className="btn btn-sm btn-danger" 
+                onClick={() => handleEliminar(servicio.id)}
+              >
                 🗑️ Eliminar
               </button>
             </div>
@@ -576,6 +562,7 @@ export default function AdminServicios() {
       {totalPaginas > 1 && (
         <div className="pagination">
           <button
+            type="button"
             disabled={pagina === 1}
             onClick={() => setPagina(pagina - 1)}
             className="btn btn-secondary"
@@ -586,6 +573,7 @@ export default function AdminServicios() {
             Página {pagina} de {totalPaginas}
           </span>
           <button
+            type="button"
             disabled={pagina === totalPaginas}
             onClick={() => setPagina(pagina + 1)}
             className="btn btn-secondary"

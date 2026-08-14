@@ -79,13 +79,13 @@ export default function AuxiliarDashboard() {
 
         const actividadProductos = productos.slice(0, 5).map((producto) => ({
           tipo: 'Producto',
-          mensaje: `Producto registrado: ${producto.nombre || `#${producto.id}`}`,
+          mensaje: `Producto registrado: ${producto.nombre || '#' + producto.id}`,
           fecha: producto.createdAt || producto.updatedAt || null,
         }));
 
         const actividadServicios = servicios.slice(0, 5).map((servicio) => ({
           tipo: 'Servicio',
-          mensaje: `Servicio actualizado: ${servicio.nombre || `#${servicio.id}`}`,
+          mensaje: `Servicio actualizado: ${servicio.nombre || '#' + servicio.id}`,
           fecha: servicio.updatedAt || servicio.createdAt || null,
         }));
 

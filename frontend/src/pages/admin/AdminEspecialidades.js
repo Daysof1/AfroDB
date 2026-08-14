@@ -10,9 +10,6 @@ export default function AdminEspecialidades() {
   const [success, setSuccess] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState('Todos');
-  const [pagina, setPagina] = useState(1);
-  const [totalPaginas, setTotalPaginas] = useState(1);
-  const limite = 100;
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEspecialidadId, setEditingEspecialidadId] = useState(null);
   const [newEspecialidad, setNewEspecialidad] = useState({ nombre: '', descripcion: '' });
@@ -109,7 +106,7 @@ export default function AdminEspecialidades() {
     <div className="admin-page">
       <div className="page-header">
         <h1>Gestión de Especialidades</h1>
-        <button className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
+        <button type="button" className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
           {isFormOpen ? 'Cancelar' : '➕ Nueva Especialidad'}
         </button>
       </div>
@@ -121,8 +118,8 @@ export default function AdminEspecialidades() {
         <div className="form-container">
           <h2>{editingEspecialidadId ? 'Editar Especialidad' : 'Crear Especialidad'}</h2>
           <form onSubmit={handleCrear}>
-            <div className="form-group"><label>Nombre</label><input value={newEspecialidad.nombre} onChange={(e) => setNewEspecialidad({ ...newEspecialidad, nombre: e.target.value })} required /></div>
-            <div className="form-group"><label>Descripción</label><textarea value={newEspecialidad.descripcion} onChange={(e) => setNewEspecialidad({ ...newEspecialidad, descripcion: e.target.value })} /></div>
+            <div className="form-group"><label htmlFor="especialidad-nombre">Nombre</label><input id="especialidad-nombre" value={newEspecialidad.nombre} onChange={(e) => setNewEspecialidad({ ...newEspecialidad, nombre: e.target.value })} required /></div>
+            <div className="form-group"><label htmlFor="especialidad-descripcion">Descripción</label><textarea id="especialidad-descripcion" value={newEspecialidad.descripcion} onChange={(e) => setNewEspecialidad({ ...newEspecialidad, descripcion: e.target.value })} /></div>
             <button type="submit" className="btn btn-primary">
               {editingEspecialidadId ? 'Actualizar Especialidad' : 'Guardar Especialidad'}
             </button>
@@ -139,6 +136,7 @@ export default function AdminEspecialidades() {
         />
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
@@ -146,6 +144,7 @@ export default function AdminEspecialidades() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
           onClick={() => setFiltro('True')}
         >
@@ -153,6 +152,7 @@ export default function AdminEspecialidades() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
           onClick={() => setFiltro('False')}
         >
@@ -171,9 +171,9 @@ export default function AdminEspecialidades() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(especialidad)}>✏️ Editar</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => handleToggle(especialidad.id)}>{especialidad.activo ? '⊘ Desactivar' : '✓ Activar'}</button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete(especialidad.id)}>🗑️ Eliminar</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleEdit(especialidad)}>✏️ Editar</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleToggle(especialidad.id)}>{especialidad.activo ? '⊘ Desactivar' : '✓ Activar'}</button>
+              <button type="button" className="btn btn-sm btn-danger" onClick={() => handleDelete(especialidad.id)}>🗑️ Eliminar</button>
             </div>
           </div>
         ))}

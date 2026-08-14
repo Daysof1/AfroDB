@@ -1,4 +1,4 @@
-// Página: AdminProductos.js. gesti?n de productos del cat?logo.
+// Página: AdminProductos.js. gestión de productos del catálogo.
 import { useEffect, useMemo, useState } from 'react';
 import '../Admin.css';
 import { apiRequest, getAssetUrl } from '../../api/client.js';
@@ -14,7 +14,6 @@ export default function AdminProductos() {
   const [success, setSuccess] = useState('');
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
-  // Este límite sólo se usa para traer cada lote desde el backend.
   const limite = 100;
   const [filtroCategoria, setFiltroCategoria] = useState('Todos');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState('Todas');
@@ -120,7 +119,6 @@ export default function AdminProductos() {
       (producto?.categoria?.nombre || '').toLowerCase().includes(textoBusqueda) ||
       (producto?.subcategoria?.nombre || '').toLowerCase().includes(textoBusqueda);
 
-    // Filtro por estado activo/inactivo
     const coincideEstado =
       filtro === 'Todos' ||
       (filtro === 'True' && producto.activo === true) ||
@@ -243,84 +241,89 @@ export default function AdminProductos() {
         <h1>Gestión de Productos</h1>
         
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative' }}>
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowExportOptions(!showExportOptions)}
-              >
-                📊 Exportar
-              </button>
-              {showExportOptions && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  backgroundColor: '#fff',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  zIndex: 10,
-                  minWidth: '150px',
-                  marginTop: '5px'
-                }}>
-                  <button 
-                    className="btn btn-sm"
-                    onClick={() => {
-                      exportarProductosAPDF(productosFiltrados);
-                      setShowExportOptions(false);
-                    }}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '10px 15px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      cursor: 'pointer',
-                      borderBottom: '1px solid #eee'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  >
-                    📄 Exportar a PDF
-                  </button>
-                  <button 
-                    className="btn btn-sm"
-                    onClick={async () => {
-                      await exportarProductosAExcel(productosFiltrados);
-                      setShowExportOptions(false);
-                    }}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '10px 15px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  >
-                    📊 Exportar a Excel
-                  </button>
-                </div>
-              )}
-            </div>
+          <div style={{ position: 'relative' }}>
+            <button 
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setShowExportOptions(!showExportOptions)}
+            >
+              📊 Exportar
+            </button>
+            {showExportOptions && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                backgroundColor: '#fff',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                zIndex: 10,
+                minWidth: '150px',
+                marginTop: '5px'
+              }}>
+                <button 
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => {
+                    exportarProductosAPDF(productosFiltrados);
+                    setShowExportOptions(false);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 15px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #eee'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  📄 Exportar a PDF
+                </button>
+                <button 
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={async () => {
+                    await exportarProductosAExcel(productosFiltrados);
+                    setShowExportOptions(false);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 15px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  📊 Exportar a Excel
+                </button>
+              </div>
+            )}
+          </div>
         
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            if (isFormOpen) {
-              resetForm();
-            }
-            setIsFormOpen(!isFormOpen);
-          }}
-        >
-          {isFormOpen ? 'Cancelar' : '➕ Nuevo Producto'}
-        </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              if (isFormOpen) {
+                resetForm();
+              }
+              setIsFormOpen(!isFormOpen);
+            }}
+          >
+            {isFormOpen ? 'Cancelar' : '➕ Nuevo Producto'}
+          </button>
+        </div>
       </div>
-      </div>
+
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
@@ -332,56 +335,47 @@ export default function AdminProductos() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="search-input"
         />
+
         <Select
           value={{
             value: filtroCategoria,
             label: `Categoría: ${filtroCategoria}`
           }}
-
-          onChange={(opcion) =>
-            setFiltroCategoria(opcion.value)
-          }
-
-          options={
-            categoriasFiltro.map((categoria) => ({
-              value: categoria,
-              label: `Categoría: ${categoria}`
-            }))
-          }
-
+          onChange={(opcion) => setFiltroCategoria(opcion.value)}
+          options={categoriasFiltro.map((categoria) => ({
+            value: categoria,
+            label: `Categoría: ${categoria}`
+          }))}
           className="search-input"
           placeholder="Filtrar categoría..."
           isSearchable
         />
+
         <Select
           value={{
             value: filtroSubcategoria,
             label: `Subcategoría: ${filtroSubcategoria}`
           }}
-
-          onChange={(opcion) =>
-            setFiltroSubcategoria(opcion.value)
-          }
-
-          options={
-            subcategoriasFiltro.map((subcategoria) => ({
-              value: subcategoria,
-              label: `Subcategoría: ${subcategoria}`
-            }))
-          }
-
+          onChange={(opcion) => setFiltroSubcategoria(opcion.value)}
+          options={subcategoriasFiltro.map((subcategoria) => ({
+            value: subcategoria,
+            label: `Subcategoría: ${subcategoria}`
+          }))}
           className="search-input"
           placeholder="Filtrar subcategoría..."
           isSearchable
         />
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todos ({productos.length})
         </button>
-         <button
+
+        <button
+          type="button"
           className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
           onClick={() => setFiltro('True')}
         >
@@ -389,6 +383,7 @@ export default function AdminProductos() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
           onClick={() => setFiltro('False')}
         >
@@ -401,8 +396,9 @@ export default function AdminProductos() {
           <h2>{editingProductId ? 'Editar Producto' : 'Agregar Nuevo Producto'}</h2>
           <form onSubmit={handleAddProduct}>
             <div className="form-group">
-              <label>Nombre</label>
+              <label htmlFor="producto-nombre">Nombre</label>
               <input
+                id="producto-nombre"
                 type="text"
                 value={newProduct.nombre}
                 onChange={(e) => setNewProduct({ ...newProduct, nombre: e.target.value })}
@@ -410,17 +406,21 @@ export default function AdminProductos() {
                 required
               />
             </div>
+
             <div className="form-group">
-              <label>Descripción</label>
+              <label htmlFor="producto-descripcion">Descripción</label>
               <textarea
+                id="producto-descripcion"
                 value={newProduct.descripcion}
                 onChange={(e) => setNewProduct({ ...newProduct, descripcion: e.target.value })}
                 placeholder="Descripción"
-              ></textarea>
+              />
             </div>
+
             <div className="form-group">
-              <label>Precio</label>
+              <label htmlFor="producto-precio">Precio</label>
               <input
+                id="producto-precio"
                 type="number"
                 value={newProduct.precio}
                 onChange={(e) => setNewProduct({ ...newProduct, precio: e.target.value })}
@@ -429,9 +429,11 @@ export default function AdminProductos() {
                 required
               />
             </div>
+
             <div className="form-group">
-              <label>Stock</label>
+              <label htmlFor="producto-stock">Stock</label>
               <input
+                id="producto-stock"
                 type="number"
                 value={newProduct.stock}
                 onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
@@ -440,9 +442,11 @@ export default function AdminProductos() {
                 required
               />
             </div>
+
             <div className="form-group">
-              <label>Categoría</label>
+              <label htmlFor="producto-categoria">Categoría</label>
               <Select
+                inputId="producto-categoria"
                 value={
                   categorias.map((categoria) => ({
                     value: categoria.id,
@@ -454,71 +458,58 @@ export default function AdminProductos() {
                 }
                 onChange={(opcion) => {
                   const categoriaId = opcion ? opcion.value : "";
-
                   setNewProduct({ 
-                  ...newProduct, 
-                  categoriaId: categoriaId,
-                  subcategoriaId: "" 
-                });
-
-                loadSubcategorias(categoriaId);
+                    ...newProduct, 
+                    categoriaId: categoriaId,
+                    subcategoriaId: "" 
+                  });
+                  loadSubcategorias(categoriaId);
                 }}
-                options={
-      categorias.map((categoria) => ({
-        value: categoria.id,
-        label: categoria.nombre
-      }))
-    }
-
-    placeholder="Selecciona categoría..."
-    isSearchable
-    noOptionsMessage={() => "No hay categorías"}
-  />
-
-</div>
-
-
-<div className="form-group">
-
-  <label>Subcategoría</label>
-
-  <Select
-    value={
-      subcategorias
-        .map((subcategoria) => ({
-          value: subcategoria.id,
-          label: subcategoria.nombre
-        }))
-        .find(
-          (opcion) => opcion.value === newProduct.subcategoriaId
-        ) || null
-    }
-
-    onChange={(opcion) => {
-
-      setNewProduct({
-        ...newProduct,
-        subcategoriaId: opcion ? opcion.value : ""
-      });
-
-    }}
-
-    options={
-      subcategorias.map((subcategoria) => ({
-        value: subcategoria.id,
-        label: subcategoria.nombre
-      }))
-    }
-
-    placeholder="Selecciona subcategoría..."
-    isSearchable
-    isDisabled={!newProduct.categoriaId}
-    noOptionsMessage={() => "No hay subcategorías"}
-  />
+                options={categorias.map((categoria) => ({
+                  value: categoria.id,
+                  label: categoria.nombre
+                }))}
+                placeholder="Selecciona categoría..."
+                isSearchable
+                noOptionsMessage={() => "No hay categorías"}
+              />
             </div>
+
             <div className="form-group">
-              <label>URL de imagen</label>
+              <label htmlFor="producto-subcategoria">Subcategoría</label>
+              <Select
+                inputId="producto-subcategoria"
+                value={
+                  subcategorias
+                    .map((subcategoria) => ({
+                      value: subcategoria.id,
+                      label: subcategoria.nombre
+                    }))
+                    .find(
+                      (opcion) => opcion.value === newProduct.subcategoriaId
+                    ) || null
+                }
+                onChange={(opcion) => {
+                  setNewProduct({
+                    ...newProduct,
+                    subcategoriaId: opcion ? opcion.value : ""
+                  });
+                }}
+                options={subcategorias.map((subcategoria) => ({
+                  value: subcategoria.id,
+                  label: subcategoria.nombre
+                }))}
+                placeholder="Selecciona subcategoría..."
+                isSearchable
+                isDisabled={!newProduct.categoriaId}
+                noOptionsMessage={() => "No hay subcategorías"}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="producto-imagen">URL de imagen</label>
               <input
+                id="producto-imagen"
                 type="url"
                 value={newProduct.imagenUrl}
                 onChange={(e) => setNewProduct({ ...newProduct, imagenUrl: e.target.value })}
@@ -534,6 +525,7 @@ export default function AdminProductos() {
                 </div>
               )}
             </div>
+
             <button type="submit" className="btn btn-primary">
               {editingProductId ? 'Actualizar Producto' : 'Guardar Producto'}
             </button>
@@ -563,15 +555,28 @@ export default function AdminProductos() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEditProduct(producto)}>✏️Editar </button>
+              <button 
+                type="button"
+                className="btn btn-sm btn-secondary" 
+                onClick={() => handleEditProduct(producto)}
+              >
+                ✏️ Editar
+              </button>
               <button
+                type="button"
                 className={`btn btn-sm ${producto.activo ? 'btn-warning' : 'btn-success'}`}
                 onClick={() => handleToggleProducto(producto.id, producto.activo)}
                 title={producto.activo ? 'Desactivar' : 'Activar'}
               >
                 {producto.activo ? '⊘ Desactivar' : '✓ Activar'}
               </button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDeleteProduct(producto.id)}>🗑️ Eliminar</button>
+              <button 
+                type="button"
+                className="btn btn-sm btn-danger" 
+                onClick={() => handleDeleteProduct(producto.id)}
+              >
+                🗑️ Eliminar
+              </button>
             </div>
           </div>
         ))}
@@ -586,6 +591,7 @@ export default function AdminProductos() {
       {totalPaginas > 1 && (
         <div className="pagination">
           <button
+            type="button"
             disabled={pagina === 1}
             onClick={() => setPagina(pagina - 1)}
             className="btn btn-secondary"
@@ -596,6 +602,7 @@ export default function AdminProductos() {
             Página {pagina} de {totalPaginas}
           </span>
           <button
+            type="button"
             disabled={pagina === totalPaginas}
             onClick={() => setPagina(pagina + 1)}
             className="btn btn-secondary"
@@ -607,4 +614,3 @@ export default function AdminProductos() {
     </div>
   );
 }
-

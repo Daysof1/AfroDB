@@ -65,10 +65,14 @@ export default function AdminUsuarios() {
     try {
       setError('');
       setSuccess('');
-      const isEditing = Boolean(editingUsuarioId);
-      const payload = isEditing
-        ? (({ tipo_documento, documento, nombre, apellido, rol, telefono, direccion }) => ({ tipo_documento, documento, nombre, apellido, rol, telefono, direccion }))(newUsuario)
-        : newUsuario;
+      // Agregar esta función antes del componente
+      const extraerCamposUsuario = (usuario) => {
+        const { tipo_documento, documento, nombre, apellido, rol, telefono, direccion } = usuario;
+        return { tipo_documento, documento, nombre, apellido, rol, telefono, direccion };
+      };
+
+      // Luego usar:
+      const payload = isEditing ? extraerCamposUsuario(newUsuario) : newUsuario;
 
       // Normalizar el tipo de documento al formato que espera el backend (ENUM exacto)
       const normalizeTipoDocumento = (raw) => {
@@ -169,6 +173,7 @@ export default function AdminUsuarios() {
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative' }}>
               <button 
+                type="button"
                 className="btn btn-primary"
                 onClick={() => setShowExportOptions(!showExportOptions)}
               >
@@ -188,6 +193,7 @@ export default function AdminUsuarios() {
                   marginTop: '5px'
                 }}>
                   <button 
+                    type="button"
                     className="btn btn-sm"
                     onClick={() => {
                       exportarUsuariosAPDF(usuariosFiltrados);
@@ -209,6 +215,7 @@ export default function AdminUsuarios() {
                     📄 Exportar a PDF
                   </button>
                   <button 
+                    type="button"
                     className="btn btn-sm"
                     onClick={async () => {
                       await exportarUsuariosAExcel(usuariosFiltrados);
@@ -232,7 +239,7 @@ export default function AdminUsuarios() {
               )}
             </div>
 
-        <button className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
+        <button type="button" className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
           {isFormOpen ? 'Cancelar' : '➕ Nuevo Usuario'}
         </button>
       </div>
@@ -249,12 +256,14 @@ export default function AdminUsuarios() {
           className="search-input"
         />
         <button
+                type="button"
                 className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
                 onClick={() => setFiltro('Todos')}
               >
                 Todos ({usuarios.length})
               </button>
               <button
+                type="button"
                 className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
                 onClick={() => setFiltro('True')}
               >
@@ -262,6 +271,7 @@ export default function AdminUsuarios() {
               </button>
 
               <button
+                type="button"
                 className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
                 onClick={() => setFiltro('False')}
               >
@@ -274,8 +284,8 @@ export default function AdminUsuarios() {
           <h2>{editingUsuarioId ? 'Editar Usuario' : 'Crear Usuario'}</h2>
           <form onSubmit={handleCrearUsuario}>
             <div className="form-group">
-              <label>Tipo Documento</label>
-              <select value={newUsuario.tipo_documento} onChange={(e) => setNewUsuario({ ...newUsuario, tipo_documento: e.target.value })}>
+              <label htmlFor="tipo_documento">Tipo Documento</label>
+              <select id="tipo_documento" value={newUsuario.tipo_documento} onChange={(e) => setNewUsuario({ ...newUsuario, tipo_documento: e.target.value })}>
                 <option value="C.C.">C.C.</option>
                 <option value="T.I.">T.I.</option>
                 <option value="C.E.">C.E.</option>
@@ -283,24 +293,45 @@ export default function AdminUsuarios() {
                 <option value="otro">Otro</option>
               </select>
             </div>
-            <div className="form-group"><label>Documento</label><input value={newUsuario.documento} onChange={(e) => setNewUsuario({ ...newUsuario, documento: e.target.value })} required /></div>
-            <div className="form-group"><label>Nombre</label><input value={newUsuario.nombre} onChange={(e) => setNewUsuario({ ...newUsuario, nombre: e.target.value })} required /></div>
-            <div className="form-group"><label>Apellido</label><input value={newUsuario.apellido} onChange={(e) => setNewUsuario({ ...newUsuario, apellido: e.target.value })} required /></div>
-            <div className="form-group"><label>Email</label><input type="email" value={newUsuario.email} onChange={(e) => setNewUsuario({ ...newUsuario, email: e.target.value })} disabled={editingUsuarioId} required={!editingUsuarioId} /></div>
+            <div className="form-group">
+              <label htmlFor="documento">Documento</label>
+              <input id="documento" value={newUsuario.documento} onChange={(e) => setNewUsuario({ ...newUsuario, documento: e.target.value })} required />
+            </div>
+            <div className="form-group">
+              <label htmlFor="nombre">Nombre</label>
+              <input id="nombre" value={newUsuario.nombre} onChange={(e) => setNewUsuario({ ...newUsuario, nombre: e.target.value })} required />
+            </div>
+            <div className="form-group">
+              <label htmlFor="apellido">Apellido</label>
+              <input id="apellido" value={newUsuario.apellido} onChange={(e) => setNewUsuario({ ...newUsuario, apellido: e.target.value })} required />
+            </div>
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input id="email" type="email" value={newUsuario.email} onChange={(e) => setNewUsuario({ ...newUsuario, email: e.target.value })} disabled={editingUsuarioId} required={!editingUsuarioId} />
+            </div>
             {!editingUsuarioId && (
-              <div className="form-group"><label>Contraseña</label><input type="password" value={newUsuario.password} onChange={(e) => setNewUsuario({ ...newUsuario, password: e.target.value })} required /></div>
+              <div className="form-group">
+                <label htmlFor="password">Contraseña</label>
+                <input id="password" type="password" value={newUsuario.password} onChange={(e) => setNewUsuario({ ...newUsuario, password: e.target.value })} required />
+              </div>
             )}
             <div className="form-group">
-              <label>Rol</label>
-              <select value={newUsuario.rol} onChange={(e) => setNewUsuario({ ...newUsuario, rol: e.target.value })}>
+              <label htmlFor="rol">Rol</label>
+              <select id="rol" value={newUsuario.rol} onChange={(e) => setNewUsuario({ ...newUsuario, rol: e.target.value })}>
                 <option value="cliente">Cliente</option>
                 <option value="profesional">Profesional</option>
                 <option value="auxiliar">Auxiliar</option>
                 <option value="administrador">Administrador</option>
               </select>
             </div>
-            <div className="form-group"><label>Teléfono</label><input value={newUsuario.telefono} onChange={(e) => setNewUsuario({ ...newUsuario, telefono: e.target.value })} /></div>
-            <div className="form-group"><label>Dirección</label><textarea value={newUsuario.direccion} onChange={(e) => setNewUsuario({ ...newUsuario, direccion: e.target.value })} /></div>
+            <div className="form-group">
+              <label htmlFor="telefono">Teléfono</label>
+              <input id="telefono" value={newUsuario.telefono} onChange={(e) => setNewUsuario({ ...newUsuario, telefono: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label htmlFor="direccion">Dirección</label>
+              <textarea id="direccion" value={newUsuario.direccion} onChange={(e) => setNewUsuario({ ...newUsuario, direccion: e.target.value })} />
+            </div>
             <button type="submit" className="btn btn-primary">{editingUsuarioId ? 'Actualizar Usuario' : 'Guardar Usuario'}</button>
           </form>
         </div>
@@ -322,9 +353,9 @@ export default function AdminUsuarios() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEditUsuario(usuario)}>✏️ Editar</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => handleToggle(usuario.id)}>{usuario.activo ? '⊘ Desactivar' : '✓ Activar'}</button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete(usuario.id)}>🗑️ Eliminar</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleEditUsuario(usuario)}>✏️ Editar</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleToggle(usuario.id)}>{usuario.activo ? '⊘ Desactivar' : '✓ Activar'}</button>
+              <button type="button" className="btn btn-sm btn-danger" onClick={() => handleDelete(usuario.id)}>🗑️ Eliminar</button>
             </div>
           </div>
         ))}

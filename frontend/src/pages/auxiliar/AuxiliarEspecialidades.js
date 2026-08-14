@@ -10,7 +10,6 @@ export default function AuxiliarEspecialidades() {
   const [success, setSuccess] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState('Todos');
-  const limite = 100;
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEspecialidadId, setEditingEspecialidadId] = useState(null);
   const [newEspecialidad, setNewEspecialidad] = useState({ nombre: '', descripcion: '' });
@@ -95,7 +94,7 @@ export default function AuxiliarEspecialidades() {
     <div className="admin-page">
       <div className="page-header">
         <h1>Auxiliar - Especialidades</h1>
-        <button className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
+        <button type="button" className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
           {isFormOpen ? 'Cancelar' : '➕ Nueva Especialidad'}
         </button>
       </div>
@@ -107,8 +106,8 @@ export default function AuxiliarEspecialidades() {
         <div className="form-container">
           <h2>{editingEspecialidadId ? 'Editar Especialidad' : 'Crear Especialidad'}</h2>
           <form onSubmit={handleCrear}>
-            <div className="form-group"><label>Nombre</label><input value={newEspecialidad.nombre} onChange={(e) => setNewEspecialidad({ ...newEspecialidad, nombre: e.target.value })} required /></div>
-            <div className="form-group"><label>Descripción</label><textarea value={newEspecialidad.descripcion} onChange={(e) => setNewEspecialidad({ ...newEspecialidad, descripcion: e.target.value })} /></div>
+            <div className="form-group"><label htmlFor="especialidad_nombre">Nombre</label><input id="especialidad_nombre" value={newEspecialidad.nombre} onChange={(e) => setNewEspecialidad({ ...newEspecialidad, nombre: e.target.value })} required /></div>
+            <div className="form-group"><label htmlFor="especialidad_descripcion">Descripción</label><textarea id="especialidad_descripcion" value={newEspecialidad.descripcion} onChange={(e) => setNewEspecialidad({ ...newEspecialidad, descripcion: e.target.value })} /></div>
             <button type="submit" className="btn btn-primary">{editingEspecialidadId ? 'Actualizar' : 'Guardar'}</button>
           </form>
         </div>
@@ -123,6 +122,7 @@ export default function AuxiliarEspecialidades() {
           className="search-input"
         />
       <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
@@ -130,6 +130,7 @@ export default function AuxiliarEspecialidades() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
           onClick={() => setFiltro('True')}
         >
@@ -137,6 +138,7 @@ export default function AuxiliarEspecialidades() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
           onClick={() => setFiltro('False')}
         >
@@ -155,8 +157,8 @@ export default function AuxiliarEspecialidades() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(especialidad)}>✏️ Editar</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => handleToggle(especialidad.id)}>{especialidad.activo ? '⊘ Desactivar' : '✓ Activar'}</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleEdit(especialidad)}>✏️ Editar</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleToggle(especialidad.id)}>{especialidad.activo ? '⊘ Desactivar' : '✓ Activar'}</button>
             </div>
           </div>
         ))}

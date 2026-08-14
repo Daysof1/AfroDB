@@ -121,7 +121,6 @@ const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 const BLOCKED_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1']);
 const PRIVATE_IP_REGEX = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/;
 const SANITIZE_REGEX = /[^a-zA-Z0-9_-]/g;
-const LEADING_TRAILING_UNDERSCORE_REGEX = /^_+|_+$/g;
 
 const validateImageUrl = (urlStr) => {
   if (!urlStr || typeof urlStr !== 'string') {
@@ -175,12 +174,25 @@ const validateImageUrl = (urlStr) => {
   return parsedUrl;
 };
 
+// ==========================================
+// FUNCIÓN PARA SANITIZAR NOMBRES DE ARCHIVO
+// ==========================================
+
 const sanitizeFileName = (nameHint) => {
   if (!nameHint) return 'imagen';
   
-  let safe = String(nameHint)
-    .replace(SANITIZE_REGEX, '_')
-    .replace(LEADING_TRAILING_UNDERSCORE_REGEX, '');
+  // Reemplazar caracteres no permitidos por _
+  let safe = String(nameHint).replace(/[^a-zA-Z0-9_-]/g, '_');
+  
+  // Eliminar _ del inicio
+  while (safe.startsWith('_')) {
+    safe = safe.substring(1);
+  }
+  
+  // Eliminar _ del final
+  while (safe.endsWith('_')) {
+    safe = safe.substring(0, safe.length - 1);
+  }
   
   return safe || 'imagen';
 };

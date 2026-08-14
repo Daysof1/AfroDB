@@ -35,8 +35,8 @@ export default function AdminCategorias() {
 
   const filtered = categorias.filter((cat) => {
     const coincideBusqueda =
-      (cat.nombre && cat.nombre.toLowerCase().includes(lowercasedFilter)) ||
-      (cat.descripcion && cat.descripcion.toLowerCase().includes(lowercasedFilter));
+      cat.nombre?.toLowerCase().includes(lowercasedFilter) || 
+      cat.descripcion?.toLowerCase().includes(lowercasedFilter);
 
     const coincideEstado =
       filtro === 'Todos' ||
@@ -120,6 +120,7 @@ export default function AdminCategorias() {
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative' }}>
           <button 
+            type="button"
             className="btn btn-primary"
             onClick={() => setShowExportOptions(!showExportOptions)}
           >
@@ -139,6 +140,7 @@ export default function AdminCategorias() {
               marginTop: '5px'
             }}>
               <button 
+                type="button"
                 className="btn btn-sm"
                 onClick={() => {
                   exportarCategoriasAPDF(filteredCategorias);
@@ -160,6 +162,7 @@ export default function AdminCategorias() {
                 📄 Exportar a PDF
               </button>
               <button 
+                type="button"
                 className="btn btn-sm"
                 onClick={async () => {
                   await exportarCategoriasAExcel(filteredCategorias);
@@ -183,7 +186,7 @@ export default function AdminCategorias() {
           )}
         </div>
 
-        <button className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
+        <button type="button" className="btn btn-primary" onClick={() => (isFormOpen ? handleCancelForm() : setIsFormOpen(true))}>
           {isFormOpen ? 'Cancelar' : '➕ Nueva Categoría'}
         </button>
       </div>
@@ -199,12 +202,14 @@ export default function AdminCategorias() {
         />
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todas ({categorias.length})
         </button>
          <button
+         type="button"
           className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
           onClick={() => setFiltro('True')}
         >
@@ -212,6 +217,7 @@ export default function AdminCategorias() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
           onClick={() => setFiltro('False')}
         >
@@ -227,8 +233,9 @@ export default function AdminCategorias() {
           <h2>{editingCategoriaId ? 'Editar Categoría' : 'Agregar Nueva Categoría'}</h2>
           <form onSubmit={handleCrearCategoria}>
             <div className="form-group">
-              <label>Nombre de la Categoría</label>
+              <label htmlFor="categoria-nombre">Nombre de la Categoría</label>
               <input
+              id="categoria-nombre"
                 type="text"
                 placeholder="Nombre"
                 value={newCategoria.nombre}
@@ -237,8 +244,9 @@ export default function AdminCategorias() {
               />
             </div>
             <div className="form-group">
-              <label>Descripción</label>
+              <label htmlFor="descripcion">Descripción</label>
               <textarea
+                id="descripcion"
                 placeholder="Descripción de la categoría"
                 rows="3"
                 value={newCategoria.descripcion}
@@ -246,8 +254,9 @@ export default function AdminCategorias() {
               ></textarea>
             </div>
             <div className="form-group">
-              <label>Tipo</label>
+              <label htmlFor="tipo">Tipo</label>
               <select
+                id="tipo"
                 value={newCategoria.tipo}
                 onChange={(e) => setNewCategoria({ ...newCategoria, tipo: e.target.value })}
               >
@@ -274,9 +283,9 @@ export default function AdminCategorias() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEditCategoria(cat)}>✏️ Editar</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => handleToggleCategoria(cat.id)}>{cat.activo ? '⊘ Desactivar' : '✓ Activar'}</button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleEliminarCategoria(cat.id)}>🗑️ Eliminar</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleEditCategoria(cat)}>✏️ Editar</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleToggleCategoria(cat.id)}>{cat.activo ? '⊘ Desactivar' : '✓ Activar'}</button>
+              <button type="button" className="btn btn-sm btn-danger" onClick={() => handleEliminarCategoria(cat.id)}>🗑️ Eliminar</button>
             </div>
           </div>
         ))}

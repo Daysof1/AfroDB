@@ -7,6 +7,23 @@ import Select from "react-select";
 import '../Cliente.css';
 import { apiRequest } from '../../api/client.js';
 
+const getBadgeClass = (estado) => {
+  const estadoLower = (estado || '').toLowerCase();
+  
+  switch (estadoLower) {
+    case 'pendiente':
+      return 'badge-warning';
+    case 'confirmada':
+      return 'badge-info';
+    case 'completada':
+      return 'badge-success';
+    case 'cancelada':
+      return 'badge-danger';
+    default:
+      return 'badge-secondary';
+  }
+};
+
 const normalizarTexto = (texto = '') =>
   String(texto)
     .normalize('NFD')
@@ -94,23 +111,6 @@ export default function ClienteCitas() {
     return map;
   }, [profesionales]);
 
-  const toggleServicio = (servicioId) => {
-    setFormData((prev) => {
-      const yaSeleccionado = prev.servicioIds.includes(servicioId);
-      if (yaSeleccionado) {
-        return {
-          ...prev,
-          servicioIds: prev.servicioIds.filter((id) => id !== servicioId),
-        };
-      }
-
-      return {
-        ...prev,
-        servicioIds: [...prev.servicioIds, servicioId],
-      };
-    });
-  };
-
   const loadData = async () => {
     try {
       setLoading(true);
@@ -196,15 +196,6 @@ export default function ClienteCitas() {
     location.state,
     navigate,
   ]);
-
-  const formatEstado = (estado) => {
-    const value = (estado || '').toLowerCase();
-    if (value === 'confirmada') return 'Confirmada';
-    if (value === 'pendiente') return 'Pendiente';
-    if (value === 'cancelada') return 'Cancelada';
-    if (value === 'completada') return 'Completada';
-    return estado || 'Sin estado';
-  };
 
   const handleCrearCita = async (e) => {
     e.preventDefault();
@@ -306,7 +297,7 @@ export default function ClienteCitas() {
     <div className="cliente-page">
       <div className="page-header">
         <h1><FontAwesomeIcon icon={faCalendar} /> Mis Citas</h1>
-        <button className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
+        <button type="button" className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
           {isFormOpen ? 'Cancelar' : '➕ Agendar Nueva Cita'}
         </button>
       </div>
@@ -319,8 +310,9 @@ export default function ClienteCitas() {
           <h2>Agendar Nueva Cita</h2>
           <form onSubmit={handleCrearCita}>
             <div className="form-group">
-              <label>Profesional</label>
+              <label htmlFor="profesional">Profesional</label>
               <Select
+                id="profesional"
                 value={
                   profesionales
                     .map((prof)=>({
@@ -435,9 +427,10 @@ export default function ClienteCitas() {
               )}
             </div>
             <div className="form-group">
-              <label>Servicios</label>
+              <label htmlFor="servicios">Servicios</label>
               <Select
                 isMulti
+                id="servicios"
                 placeholder="Buscar servicios..."
                 value={
                 servicios
@@ -470,17 +463,18 @@ export default function ClienteCitas() {
               <small>{formData.servicioIds.length} servicio(s) seleccionado(s)</small>
             </div>
             <div className="form-group">
-              <label>Fecha</label>
-              <input type="date" value={formData.fecha} onChange={(e) => setFormData({ ...formData, fecha: e.target.value })} required />
+              <label htmlFor="fecha">Fecha</label>
+              <input type="date" id="fecha" value={formData.fecha} onChange={(e) => setFormData({ ...formData, fecha: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label>Hora</label>
-              <input type="time" value={formData.hora} onChange={(e) => setFormData({ ...formData, hora: e.target.value })} required />
+              <label htmlFor="hora">Hora</label>
+              <input type="time" id="hora" value={formData.hora} onChange={(e) => setFormData({ ...formData, hora: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label>Notas</label>
+              <label htmlFor="notas">Notas</label>
               <textarea
                 className="form-input"
+                id="notas"
                 value={formData.notas || ''}
                 onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
                 placeholder="Agrega alguna nota para el profesional o para la cita."
@@ -502,12 +496,14 @@ export default function ClienteCitas() {
         />
         
       <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todas ({citas.length})
         </button>
          <button
+          type="button"
           className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
           onClick={() => setFiltro('Pendiente')}
         >
@@ -515,6 +511,7 @@ export default function ClienteCitas() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Confirmada' ? 'active' : ''}`}
           onClick={() => setFiltro('Confirmada')}
         >
@@ -522,6 +519,7 @@ export default function ClienteCitas() {
         </button>
 
          <button
+          type="button"
           className={`filter-btn ${filtro === 'Completada' ? 'active' : ''}`}
           onClick={() => setFiltro('Completada')}
         >
@@ -529,6 +527,7 @@ export default function ClienteCitas() {
         </button>
 
          <button
+          type="button"
           className={`filter-btn ${filtro === 'Cancelada' ? 'active' : ''}`}
           onClick={() => setFiltro('Cancelada')}
         >
@@ -547,21 +546,9 @@ export default function ClienteCitas() {
               <div key={cita.id} className="cita-card">
                 <div className="cita-header">
                   <h3>{(cita.Servicios || []).map((s) => s.nombre).join(', ') || 'Cita'}</h3>
-                  <span
-                className={`badge ${
-                  (cita.estado || '').toLowerCase() === 'pendiente'
-                  ? 'badge-warning'
-                  : (cita.estado || '').toLowerCase() === 'confirmada'
-                  ? 'badge-info'
-                  : (cita.estado || '').toLowerCase() === 'completada'
-                  ? 'badge-success'
-                  : (cita.estado || '').toLowerCase() === 'cancelada'
-                  ? 'badge-danger'
-                  : 'badge-secondary'
-                }`}
-              >
-              {cita.estado}
-              </span>
+                  <span className={`badge ${getBadgeClass(cita.estado)}`}>
+                    {cita.estado}
+                  </span>
                 </div>
 
                 <div className="cita-info">
@@ -595,6 +582,7 @@ export default function ClienteCitas() {
                 <div className="cita-actions">
                   {(['pendiente', 'confirmada', 'cancelada'].includes((cita.estado || '').toLowerCase())) && (
                     <button
+                      type="button"
                       className="btn btn-sm btn-secondary"
                       onClick={() => (reprogramandoId === cita.id ? cancelarReprogramacion() : abrirReprogramacion(cita))}
                     >
@@ -602,35 +590,37 @@ export default function ClienteCitas() {
                     </button>
                   )}
                   {(['pendiente', 'confirmada'].includes((cita.estado || '').toLowerCase())) && (
-                    <button className="btn btn-sm btn-danger" onClick={() => handleCancelarCita(cita.id)}>Cancelar</button>
+                    <button type="button" className="btn btn-sm btn-danger" onClick={() => handleCancelarCita(cita.id)}>Cancelar</button>
                   )}
                 </div>
 
                 {reprogramandoId === cita.id && (['pendiente', 'confirmada', 'cancelada'].includes((cita.estado || '').toLowerCase())) && (
                   <div className="cita-reprogramar-box">
                     <div className="form-group">
-                      <label>Nueva fecha</label>
+                      <label htmlFor="nueva-fecha">Nueva fecha</label>
                       <input
                         type="date"
+                        id="nueva-fecha"
                         value={reprogramacionData.fecha}
                         onChange={(e) => setReprogramacionData({ ...reprogramacionData, fecha: e.target.value })}
                         required
                       />
                     </div>
                     <div className="form-group">
-                      <label>Nueva hora</label>
+                      <label htmlFor="nueva-hora">Nueva hora</label>
                       <input
                         type="time"
+                        id="nueva-hora"
                         value={reprogramacionData.hora}
                         onChange={(e) => setReprogramacionData({ ...reprogramacionData, hora: e.target.value })}
                         required
                       />
                     </div>
                     <div className="cita-reprogramar-actions">
-                      <button className="btn btn-sm btn-primary" onClick={() => handleReprogramarCita(cita.id)}>
+                      <button type="button" className="btn btn-sm btn-primary" onClick={() => handleReprogramarCita(cita.id)}>
                         Guardar nueva fecha
                       </button>
-                      <button className="btn btn-sm btn-secondary" onClick={cancelarReprogramacion}>
+                      <button type="button" className="btn btn-sm btn-secondary" onClick={cancelarReprogramacion}>
                         Cancelar
                       </button>
                     </div>
@@ -644,4 +634,3 @@ export default function ClienteCitas() {
     </div>
   );
 }
-

@@ -1,19 +1,42 @@
-// Página: AdminCitas.js. gesti?n de citas desde administraci?n.
+// Página: AdminCitas.js. gestión de citas desde administración.
 import { useEffect, useState } from 'react';
 import '../Admin.css';
 import { apiRequest } from '../../api/client.js';
 import { exportarCitasAPDF, exportarCitasAExcel } from '../../utils/exportUtils.js';
 
+// ==========================================
+// FUNCIÓN AUXILIAR (fuera del componente)
+// ==========================================
+
+const getBadgeClass = (estado) => {
+  const estadoLower = (estado || '').toLowerCase();
+  
+  switch (estadoLower) {
+    case 'pendiente':
+      return 'badge-warning';
+    case 'confirmada':
+      return 'badge-info';
+    case 'completada':
+      return 'badge-success';
+    case 'cancelada':
+      return 'badge-danger';
+    default:
+      return 'badge-secondary';
+  }
+};
+
+// ==========================================
+// COMPONENTE PRINCIPAL
+// ==========================================
+
 // Renderiza la vista principal de este componente.
 export default function AdminCitas() {
   const [citas, setCitas] = useState([]);
-  const [servicios, setServicios] = useState([]);
   const [profesionales, setProfesionales] = useState([]);
   const [busqueda, setBusqueda] = useState('');
-
   const [filtro, setFiltro] = useState('Todos');
   const [showExportOptions, setShowExportOptions] = useState(false);
-  const [error, setError] = useState('');  //este no se elimina.
+  const [error, setError] = useState('');
 
   // Mapa de profesionales por ID
   const profesionalesPorId = profesionales.reduce((map, prof) => {
@@ -34,28 +57,23 @@ export default function AdminCitas() {
       
       console.log('Citas iniciales:', citasIniciales);
       
-  // Cargar servicios para cada cita usando el endpoint /cliente/citas/:id
-const citasConServicios = await Promise.all(
-  citasIniciales.map(async (cita) => {
-    try {
-      console.log('Cargando detalles de la cita.');
-
-      const citaCompleta = await apiRequest(
-        `/cliente/citas/${cita.id}`
+      // Cargar servicios para cada cita usando el endpoint /cliente/citas/:id
+      const citasConServicios = await Promise.all(
+        citasIniciales.map(async (cita) => {
+          try {
+            console.log('Cargando detalles de la cita.');
+            const citaCompleta = await apiRequest(`/cliente/citas/${cita.id}`);
+            console.log('Detalles de la cita cargados correctamente.');
+            return {
+              ...cita,
+              Servicios: citaCompleta?.data?.cita?.Servicios || []
+            };
+          } catch (err) {
+            console.warn('No se pudieron cargar los servicios de la cita:', err.message || err);
+            return cita;
+          }
+        })
       );
-
-      console.log('Detalles de la cita cargados correctamente.');
-
-      return {
-        ...cita,
-        Servicios: citaCompleta?.data?.cita?.Servicios || []
-      };
-    } catch (err) {
-      console.warn('No se pudieron cargar los servicios de la cita.');
-      return cita;
-    }
-  })
-);
       
       console.log('Citas con servicios:', citasConServicios);
       setCitas(citasConServicios);
@@ -69,34 +87,32 @@ const citasConServicios = await Promise.all(
   }, []);
 
   const citasFiltradas = citas.filter((cita) => {
-  const textoBusqueda = busqueda.toLowerCase().trim();
+    const textoBusqueda = busqueda.toLowerCase().trim();
 
-  const coincideBusqueda =
-    !textoBusqueda ||
-    (cita?.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
-    (cita?.profesional?.nombre || '').toLowerCase().includes(textoBusqueda) ||
-    (cita?.estado || '').toLowerCase().includes(textoBusqueda) ||
-    (cita.fecha || '').toLowerCase().includes(textoBusqueda) ||
-    (cita.hora || '').toLowerCase().includes(textoBusqueda) ||
-    (cita.notas || '').toLowerCase().includes(textoBusqueda);
+    const coincideBusqueda =
+      !textoBusqueda ||
+      (cita?.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (cita?.profesional?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (cita?.estado || '').toLowerCase().includes(textoBusqueda) ||
+      (cita.fecha || '').toLowerCase().includes(textoBusqueda) ||
+      (cita.hora || '').toLowerCase().includes(textoBusqueda) ||
+      (cita.notas || '').toLowerCase().includes(textoBusqueda);
 
-  const coincideEstado =
-    filtro === 'Todos' ||
-    (cita.estado || '').toLowerCase() === filtro.toLowerCase();
+    const coincideEstado =
+      filtro === 'Todos' ||
+      (cita.estado || '').toLowerCase() === filtro.toLowerCase();
 
-  return coincideBusqueda && coincideEstado;
-});
+    return coincideBusqueda && coincideEstado;
+  });
 
   // Función para obtener todos los profesionales únicos de una cita
   const getProfesionalesUnicos = (cita) => {
     const profesionalesSet = new Set();
     
-    // Agregar profesional principal si existe
     if (cita?.profesional?.nombre) {
       profesionalesSet.add(cita.profesional.nombre);
     }
     
-    // Agregar profesionales de cada servicio
     if (Array.isArray(cita.Servicios)) {
       cita.Servicios.forEach(servicio => {
         const profesionalId = servicio?.profesionalId || servicio?.CitaServicio?.profesionalId;
@@ -128,72 +144,74 @@ const citasConServicios = await Promise.all(
         <h1>Gestión de Citas</h1>
 
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative' }}>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => setShowExportOptions(!showExportOptions)}
-              >
-                📊 Exportar
-              </button>
-              {showExportOptions && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  backgroundColor: '#fff',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  zIndex: 10,
-                  minWidth: '150px',
-                  marginTop: '5px'
-                }}>
-                  <button 
-                    className="btn btn-sm"
-                    onClick={() => {
-                      exportarCitasAPDF(citasFiltradas);
-                      setShowExportOptions(false);
-                    }}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '10px 15px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      cursor: 'pointer',
-                      borderBottom: '1px solid #eee'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  >
-                    📄 Exportar a PDF
-                  </button>
-                  <button 
-                    className="btn btn-sm"
-                    onClick={async () => {
-                      await exportarCitasAExcel(citasFiltradas);
-                      setShowExportOptions(false);
-                    }}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '10px 15px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  >
-                    📊 Exportar a Excel
-                  </button>
-                </div>
-              )}
-            </div>
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setShowExportOptions(!showExportOptions)}
+            >
+              📊 Exportar
+            </button>
+            {showExportOptions && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                backgroundColor: '#fff',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                zIndex: 10,
+                minWidth: '150px',
+                marginTop: '5px'
+              }}>
+                <button 
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => {
+                    exportarCitasAPDF(citasFiltradas);
+                    setShowExportOptions(false);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 15px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #eee'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  📄 Exportar a PDF
+                </button>
+                <button 
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={async () => {
+                    await exportarCitasAExcel(citasFiltradas);
+                    setShowExportOptions(false);
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 15px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  📊 Exportar a Excel
+                </button>
+              </div>
+            )}
           </div>
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -207,13 +225,16 @@ const citasConServicios = await Promise.all(
           className="search-input"
         />
         
-      <button
+        <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todas ({citas.length})
         </button>
-         <button
+        
+        <button
+          type="button"
           className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
           onClick={() => setFiltro('Pendiente')}
         >
@@ -221,20 +242,23 @@ const citasConServicios = await Promise.all(
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Confirmada' ? 'active' : ''}`}
           onClick={() => setFiltro('Confirmada')}
         >
           Confirmadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'confirmada').length})
         </button>
 
-         <button
+        <button
+          type="button"
           className={`filter-btn ${filtro === 'Completada' ? 'active' : ''}`}
           onClick={() => setFiltro('Completada')}
         >
           Completadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'completada').length})
         </button>
 
-         <button
+        <button
+          type="button"
           className={`filter-btn ${filtro === 'Cancelada' ? 'active' : ''}`}
           onClick={() => setFiltro('Cancelada')}
         >
@@ -248,29 +272,23 @@ const citasConServicios = await Promise.all(
             <p>No hay citas en esta categoría</p>
           </div>
         ) : (
-       <div className="citas-grid">
+          <div className="citas-grid">
             {citasFiltradas.map((cita) => (
               <div key={cita.id} className="cita-card-prof">
                 <div className="cita-header-prof">
                   <h3>{cita?.cliente?.nombre || 'Cliente'}</h3>
-                  <span
-                className={`badge ${
-                  (cita.estado || '').toLowerCase() === 'pendiente'
-                  ? 'badge-warning'
-                  : (cita.estado || '').toLowerCase() === 'confirmada'
-                  ? 'badge-info'
-                  : (cita.estado || '').toLowerCase() === 'completada'
-                  ? 'badge-success'
-                  : (cita.estado || '').toLowerCase() === 'cancelada'
-                  ? 'badge-danger'
-                  : 'badge-secondary'
-                }`}
-              >
-              {cita.estado}
-              </span>
+                  <span className={`badge ${getBadgeClass(cita.estado)}`}>
+                    {cita.estado}
+                  </span>
                 </div>
+                
                 <div className="cita-info-prof">
-                  <p><strong>Servicio:</strong> {Array.isArray(cita.Servicios) && cita.Servicios.length > 0 ? cita.Servicios.map((s) => s.nombre).join(', ') : 'Sin servicios especificados'}</p>
+                  <p>
+                    <strong>Servicio:</strong>{' '}
+                    {Array.isArray(cita.Servicios) && cita.Servicios.length > 0 
+                      ? cita.Servicios.map((s) => s.nombre).join(', ') 
+                      : 'Sin servicios especificados'}
+                  </p>
                   <p><strong>Profesional:</strong> {getProfesionalesUnicos(cita)}</p>
                   <p><strong>Fecha:</strong> {cita.fecha}</p>
                   <p><strong>Hora:</strong> {cita.hora}</p>
@@ -280,16 +298,18 @@ const citasConServicios = await Promise.all(
                   <p><strong>Teléfono:</strong> {cita?.cliente?.telefono || 'N/A'}</p>
                 </div>
 
-            <div className="card-actions">
-             {(cita.estado || '').toLowerCase() === 'pendiente' && (
+                <div className="card-actions">
+                  {(cita.estado || '').toLowerCase() === 'pendiente' && (
                     <>
                       <button 
+                        type="button"
                         className="btn btn-sm btn-primary"
                         onClick={() => handleActualizarEstado(cita.id, 'Confirmada')}
                       >
                         ✅ Confirmar
                       </button>
                       <button 
+                        type="button"
                         className="btn btn-sm btn-danger"
                         onClick={() => handleActualizarEstado(cita.id, 'Cancelada')}
                       >
@@ -298,7 +318,11 @@ const citasConServicios = await Promise.all(
                     </>
                   )}
                   {(cita.estado || '').toLowerCase() === 'confirmada' && (
-                    <button className="btn btn-sm btn-secondary" onClick={() => handleActualizarEstado(cita.id, 'Completada')}>
+                    <button 
+                      type="button"
+                      className="btn btn-sm btn-secondary" 
+                      onClick={() => handleActualizarEstado(cita.id, 'Completada')}
+                    >
                       ✓ Completada
                     </button>
                   )}
@@ -311,4 +335,3 @@ const citasConServicios = await Promise.all(
     </div>
   );
 }
-

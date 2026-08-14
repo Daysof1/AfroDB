@@ -1,13 +1,11 @@
 // Página: AdminDashboard.js. panel administrativo general.
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCalendar,
   faBox,
   faBell,
-  faChalkboard,
   faShoppingCart,
   faTags,
   faSitemap,
@@ -87,7 +85,7 @@ export default function AdminDashboard() {
 
         const actividadProductos = productos.slice(0, 5).map((producto) => ({
           tipo: 'Producto',
-          mensaje: `Producto registrado: ${producto.nombre || `#${producto.id}`}`,
+          mensaje: `Producto registrado: ${producto.nombre || '#' + producto.id}`,
           fecha: producto.createdAt || producto.updatedAt || null,
         }));
 
@@ -200,10 +198,10 @@ export default function AdminDashboard() {
       <div className="admin-section">
         <h2>Acciones Rápidas</h2>
         <div className="action-buttons">
-          <button className="action-btn btn-primary" onClick={() => navigate('/admin/productos')}>➕ Nuevo Producto</button>
-          <button className="action-btn btn-primary" onClick={() => navigate('/admin/servicios')}>➕ Nuevo Servicio</button>
-          <button className="action-btn btn-secondary" onClick={() => navigate('/admin/citas')}>📋 Ver citas</button>
-          <button className="action-btn btn-secondary" onClick={() => navigate('/admin/usuarios')}>⚙️ Ver usuarios</button>
+          <button type="button" className="action-btn btn-primary" onClick={() => navigate('/admin/productos')}>➕ Nuevo Producto</button>
+          <button type="button" className="action-btn btn-primary" onClick={() => navigate('/admin/servicios')}>➕ Nuevo Servicio</button>
+          <button type="button" className="action-btn btn-secondary" onClick={() => navigate('/admin/citas')}>📋 Ver citas</button>
+          <button type="button" className="action-btn btn-secondary" onClick={() => navigate('/admin/usuarios')}>⚙️ Ver usuarios</button>
         </div>
       </div>
 

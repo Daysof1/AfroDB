@@ -252,7 +252,7 @@ export default function AdminProfesionales() {
               >
                 {profesional.activo ? '⊘ Desactivar' : '✓ Activar'}
               </button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete(profesional.id)}>🗑️ Eliminar</button>
+              <button type="button" className="btn btn-sm btn-danger" onClick={() => handleDelete(profesional.id)}>🗑️ Eliminar</button>
             </div>
           </div>
         ))}

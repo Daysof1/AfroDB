@@ -234,6 +234,7 @@ export default function AuxiliarProductos() {
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <button 
+              type="button"
               className="btn btn-primary"
               onClick={() => setShowExportOptions(!showExportOptions)}
             >
@@ -253,6 +254,7 @@ export default function AuxiliarProductos() {
                 marginTop: '5px'
               }}>
                 <button 
+                  type="button"
                   className="btn btn-sm"
                   onClick={() => {
                     exportarProductosAPDF(productosFiltrados);
@@ -274,6 +276,7 @@ export default function AuxiliarProductos() {
                   📄 Exportar a PDF
                 </button>
                 <button 
+                  type="button"
                   className="btn btn-sm"
                   onClick={async () => {
                     await exportarProductosAExcel(productosFiltrados);
@@ -298,6 +301,7 @@ export default function AuxiliarProductos() {
           </div>
 
         <button
+          type="button"
           className="btn btn-primary"
           onClick={() => {
             if (isFormOpen) {
@@ -366,12 +370,14 @@ export default function AuxiliarProductos() {
         />
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todos ({productos.length})
         </button>
          <button
+          type="button"
           className={`filter-btn ${filtro === 'True' ? 'active' : ''}`}
           onClick={() => setFiltro('True')}
         >
@@ -379,6 +385,7 @@ export default function AuxiliarProductos() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'False' ? 'active' : ''}`}
           onClick={() => setFiltro('False')}
         >
@@ -391,24 +398,25 @@ export default function AuxiliarProductos() {
           <h2>{editingProductId ? 'Editar Producto' : 'Agregar Nuevo Producto'}</h2>
           <form onSubmit={handleAddProduct}>
             <div className="form-group">
-              <label>Nombre</label>
-              <input value={newProduct.nombre} onChange={(e) => setNewProduct({ ...newProduct, nombre: e.target.value })} required />
+              <label htmlFor="producto-nombre">Nombre</label>
+              <input id="producto-nombre" value={newProduct.nombre} onChange={(e) => setNewProduct({ ...newProduct, nombre: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label>Descripción</label>
-              <textarea value={newProduct.descripcion} onChange={(e) => setNewProduct({ ...newProduct, descripcion: e.target.value })} />
+              <label htmlFor="producto-descripcion">Descripción</label>
+              <textarea id="producto-descripcion" value={newProduct.descripcion} onChange={(e) => setNewProduct({ ...newProduct, descripcion: e.target.value })} />
             </div>
             <div className="form-group">
-              <label>Precio</label>
-              <input type="number" min="1" value={newProduct.precio} onChange={(e) => setNewProduct({ ...newProduct, precio: e.target.value })} required />
+              <label htmlFor="producto-precio">Precio</label>
+              <input id="producto-precio" type="number" min="1" value={newProduct.precio} onChange={(e) => setNewProduct({ ...newProduct, precio: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label>Stock</label>
-              <input type="number" min="0" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })} required />
+              <label htmlFor="producto-stock">Stock</label>
+              <input id="producto-stock" type="number" min="0" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label>Categoría</label>
+              <label htmlFor="producto-categoria">Categoría</label>
               <Select
+                id="producto-categoria"
                 value={
                   categorias.map((categoria) => ({
                     value: categoria.id,
@@ -446,9 +454,10 @@ export default function AuxiliarProductos() {
 
 <div className="form-group">
 
-  <label>Subcategoría</label>
+  <label htmlFor="producto-subcategoria">Subcategoría</label>
 
   <Select
+    id="producto-subcategoria"
     value={
       subcategorias
         .map((subcategoria) => ({
@@ -483,8 +492,9 @@ export default function AuxiliarProductos() {
   />
             </div>
             <div className="form-group">
-              <label>URL de imagen</label>
+              <label htmlFor="producto-imagen">URL de imagen</label>
               <input
+                id="producto-imagen"
                 type="url"
                 value={newProduct.imagenUrl}
                 onChange={(e) => setNewProduct({ ...newProduct, imagenUrl: e.target.value })}
@@ -529,8 +539,9 @@ export default function AuxiliarProductos() {
               </span>
             </p>
             <div className="card-actions">
-              <button className="btn btn-sm btn-secondary" onClick={() => handleEditProduct(producto)}>✏️ Editar</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleEditProduct(producto)}>✏️ Editar</button>
               <button
+                type="button"
                 className={`btn btn-sm ${producto.activo ? 'btn-warning' : 'btn-success'}`}
                 onClick={() => handleToggleProducto(producto.id, producto.activo)}
                 title={producto.activo ? 'Desactivar' : 'Activar'}
@@ -551,6 +562,7 @@ export default function AuxiliarProductos() {
       {totalPaginas > 1 && (
         <div className="pagination">
           <button
+            type="button"
             disabled={pagina === 1}
             onClick={() => setPagina(pagina - 1)}
             className="btn btn-secondary"
@@ -561,6 +573,7 @@ export default function AuxiliarProductos() {
             Página {pagina} de {totalPaginas}
           </span>
           <button
+            type="button"
             disabled={pagina === totalPaginas}
             onClick={() => setPagina(pagina + 1)}
             className="btn btn-secondary"

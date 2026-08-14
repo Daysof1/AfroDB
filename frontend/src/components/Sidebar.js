@@ -101,7 +101,13 @@ export default function Sidebar({ userRole, onToggle }) {
 
   return (
     <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
-      <button className="sidebar-toggle" onClick={toggleSidebar} title={isOpen ? 'Cerrar menú' : 'Abrir menú'}>
+      <button 
+        type="button" 
+        className="sidebar-toggle" 
+        onClick={toggleSidebar} 
+        title={isOpen ? 'Cerrar menú' : 'Abrir menú'}
+        aria-label={isOpen ? 'Cerrar menú' : 'Abrir menú'}
+      >
         {isOpen ? '✕' : '☰'}
       </button>
 
@@ -110,7 +116,7 @@ export default function Sidebar({ userRole, onToggle }) {
         
         <ul className="sidebar-links">
           {links.map((link, index) => (
-            <li key={index}>
+            <li key={link.href || link.label}>
               <Link to={link.href} title={link.label} className="sidebar-link">
                 <span className="icon">{renderIcon(link.label, link.icon)}</span>
                 <span className="label">{link.label}</span>

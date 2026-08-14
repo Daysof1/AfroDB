@@ -14,6 +14,31 @@ const normalizarTexto = (texto = '') =>
     .trim()
     .toLowerCase();
 
+// ==========================================
+// FUNCIÓN AUXILIAR
+// ==========================================
+
+const getBadgeClass = (estado) => {
+  const estadoLower = (estado || '').toLowerCase();
+  
+  switch (estadoLower) {
+    case 'pendiente':
+      return 'badge-warning';
+    case 'confirmada':
+      return 'badge-info';
+    case 'completada':
+      return 'badge-success';
+    case 'cancelada':
+      return 'badge-danger';
+    default:
+      return 'badge-secondary';
+  }
+};
+
+// ==========================================
+// COMPONENTE PRINCIPAL
+// ==========================================
+
 // Renderiza la vista principal de este componente.
 export default function AdminMisCitas() {
   const location = useLocation();
@@ -29,7 +54,6 @@ export default function AdminMisCitas() {
   const [error, setError] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [busqueda, setBusqueda] = useState('');
-  
   const [filtro, setFiltro] = useState('Todos');
 
   const servicioPreseleccionadoId = useMemo(() => {
@@ -94,23 +118,6 @@ export default function AdminMisCitas() {
     return map;
   }, [profesionales]);
 
-  const toggleServicio = (servicioId) => {
-    setFormData((prev) => {
-      const yaSeleccionado = prev.servicioIds.includes(servicioId);
-      if (yaSeleccionado) {
-        return {
-          ...prev,
-          servicioIds: prev.servicioIds.filter((id) => id !== servicioId),
-        };
-      }
-
-      return {
-        ...prev,
-        servicioIds: [...prev.servicioIds, servicioId],
-      };
-    });
-  };
-
   const loadData = async () => {
     try {
       setLoading(true);
@@ -125,9 +132,6 @@ export default function AdminMisCitas() {
       const profesionalesData = profesionalesRes?.data?.profesionales || [];
       setProfesionales(profesionalesData);
 
-      // CORRECCIÓN DE SEGURIDAD: Se ha eliminado el console.log de datos del servidor.
-      // console.log('Citas iniciales:', citasIniciales); // <--- ELIMINADA
-
       setCitas(citasIniciales);
       setServicios(serviciosRes?.data?.servicios || []);
     } catch (err) {
@@ -141,27 +145,27 @@ export default function AdminMisCitas() {
     loadData();
   }, []);
 
-   const citasFiltradas = citas.filter((cita) => {
-  const textoBusqueda = busqueda.toLowerCase().trim();
+  const citasFiltradas = citas.filter((cita) => {
+    const textoBusqueda = busqueda.toLowerCase().trim();
 
-  const coincideBusqueda =
-    !textoBusqueda ||
+    const coincideBusqueda =
+      !textoBusqueda ||
       (cita.Servicios || []).some((s) =>
-    (s.nombre || '').toLowerCase().includes(textoBusqueda)
-  ) ||
-    (cita?.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
-    (cita?.profesional?.nombre || '').toLowerCase().includes(textoBusqueda) ||
-    (cita?.estado || '').toLowerCase().includes(textoBusqueda) ||
-    (cita.fecha || '').toLowerCase().includes(textoBusqueda) ||
-    (cita.hora || '').toLowerCase().includes(textoBusqueda) ||
-    (cita.notas || '').toLowerCase().includes(textoBusqueda);
+        (s.nombre || '').toLowerCase().includes(textoBusqueda)
+      ) ||
+      (cita?.cliente?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (cita?.profesional?.nombre || '').toLowerCase().includes(textoBusqueda) ||
+      (cita?.estado || '').toLowerCase().includes(textoBusqueda) ||
+      (cita.fecha || '').toLowerCase().includes(textoBusqueda) ||
+      (cita.hora || '').toLowerCase().includes(textoBusqueda) ||
+      (cita.notas || '').toLowerCase().includes(textoBusqueda);
 
-  const coincideEstado =
-    filtro === 'Todos' ||
-    (cita.estado || '').toLowerCase() === filtro.toLowerCase();
+    const coincideEstado =
+      filtro === 'Todos' ||
+      (cita.estado || '').toLowerCase() === filtro.toLowerCase();
 
-  return coincideBusqueda && coincideEstado;
-});
+    return coincideBusqueda && coincideEstado;
+  });
 
   useEffect(() => {
     const hasServicioPrefill = Number.isFinite(servicioPreseleccionadoId)
@@ -206,15 +210,6 @@ export default function AdminMisCitas() {
     location.state,
     navigate,
   ]);
-
-  const formatEstado = (estado) => {
-    const value = (estado || '').toLowerCase();
-    if (value === 'confirmada') return 'Confirmada';
-    if (value === 'pendiente') return 'Pendiente';
-    if (value === 'cancelada') return 'Cancelada';
-    if (value === 'completada') return 'Completada';
-    return estado || 'Sin estado';
-  };
 
   const handleCrearCita = async (e) => {
     e.preventDefault();
@@ -316,7 +311,7 @@ export default function AdminMisCitas() {
     <div className="cliente-page">
       <div className="page-header">
         <h1><FontAwesomeIcon icon={faCalendar} /> Mis Citas Personales</h1>
-        <button className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
+        <button type="button" className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
           {isFormOpen ? 'Cancelar' : '➕ Agendar Nueva Cita'}
         </button>
       </div>
@@ -329,8 +324,9 @@ export default function AdminMisCitas() {
           <h2>Agendar Nueva Cita</h2>
           <form onSubmit={handleCrearCita}>
             <div className="form-group">
-              <label>Profesional</label>
+              <label htmlFor="profesional">Profesional</label>
               <Select
+                id="profesional"
                 value={
                   profesionales
                     .map((prof)=>({
@@ -445,7 +441,7 @@ export default function AdminMisCitas() {
               )}
             </div>
             <div className="form-group">
-              <label>Servicios</label>
+              <label htmlFor="servicios">Servicios</label>
                <Select
                 isMulti
                 placeholder="Buscar servicios..."
@@ -480,17 +476,18 @@ export default function AdminMisCitas() {
               <small>{formData.servicioIds.length} servicio(s) seleccionado(s)</small>
             </div>
             <div className="form-group">
-              <label>Fecha</label>
-              <input type="date" value={formData.fecha} onChange={(e) => setFormData({ ...formData, fecha: e.target.value })} required />
+              <label htmlFor="fecha">Fecha</label>
+              <input type="date" id="fecha" value={formData.fecha} onChange={(e) => setFormData({ ...formData, fecha: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label>Hora</label>
-              <input type="time" value={formData.hora} onChange={(e) => setFormData({ ...formData, hora: e.target.value })} required />
+              <label htmlFor="hora">Hora</label>
+              <input type="time" id="hora" value={formData.hora} onChange={(e) => setFormData({ ...formData, hora: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label>Notas</label>
+              <label htmlFor="notas">Notas</label>
               <textarea
                 className="form-input"
+                id="notas"
                 value={formData.notas || ''}
                 onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
                 placeholder="Agrega alguna nota para el profesional o para la cita."
@@ -511,13 +508,15 @@ export default function AdminMisCitas() {
           className="search-input"
         />
         
-      <button
+        <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todas ({citas.length})
         </button>
-         <button
+        <button
+          type="button"
           className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
           onClick={() => setFiltro('Pendiente')}
         >
@@ -525,20 +524,23 @@ export default function AdminMisCitas() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Confirmada' ? 'active' : ''}`}
           onClick={() => setFiltro('Confirmada')}
         >
           Confirmadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'confirmada').length})
         </button>
 
-         <button
+        <button
+          type="button"
           className={`filter-btn ${filtro === 'Completada' ? 'active' : ''}`}
           onClick={() => setFiltro('Completada')}
         >
           Completadas ({citas.filter((c) => (c.estado || '').toLowerCase() === 'completada').length})
         </button>
 
-         <button
+        <button
+          type="button"
           className={`filter-btn ${filtro === 'Cancelada' ? 'active' : ''}`}
           onClick={() => setFiltro('Cancelada')}
         >
@@ -552,26 +554,14 @@ export default function AdminMisCitas() {
             <p>No tienes citas agendadas</p>
           </div>
         ) : (
-       <div className="citas-grid">
+          <div className="citas-grid">
             {citasFiltradas.map((cita) => (
               <div key={cita.id} className="cita-card-prof">
                 <div className="cita-header-prof">
                   <h3>{(cita.Servicios || []).map((s) => s.nombre).join(', ') || 'Cita'}</h3>
-                  <span
-                className={`badge ${
-                  (cita.estado || '').toLowerCase() === 'pendiente'
-                  ? 'badge-warning'
-                  : (cita.estado || '').toLowerCase() === 'confirmada'
-                  ? 'badge-info'
-                  : (cita.estado || '').toLowerCase() === 'completada'
-                  ? 'badge-success'
-                  : (cita.estado || '').toLowerCase() === 'cancelada'
-                  ? 'badge-danger'
-                  : 'badge-secondary'
-                }`}
-              >
-              {cita.estado}
-              </span>
+                  <span className={`badge ${getBadgeClass(cita.estado)}`}>
+                    {cita.estado}
+                  </span>
                 </div>
 
                 <div className="cita-info">
@@ -605,6 +595,7 @@ export default function AdminMisCitas() {
                 <div className="cita-actions">
                   {(['pendiente', 'confirmada', 'cancelada'].includes((cita.estado || '').toLowerCase())) && (
                     <button
+                      type="button"
                       className="btn btn-sm btn-secondary"
                       onClick={() => (reprogramandoId === cita.id ? cancelarReprogramacion() : abrirReprogramacion(cita))}
                     >
@@ -612,15 +603,22 @@ export default function AdminMisCitas() {
                     </button>
                   )}
                   {(['pendiente', 'confirmada'].includes((cita.estado || '').toLowerCase())) && (
-                    <button className="btn btn-sm btn-danger" onClick={() => handleCancelarCita(cita.id)}>Cancelar</button>
+                    <button 
+                      type="button" 
+                      className="btn btn-sm btn-danger" 
+                      onClick={() => handleCancelarCita(cita.id)}
+                    >
+                      Cancelar
+                    </button>
                   )}
                 </div>
 
                 {reprogramandoId === cita.id && (['pendiente', 'confirmada', 'cancelada'].includes((cita.estado || '').toLowerCase())) && (
                   <div className="cita-reprogramar-box">
                     <div className="form-group">
-                      <label>Nueva fecha</label>
+                      <label htmlFor="nueva-fecha">Nueva fecha</label>
                       <input
+                        id="nueva-fecha"
                         type="date"
                         value={reprogramacionData.fecha}
                         onChange={(e) => setReprogramacionData({ ...reprogramacionData, fecha: e.target.value })}
@@ -628,8 +626,9 @@ export default function AdminMisCitas() {
                       />
                     </div>
                     <div className="form-group">
-                      <label>Nueva hora</label>
+                      <label htmlFor="nueva-hora">Nueva hora</label>
                       <input
+                        id="nueva-hora"
                         type="time"
                         value={reprogramacionData.hora}
                         onChange={(e) => setReprogramacionData({ ...reprogramacionData, hora: e.target.value })}
@@ -637,10 +636,18 @@ export default function AdminMisCitas() {
                       />
                     </div>
                     <div className="cita-reprogramar-actions">
-                      <button className="btn btn-sm btn-primary" onClick={() => handleReprogramarCita(cita.id)}>
+                      <button 
+                        type="button"
+                        className="btn btn-sm btn-primary" 
+                        onClick={() => handleReprogramarCita(cita.id)}
+                      >
                         Guardar nueva fecha
                       </button>
-                      <button className="btn btn-sm btn-secondary" onClick={cancelarReprogramacion}>
+                      <button 
+                        type="button"
+                        className="btn btn-sm btn-secondary" 
+                        onClick={cancelarReprogramacion}
+                      >
                         Cancelar
                       </button>
                     </div>
