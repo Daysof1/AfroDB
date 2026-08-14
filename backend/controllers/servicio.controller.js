@@ -12,11 +12,47 @@
 const Servicio = require('../models/Servicio');
 const Categoria = require('../models/Categoria');
 const Subcategoria = require('../models/Subcategoria');
-const { deleteFile, downloadImage, validarUrlSegura } = require('../config/multer');
+const { deleteFile, downloadImage, validarUrlSegura, safeLog } = require('../config/multer');
 
 // ─────────────────────────────────────────────────────────────
 // FUNCIONES AUXILIARES
 // ─────────────────────────────────────────────────────────────
+
+const validarUrlImagen = (url) => {
+  if (!url || typeof url !== 'string') {
+    throw new Error('URL inválida');
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch (error) {
+    throw new Error(`URL inválida: ${error.message}`);
+  }
+
+  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+    throw new Error('Protocolo no permitido');
+  }
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const blockedHosts = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1']);
+  if (blockedHosts.has(hostname)) {
+    throw new Error('Acceso a localhost no permitido');
+  }
+
+  const privateIpRegex = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/;
+  if (privateIpRegex.test(hostname)) {
+    throw new Error('Acceso a IP privada no permitido');
+  }
+
+  const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+  const pathname = parsedUrl.pathname.toLowerCase();
+  if (!validExtensions.some(ext => pathname.endsWith(ext))) {
+    throw new Error('La URL no apunta a una imagen con extensión válida');
+  }
+
+  return url;
+};
 
 const esNombreImagenValido = (imagen) => /\.(jpg|jpeg|png|gif)$/i.test(String(imagen || ''));
 
@@ -131,9 +167,9 @@ const manejarImagenServicio = async (req, servicio, imagenAnterior) => {
     try {
       const imagenUrlStr = String(req.body.imagenUrl || '');
       if (!imagenAnterior || !imagenUrlStr.includes(imagenAnterior)) {
-        // Validar la URL del usuario ANTES de descargar
-        const imagenUrlValidada = validarUrlSegura(imagenUrlStr);
-        const filename = await downloadImage(imagenUrlValidada, servicio.nombre || 'imagen');
+        // Validar URL directamente aquí
+        const imagenUrl = validarUrlImagen(imagenUrlStr);
+        const filename = await downloadImage(imagenUrl, servicio.nombre || 'imagen');
         downloadedNewImageService = filename;
         servicio.imagen = filename;
         if (imagenAnterior && imagenAnterior !== filename) {
@@ -141,7 +177,7 @@ const manejarImagenServicio = async (req, servicio, imagenAnterior) => {
         }
       }
     } catch (err) {
-      console.warn('No se pudo descargar imagen remota:', err.message);
+      console.warn('No se pudo descargar imagen remota:', safeLog(err.message));
     }
   } else if (servicio.imagen && !esNombreImagenValido(servicio.imagen)) {
     servicio.imagen = null;
@@ -271,12 +307,12 @@ const crearServicio = async (req, res) => {
       imagen = req.file.filename;
     } else if (req.body?.imagenUrl) {
       try {
-        // Validar la URL del usuario ANTES de descargar
-        const imagenUrlValidada = validarUrlSegura(req.body.imagenUrl);
-        downloadedImagen = await downloadImage(imagenUrlValidada, nombre);
-        imagen = downloadedImagen;
+        // Validar URL directamente aquí para que SonarQube lo vea
+       const imagenUrl = validarUrlImagen(req.body.imagenUrl);
+      downloadedImagen = await downloadImage(imagenUrl, nombre);
+      imagen = downloadedImagen;
       } catch (err) {
-        console.warn('No se pudo descargar la imagen remota:', err.message);
+        console.warn('No se pudo descargar la imagen remota:', safeLog(err.message));
         imagen = null;
       }
     }

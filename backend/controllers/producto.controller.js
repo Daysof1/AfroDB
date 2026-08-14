@@ -19,6 +19,42 @@ const { downloadImage, deleteFile, safeLog } = require('../config/multer');
 // FUNCIONES AUXILIARES
 // ─────────────────────────────────────────────────────────────
 
+const validarUrlImagen = (url) => {
+  if (!url || typeof url !== 'string') {
+    throw new Error('URL inválida');
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch (error) {
+    throw new Error(`URL inválida: ${error.message}`);
+  }
+
+  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+    throw new Error('Protocolo no permitido');
+  }
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const blockedHosts = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1']);
+  if (blockedHosts.has(hostname)) {
+    throw new Error('Acceso a localhost no permitido');
+  }
+
+  const privateIpRegex = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/;
+  if (privateIpRegex.test(hostname)) {
+    throw new Error('Acceso a IP privada no permitido');
+  }
+
+  const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+  const pathname = parsedUrl.pathname.toLowerCase();
+  if (!validExtensions.some(ext => pathname.endsWith(ext))) {
+    throw new Error('La URL no apunta a una imagen con extensión válida');
+  }
+
+  return url;
+};
+
 const buildProductoWhere = (filtros) => {
   const { Op } = require('sequelize');
   const { categoriaId, subcategoriaId, activo, conStock, buscar } = filtros;
@@ -125,18 +161,19 @@ const manejarImagenProducto = async (req, producto, imagenAnterior) => {
       await limpiarImagenEnError(imagenAnterior);
     }
   } else if (req.body?.imagenUrl) {
-    const imagenUrlStr = String(req.body.imagenUrl || '');
-    if (!imagenAnterior || !imagenUrlStr.includes(imagenAnterior)) {
-      try {
-        const filename = await downloadImage(imagenUrlStr, producto.nombre || 'imagen');
+    try {
+      const imagenUrlStr = String(req.body.imagenUrl || '');
+      if (!imagenAnterior || !imagenUrlStr.includes(imagenAnterior)) {
+        const imagenUrl = validarUrlImagen(imagenUrlStr);
+        const filename = await downloadImage(imagenUrl, producto.nombre || 'imagen');
         downloadedNewImage = filename;
         producto.imagen = filename;
         if (imagenAnterior && imagenAnterior !== filename) {
           await limpiarImagenEnError(imagenAnterior);
         }
-      } catch (err) {
-        console.warn('No se pudo descargar la imagen remota:', safeLog(err.message));
       }
+    } catch (err) {
+      console.warn('No se pudo descargar la imagen remota:', safeLog(err.message));
     }
   }
 
@@ -288,7 +325,8 @@ const crearProducto = async (req, res) => {
       imagen = req.file.filename;
     } else if (req.body?.imagenUrl) {
       try {
-        downloadedImagen = await downloadImage(req.body.imagenUrl, nombre);
+        const imagenUrl = validarUrlImagen(req.body.imagenUrl);
+        downloadedImagen = await downloadImage(imagenUrl, nombre);
         imagen = downloadedImagen;
       } catch (err) {
         console.warn('No se pudo descargar la imagen remota:', err.message);

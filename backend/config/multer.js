@@ -402,5 +402,6 @@ module.exports = {
   upload,
   deleteFile,
   downloadImage,
-  validarUrlSegura 
+  validarUrlSegura,
+  safeLog   
 };
