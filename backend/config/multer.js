@@ -201,8 +201,7 @@ const sanitizeFileName = (nameHint) => {
 // DESCARGA DE IMÁGENES (REFACTORIZADA)
 // ==========================================
 
-const downloadImage = async (urlStr, nameHint = 'imagen') => {
-  // ✅ VALIDACIÓN DIRECTA - SonarQube puede verla
+const validarUrlSegura = (urlStr) => {
   if (!urlStr || typeof urlStr !== 'string') {
     throw new Error('URL inválida: debe ser un string');
   }
@@ -214,7 +213,6 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
     throw new Error(`URL inválida: ${error.message}`);
   }
 
-  // Validar protocolo
   if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
     throw new Error('Protocolo no permitido. Solo HTTP o HTTPS');
   }
@@ -226,17 +224,14 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
 
   const hostnameLower = hostname.toLowerCase();
 
-  // Bloquear localhost
   if (BLOCKED_HOSTS.has(hostnameLower)) {
     throw new Error('Acceso a localhost no permitido');
   }
 
-  // Bloquear IPs privadas
   if (PRIVATE_IP_REGEX.test(hostnameLower)) {
     throw new Error('Acceso a IP privada no permitido');
   }
 
-  // Validar contra lista blanca
   if (ALLOWED_DOMAINS.length > 0) {
     const isAllowed = ALLOWED_DOMAINS.some(domain => 
       hostnameLower === domain || hostnameLower.endsWith('.' + domain)
@@ -246,136 +241,146 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
     }
   }
 
-  // Validar extensión
   const pathname = parsedUrl.pathname.toLowerCase();
   const hasValidExtension = ALLOWED_EXTENSIONS.some(ext => pathname.endsWith(ext));
   if (!hasValidExtension) {
     throw new Error('La URL no apunta a una imagen con extensión válida');
   }
 
-  // ✅ URL VALIDADA - ahora usar parsedUrl
-  const validatedUrl = parsedUrl;
-  
-  let filePath = null;
-  
-  try {
-    const safeBase = sanitizeFileName(nameHint);
+  return parsedUrl;
+};
+
+const realizarDescarga = (validatedUrl, filePath) => {
+  return new Promise((resolve, reject) => {
     const protocol = validatedUrl.protocol === 'https:' ? https : http;
+    
+    const requestOptions = {
+      hostname: validatedUrl.hostname,
+      port: validatedUrl.port || (validatedUrl.protocol === 'https:' ? 443 : 80),
+      path: validatedUrl.pathname + (validatedUrl.search || ''),
+      method: 'GET',
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; MiApp/1.0)'
+      }
+    };
 
-    const ext = path.extname(validatedUrl.pathname) || '.jpg';
-    const filename = `${Date.now()}-${safeBase}-${crypto.randomBytes(4).toString('hex')}${ext}`;
-    filePath = path.join(uploadPath, filename);
+    const req = protocol.request(requestOptions, (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`HTTP ${res.statusCode}`));
+        res.resume();
+        return;
+      }
 
-    return await new Promise((resolve, reject) => {
-      const requestOptions = {
-        hostname: validatedUrl.hostname,
-        port: validatedUrl.port || (validatedUrl.protocol === 'https:' ? 443 : 80),
-        path: validatedUrl.pathname + (validatedUrl.search || ''),
-        method: 'GET',
-        timeout: 10000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; MiApp/1.0)'
-        }
-      };
+      const contentType = res.headers['content-type'] || '';
+      if (!contentType.startsWith('image/')) {
+        reject(new Error('La URL no apunta a una imagen válida'));
+        res.resume();
+        return;
+      }
 
-      const req = protocol.request(requestOptions, (res) => {
-        if (res.statusCode !== 200) {
-          reject(new Error(`HTTP ${res.statusCode}`));
-          res.resume();
-          return;
-        }
+      const contentLength = Number.parseInt(res.headers['content-length'], 10);
+      const maxSize = Number.parseInt(process.env.MAX_FILE_SIZE, 10) || 5242880;
+      
+      if (contentLength && contentLength > maxSize) {
+        reject(new Error(`La imagen excede el tamaño máximo permitido (${maxSize} bytes)`));
+        res.resume();
+        return;
+      }
 
-        const contentType = res.headers['content-type'] || '';
-        if (!contentType.startsWith('image/')) {
-          reject(new Error('La URL no apunta a una imagen válida'));
-          res.resume();
-          return;
-        }
+      const fileStream = fs.createWriteStream(filePath);
+      let downloadedSize = 0;
 
-        const contentLength = Number.parseInt(res.headers['content-length'], 10);
-        const maxSize = Number.parseInt(process.env.MAX_FILE_SIZE, 10) || 5242880;
-        
-        if (contentLength && contentLength > maxSize) {
-          reject(new Error(`La imagen excede el tamaño máximo permitido (${maxSize} bytes)`));
-          res.resume();
-          return;
-        }
+      res.pipe(fileStream);
 
-        const fileStream = fs.createWriteStream(filePath);
-        let downloadedSize = 0;
-
-        res.pipe(fileStream);
-
-        res.on('data', (chunk) => {
-          downloadedSize += chunk.length;
-          if (downloadedSize > maxSize) {
-            res.destroy();
-            fileStream.destroy();
-            if (filePath && fs.existsSync(filePath)) {
-              try { 
-                fs.unlinkSync(filePath); 
-              } catch (cleanupError) {
-                console.error('Error al limpiar archivo parcial:', safeLog(cleanupError.message));
-              }
-            }
-            reject(new Error(`La imagen excede el tamaño máximo permitido (${maxSize} bytes)`));
-          }
-        });
-
-        fileStream.on('finish', () => {
-          fileStream.close(() => resolve(filename));
-        });
-
-        fileStream.on('error', (err) => {
-          if (filePath && fs.existsSync(filePath)) {
-            try { 
-              fs.unlinkSync(filePath); 
-            } catch (cleanupError) {
-              console.error('Error al limpiar archivo en error de stream:', safeLog(cleanupError.message));
-            }
-          }
-          reject(err);
-        });
-
-        res.setTimeout(30000, () => {
+      res.on('data', (chunk) => {
+        downloadedSize += chunk.length;
+        if (downloadedSize > maxSize) {
           res.destroy();
           fileStream.destroy();
           if (filePath && fs.existsSync(filePath)) {
             try { 
               fs.unlinkSync(filePath); 
             } catch (cleanupError) {
-              console.error('Error al limpiar archivo por timeout:', safeLog(cleanupError.message));
+              console.error('Error al limpiar archivo parcial:', safeLog(cleanupError.message));
             }
           }
-          reject(new Error('Timeout al descargar la imagen'));
-        });
-      });
-
-      req.on('timeout', () => {
-        req.destroy();
-        if (filePath && fs.existsSync(filePath)) {
-          try { 
-            fs.unlinkSync(filePath); 
-          } catch (cleanupError) {
-            console.error('Error al limpiar archivo por timeout de solicitud:', safeLog(cleanupError.message));
-          }
+          reject(new Error(`La imagen excede el tamaño máximo permitido (${maxSize} bytes)`));
         }
-        reject(new Error('Timeout en la solicitud'));
       });
 
-      req.on('error', (err) => {
+      fileStream.on('finish', () => {
+        fileStream.close(() => resolve());
+      });
+
+      fileStream.on('error', (err) => {
         if (filePath && fs.existsSync(filePath)) {
           try { 
             fs.unlinkSync(filePath); 
           } catch (cleanupError) {
-            console.error('Error al limpiar archivo por error de solicitud:', safeLog(cleanupError.message));
+            console.error('Error al limpiar archivo en error de stream:', safeLog(cleanupError.message));
           }
         }
         reject(err);
       });
 
-      req.end();
+      res.setTimeout(30000, () => {
+        res.destroy();
+        fileStream.destroy();
+        if (filePath && fs.existsSync(filePath)) {
+          try { 
+            fs.unlinkSync(filePath); 
+          } catch (cleanupError) {
+            console.error('Error al limpiar archivo por timeout:', safeLog(cleanupError.message));
+          }
+        }
+        reject(new Error('Timeout al descargar la imagen'));
+      });
     });
+
+    req.on('timeout', () => {
+      req.destroy();
+      if (filePath && fs.existsSync(filePath)) {
+        try { 
+          fs.unlinkSync(filePath); 
+        } catch (cleanupError) {
+          console.error('Error al limpiar archivo por timeout de solicitud:', safeLog(cleanupError.message));
+        }
+      }
+      reject(new Error('Timeout en la solicitud'));
+    });
+
+    req.on('error', (err) => {
+      if (filePath && fs.existsSync(filePath)) {
+        try { 
+          fs.unlinkSync(filePath); 
+        } catch (cleanupError) {
+          console.error('Error al limpiar archivo por error de solicitud:', safeLog(cleanupError.message));
+        }
+      }
+      reject(err);
+    });
+
+    req.end();
+  });
+};
+
+const downloadImage = async (urlStr, nameHint = 'imagen') => {
+  // ✅ Validar URL
+  const validatedUrl = validarUrlSegura(urlStr);
+  
+  let filePath = null;
+  
+  try {
+    const safeBase = sanitizeFileName(nameHint);
+    const ext = path.extname(validatedUrl.pathname) || '.jpg';
+    const filename = `${Date.now()}-${safeBase}-${crypto.randomBytes(4).toString('hex')}${ext}`;
+    filePath = path.join(uploadPath, filename);
+
+    await realizarDescarga(validatedUrl, filePath);
+    
+    return filename;
+    
   } catch (error) {
     if (filePath && fs.existsSync(filePath)) {
       try { 
@@ -396,5 +401,6 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
 module.exports = {
   upload,
   deleteFile,
-  downloadImage
+  downloadImage,
+  validarUrlSegura 
 };

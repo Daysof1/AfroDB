@@ -12,7 +12,7 @@
 const Servicio = require('../models/Servicio');
 const Categoria = require('../models/Categoria');
 const Subcategoria = require('../models/Subcategoria');
-const { deleteFile, downloadImage } = require('../config/multer');
+const { deleteFile, downloadImage, validarUrlSegura } = require('../config/multer');
 
 // ─────────────────────────────────────────────────────────────
 // FUNCIONES AUXILIARES
@@ -131,7 +131,9 @@ const manejarImagenServicio = async (req, servicio, imagenAnterior) => {
     try {
       const imagenUrlStr = String(req.body.imagenUrl || '');
       if (!imagenAnterior || !imagenUrlStr.includes(imagenAnterior)) {
-        const filename = await downloadImage(imagenUrlStr, servicio.nombre || 'imagen');
+        // Validar la URL del usuario ANTES de descargar
+        const imagenUrlValidada = validarUrlSegura(imagenUrlStr);
+        const filename = await downloadImage(imagenUrlValidada, servicio.nombre || 'imagen');
         downloadedNewImageService = filename;
         servicio.imagen = filename;
         if (imagenAnterior && imagenAnterior !== filename) {
@@ -269,7 +271,9 @@ const crearServicio = async (req, res) => {
       imagen = req.file.filename;
     } else if (req.body?.imagenUrl) {
       try {
-        downloadedImagen = await downloadImage(req.body.imagenUrl, nombre);
+        // Validar la URL del usuario ANTES de descargar
+        const imagenUrlValidada = validarUrlSegura(req.body.imagenUrl);
+        downloadedImagen = await downloadImage(imagenUrlValidada, nombre);
         imagen = downloadedImagen;
       } catch (err) {
         console.warn('No se pudo descargar la imagen remota:', err.message);
