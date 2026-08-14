@@ -76,6 +76,7 @@ const safeLog = (value) => {
 
 const deleteFile = (filename) => {
   try {
+    // ✅ VALIDACIÓN INMEDIATA - Path traversal
     const sanitizedFilename = path.basename(filename);
     if (sanitizedFilename !== filename) {
       console.warn('⚠️ Intento de path traversal detectado:', safeLog(filename));
@@ -84,6 +85,7 @@ const deleteFile = (filename) => {
 
     const filePath = path.join(uploadPath, sanitizedFilename);
     
+    // ✅ VALIDACIÓN DE RUTA REAL
     const resolvedPath = fs.realpathSync(filePath);
     const resolvedUploadPath = fs.realpathSync(uploadPath);
     if (!resolvedPath.startsWith(resolvedUploadPath)) {
@@ -109,42 +111,18 @@ const deleteFile = (filename) => {
 // FUNCIÓN SEGURA PARA DESCARGAR IMÁGENES
 // ==========================================
 
-const ALLOWED_DOMAINS = new Set([
+const ALLOWED_DOMAINS = [
   'images.unsplash.com',
   'cdn.example.com',
   'storage.googleapis.com',
-]);
+];
 
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 const BLOCKED_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1']);
 const PRIVATE_IP_REGEX = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/;
+const SANITIZE_REGEX = /[^a-zA-Z0-9_-]/g;
 
-// ==========================================
-// FUNCIÓN PARA SANITIZAR NOMBRES DE ARCHIVO
-// ==========================================
-
-const sanitizeFileName = (nameHint) => {
-  if (!nameHint) return 'imagen';
-  
-  let safe = String(nameHint).replace(/[^a-zA-Z0-9_-]/g, '_');
-  
-  while (safe.startsWith('_')) {
-    safe = safe.substring(1);
-  }
-  
-  while (safe.endsWith('_')) {
-    safe = safe.substring(0, safe.length - 1);
-  }
-  
-  return safe || 'imagen';
-};
-
-// ==========================================
-// DESCARGA DE IMÁGENES (VERSIÓN ÚNICA Y SEGURA)
-// ==========================================
-
-const downloadImage = async (urlStr, nameHint = 'imagen') => {
-  // ✅ VALIDACIÓN DIRECTA - SonarQube la ve aquí
+const validateImageUrl = (urlStr) => {
   if (!urlStr || typeof urlStr !== 'string') {
     throw new Error('URL inválida: debe ser un string');
   }
@@ -156,7 +134,8 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
     throw new Error(`URL inválida: ${error.message}`);
   }
 
-  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+  const protocol = parsedUrl.protocol;
+  if (protocol !== 'http:' && protocol !== 'https:') {
     throw new Error('Protocolo no permitido. Solo HTTP o HTTPS');
   }
 
@@ -175,9 +154,11 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
     throw new Error('Acceso a IP privada no permitido');
   }
 
-  if (ALLOWED_DOMAINS.size > 0) {
-    const isAllowed = ALLOWED_DOMAINS.has(hostnameLower) || 
-      Array.from(ALLOWED_DOMAINS).some(domain => hostnameLower.endsWith('.' + domain));
+  if (ALLOWED_DOMAINS.length > 0) {
+    const isAllowed = ALLOWED_DOMAINS.some(domain => 
+      hostnameLower === domain || hostnameLower.endsWith('.' + domain)
+    );
+    
     if (!isAllowed) {
       throw new Error(`Dominio no permitido: ${hostname}`);
     }
@@ -185,12 +166,44 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
 
   const pathname = parsedUrl.pathname.toLowerCase();
   const hasValidExtension = ALLOWED_EXTENSIONS.some(ext => pathname.endsWith(ext));
+  
   if (!hasValidExtension) {
     throw new Error('La URL no apunta a una imagen con extensión válida');
   }
 
-  // ✅ URL VALIDADA
-  const validatedUrl = parsedUrl;
+  return parsedUrl;
+};
+
+// ==========================================
+// FUNCIÓN PARA SANITIZAR NOMBRES DE ARCHIVO
+// ==========================================
+
+const sanitizeFileName = (nameHint) => {
+  if (!nameHint) return 'imagen';
+  
+  // Reemplazar caracteres no permitidos por _
+  let safe = String(nameHint).replace(/[^a-zA-Z0-9_-]/g, '_');
+  
+  // Eliminar _ del inicio
+  while (safe.startsWith('_')) {
+    safe = safe.substring(1);
+  }
+  
+  // Eliminar _ del final
+  while (safe.endsWith('_')) {
+    safe = safe.substring(0, safe.length - 1);
+  }
+  
+  return safe || 'imagen';
+};
+
+// ==========================================
+// DESCARGA DE IMÁGENES (REFACTORIZADA)
+// ==========================================
+
+const downloadImage = async (urlStr, nameHint = 'imagen') => {
+  // ✅ VALIDACIÓN INMEDIATA - Antes de cualquier otra operación
+  const validatedUrl = validateImageUrl(urlStr);
   
   let filePath = null;
   
@@ -203,6 +216,7 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
     filePath = path.join(uploadPath, filename);
 
     return await new Promise((resolve, reject) => {
+      // ✅ Usando validatedUrl (YA VALIDADO)
       const requestOptions = {
         hostname: validatedUrl.hostname,
         port: validatedUrl.port || (validatedUrl.protocol === 'https:' ? 443 : 80),
@@ -332,6 +346,5 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
 module.exports = {
   upload,
   deleteFile,
-  downloadImage,
-  safeLog
+  downloadImage
 };
