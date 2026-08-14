@@ -232,25 +232,10 @@ const parseResponsePayload = async (response) => {
       return null;
     }
 
-  const parseResponsePayload = async (response) => {
-    try {
-      const contentType = response.headers.get('content-type') || '';
-
-      if (!contentType.includes('application/json')) {
-        return null;
-      }
-
-      const data = await response.json();  // ✅ Esto está correcto
-      return createSafePayload(data);
-
-    } catch {
-      return null;
-    }
-  };
+    const data = await response.json();  // ✅ Esto está correcto
     return createSafePayload(data);
 
   } catch {
-    // Si falla el parseo, retorna null
     return null;
   }
 };

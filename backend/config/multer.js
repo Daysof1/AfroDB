@@ -202,8 +202,59 @@ const sanitizeFileName = (nameHint) => {
 // ==========================================
 
 const downloadImage = async (urlStr, nameHint = 'imagen') => {
-  // ✅ VALIDACIÓN INMEDIATA - Antes de cualquier otra operación
-  const validatedUrl = validateImageUrl(urlStr);
+  // ✅ VALIDACIÓN DIRECTA - SonarQube puede verla
+  if (!urlStr || typeof urlStr !== 'string') {
+    throw new Error('URL inválida: debe ser un string');
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(urlStr);
+  } catch (error) {
+    throw new Error(`URL inválida: ${error.message}`);
+  }
+
+  // Validar protocolo
+  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+    throw new Error('Protocolo no permitido. Solo HTTP o HTTPS');
+  }
+
+  const hostname = parsedUrl.hostname;
+  if (!hostname) {
+    throw new Error('URL sin hostname');
+  }
+
+  const hostnameLower = hostname.toLowerCase();
+
+  // Bloquear localhost
+  if (BLOCKED_HOSTS.has(hostnameLower)) {
+    throw new Error('Acceso a localhost no permitido');
+  }
+
+  // Bloquear IPs privadas
+  if (PRIVATE_IP_REGEX.test(hostnameLower)) {
+    throw new Error('Acceso a IP privada no permitido');
+  }
+
+  // Validar contra lista blanca
+  if (ALLOWED_DOMAINS.length > 0) {
+    const isAllowed = ALLOWED_DOMAINS.some(domain => 
+      hostnameLower === domain || hostnameLower.endsWith('.' + domain)
+    );
+    if (!isAllowed) {
+      throw new Error(`Dominio no permitido: ${hostname}`);
+    }
+  }
+
+  // Validar extensión
+  const pathname = parsedUrl.pathname.toLowerCase();
+  const hasValidExtension = ALLOWED_EXTENSIONS.some(ext => pathname.endsWith(ext));
+  if (!hasValidExtension) {
+    throw new Error('La URL no apunta a una imagen con extensión válida');
+  }
+
+  // ✅ URL VALIDADA - ahora usar parsedUrl
+  const validatedUrl = parsedUrl;
   
   let filePath = null;
   
@@ -216,7 +267,6 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
     filePath = path.join(uploadPath, filename);
 
     return await new Promise((resolve, reject) => {
-      // ✅ Usando validatedUrl (YA VALIDADO)
       const requestOptions = {
         hostname: validatedUrl.hostname,
         port: validatedUrl.port || (validatedUrl.protocol === 'https:' ? 443 : 80),

@@ -64,7 +64,7 @@ export default function AdminCitas() {
             console.log('Cargando detalles de la cita.');
             // Validar que el ID sea un número antes de usarlo
             const citaId = Number(cita.id);
-            if (isNaN(citaId) || citaId <= 0) {
+            if (Number.isNaN(citaId) || citaId <= 0) {
               console.warn(`⚠️ ID de cita inválido: ${cita.id}`);
               return cita;
             }

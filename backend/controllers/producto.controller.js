@@ -13,7 +13,7 @@ const Categoria = require('../models/Categoria');
 const Subcategoria = require('../models/Subcategoria');
 const path = require('node:path');
 const fs = require('node:fs').promises;
-const { downloadImage, deleteFile } = require('../config/multer');
+const { downloadImage, deleteFile, safeLog } = require('../config/multer');
 
 // ─────────────────────────────────────────────────────────────
 // FUNCIONES AUXILIARES
@@ -135,7 +135,7 @@ const manejarImagenProducto = async (req, producto, imagenAnterior) => {
           await limpiarImagenEnError(imagenAnterior);
         }
       } catch (err) {
-        console.warn('No se pudo descargar imagen remota:', err.message);
+        console.warn('No se pudo descargar la imagen remota:', safeLog(err.message));
       }
     }
   }
