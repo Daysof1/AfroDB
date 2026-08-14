@@ -38,7 +38,7 @@ const Pedido = sequelize.define('Pedido', {
   // Indica QUÉ usuario realizó este pedido
   usuarioId: {
     type: DataTypes.INTEGER,           // Tipo INT, coincide con usuarios.id
-    allowNull: false,                  // Obligatorio: todo pedido pertenece a un usuario
+    allowNull: false,                  // Obligatorio: pedido pertenece a un usuario
     references: {                      // Define la relación FK en MySQL
       model: 'usuarios',              // Tabla referenciada
       key: 'id'                       // Columna referenciada
@@ -80,7 +80,7 @@ const Pedido = sequelize.define('Pedido', {
       'cancelado'                      // Fue cancelado (se devuelve el stock)
     ),
     allowNull: false,                  // Obligatorio
-    defaultValue: 'pendiente',         // Todo pedido nuevo empieza como 'pendiente'
+    defaultValue: 'pendiente',         // pedido nuevo empieza como 'pendiente'
     validate: {
       isIn: {                          // Doble validación: a nivel de Sequelize
         args: [['pendiente', 'pagado', 'enviado', 'entregado', 'cancelado']],

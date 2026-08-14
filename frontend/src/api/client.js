@@ -196,7 +196,7 @@ export async function fetchImageAsFile(imageUrl, fileNameHint = 'imagen') {
 
 const buildHeaders = (options, token, isFormData) => {
   const headers = {
-    ...(options.headers || {}),
+    ...(options.headers ? options.headers : {}),
   };
 
   if (!isFormData && !headers['Content-Type']) {

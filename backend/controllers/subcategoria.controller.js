@@ -118,7 +118,7 @@ const crearSubcategoria = async (req, res) => {
 
     // Validar categoría
     const categoria = await Categoria.findByPk(categoriaId);
-    if (!categoria || !categoria.activo) {
+    if (!categoria?.activo) {
       return res.status(400).json({
         success: false,
         message: 'Categoría inválida o inactiva'

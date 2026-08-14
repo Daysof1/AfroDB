@@ -54,7 +54,6 @@ const ProfesionalEspecialidad = sequelize.define('ProfesionalEspecialidad', {
         throw new Error('El usuario no existe');
       }
 
-      // 🔥 AQUÍ ESTÁ TODO
       if (usuario.rol !== 'profesional') {
         throw new Error('Solo los usuarios con rol profesional pueden tener especialidades');
       }

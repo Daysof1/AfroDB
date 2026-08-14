@@ -2,7 +2,6 @@
  * ============================================
  * RUTAS DEL CLIENTE (cliente.routes.js)
  * ============================================
- * (TODO TU CÓDIGO ORIGINAL SE MANTIENE IGUAL)
  */
 
 const express = require('express');

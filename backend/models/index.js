@@ -279,7 +279,7 @@ ProfesionalEspecialidad.belongsTo(Especialidad, {
 // ==========================================
 // Un usuario tiene muchos items en su carrito (cada item es un registro en 'carritos')
 // Cada item del carrito pertenece a un usuario
-// CASCADE: si se elimina el usuario, se borra todo su carrito
+// CASCADE: si se elimina el usuario, se borra su carrito
 
 // Lado UNO → el usuario "tiene muchos" items de carrito
 Usuario.hasMany(Carrito, {
@@ -490,7 +490,7 @@ module.exports = {
  * ============================================
  * 
  * 1. CASCADE en Carrito (eliminación en cascada):
- *    - Si se elimina un usuario → se elimina TODO su carrito automáticamente
+ *    - Si se elimina un usuario → se elimina su carrito automáticamente
  *    - Si se elimina un producto → se elimina de TODOS los carritos
  *    - Razón: el carrito es temporal, no hay problema en perder esos datos
  * 

@@ -106,7 +106,7 @@ const Producto = sequelize.define('Producto', {
   // Indica a QUÉ subcategoría pertenece el producto
   subcategoriaId: {
     type: DataTypes.INTEGER,           // Tipo INT, coincide con subcategorias.id
-    allowNull: false,                  // Obligatorio: todo producto tiene subcategoría
+    allowNull: false,                  // Obligatorio: producto tiene subcategoría
     references: {                      // Define la FK en MySQL
       model: 'subcategorias',         // Tabla referenciada
       key: 'id'                       // Columna referenciada

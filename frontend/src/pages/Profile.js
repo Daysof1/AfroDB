@@ -59,7 +59,7 @@ export default function Profile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (photoPreview && photoPreview.startsWith('blob:')) {
+    if (photoPreview?.startsWith('blob:')) {
       URL.revokeObjectURL(photoPreview);
     }
 

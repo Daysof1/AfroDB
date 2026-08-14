@@ -115,7 +115,7 @@ const getMiPerfilProfesional = async (req, res) => {
       }]
     });
 
-    if (!profesional || profesional.rol !== 'profesional') {
+    if (profesional?.rol !== 'profesional') {
       return res.status(403).json({
         success: false,
         message: 'No autorizado'
@@ -149,7 +149,7 @@ const getMisEspecialidades = async (req, res) => {
       }]
     });
 
-    if (!profesional || profesional.rol !== 'profesional') {
+    if (profesional?.rol !== 'profesional') {
       return res.status(403).json({
         success: false,
         message: 'No autorizado'
@@ -183,7 +183,7 @@ const agregarEspecialidad = async (req, res) => {
     }
 
     const profesional = await Usuario.findByPk(req.usuario.id);
-    if (!profesional || profesional.rol !== 'profesional') {
+    if (profesional?.rol !== 'profesional') {
       return res.status(403).json({
         success: false,
         message: 'No autorizado'
@@ -241,7 +241,7 @@ const removerEspecialidad = async (req, res) => {
     }
 
     const profesional = await Usuario.findByPk(req.usuario.id);
-    if (!profesional || profesional.rol !== 'profesional') {
+    if (profesional?.rol !== 'profesional') {
       return res.status(403).json({
         success: false,
         message: 'No autorizado'
@@ -286,10 +286,10 @@ const asignarEspecialidades = async (req, res) => {
 
     const profesional = await Usuario.findByPk(id);
 
-    if (!profesional || profesional.rol !== 'profesional') {
-      return res.status(404).json({
+    if (profesional?.rol !== 'profesional') {
+      return res.status(403).json({
         success: false,
-        message: 'Profesional no encontrado'
+        message: 'No autorizado'
       });
     }
 
@@ -334,7 +334,7 @@ const actualizarMiPerfil = async (req, res) => {
 
     const profesional = await Usuario.findByPk(req.usuario.id);
 
-    if (!profesional || profesional.rol !== 'profesional') {
+    if (profesional?.rol !== 'profesional') {
       return res.status(403).json({
         success: false,
         message: 'No autorizado'
@@ -377,10 +377,10 @@ const eliminarEspecialidad = async (req, res) => {
 
     const profesional = await Usuario.findByPk(id);
 
-    if (!profesional || profesional.rol !== 'profesional') {
-      return res.status(404).json({
+    if (profesional?.rol !== 'profesional') {
+      return res.status(403).json({
         success: false,
-        message: 'Profesional no encontrado'
+        message: 'No autorizado'
       });
     }
 
@@ -418,10 +418,10 @@ const actualizarProfesional = async (req, res) => {
 
     const profesional = await Usuario.findByPk(id);
 
-    if (!profesional || profesional.rol !== 'profesional') {
-      return res.status(404).json({
+    if (profesional?.rol !== 'profesional') {
+      return res.status(403).json({
         success: false,
-        message: 'Profesional no encontrado'
+        message: 'No autorizado'
       });
     }
 
@@ -463,10 +463,10 @@ const eliminarProfesional = async (req, res) => {
 
     const profesional = await Usuario.findByPk(id);
 
-    if (!profesional || profesional.rol !== 'profesional') {
-      return res.status(404).json({
+    if (profesional?.rol !== 'profesional') {
+      return res.status(403).json({
         success: false,
-        message: 'Profesional no encontrado'
+        message: 'No autorizado'
       });
     }
 

@@ -39,7 +39,7 @@ const Carrito = sequelize.define('Carrito', {
   // Indica QUÉ usuario es dueño de este item del carrito
   usuarioId: {
     type: DataTypes.INTEGER,           // Tipo INT, debe coincidir con usuarios.id
-    allowNull: false,                  // Obligatorio: todo item pertenece a un usuario
+    allowNull: false,                  // Obligatorio: item pertenece a un usuario
     references: {                      // Define la relación de FK en la BD
       model: 'usuarios',              // Tabla referenciada → tabla 'usuarios'
       key: 'id'                       // Columna referenciada → usuarios.id
@@ -57,7 +57,7 @@ const Carrito = sequelize.define('Carrito', {
   // Indica QUÉ producto se agregó al carrito
   productoId: {
     type: DataTypes.INTEGER,           // Tipo INT, debe coincidir con productos.id
-    allowNull: false,                  // Obligatorio: todo item tiene un producto
+    allowNull: false,                  // Obligatorio: item tiene un producto
     references: {                      // Define la relación de FK en la BD
       model: 'productos',             // Tabla referenciada → tabla 'productos'
       key: 'id'                       // Columna referenciada → productos.id

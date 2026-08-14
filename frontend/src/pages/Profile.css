@@ -123,7 +123,7 @@
   color: #475569;
   max-width: 220px;
   text-align: center;
-  word-break: break-word;
+  word-break: word-break;
 }
 
 .profile-content {
@@ -236,7 +236,7 @@
   font-size: 1rem;
   color: var(--color-text);
   font-weight: 600;
-  word-break: break-word;
+  word-break:word-break ;
 }
 
 .profile-info-value.empty {
@@ -352,7 +352,7 @@
 
 .form-group input:disabled {
   background: #f1f5f9;
-  color: #94a3b8;
+  color: #475569;
   cursor: not-allowed;
 }
 

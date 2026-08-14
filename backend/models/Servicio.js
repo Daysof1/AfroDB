@@ -205,11 +205,11 @@ const Servicio = sequelize.define('Servicio', {
         const categoria = await Categoria.findByPk(servicio.categoriaId);
         const subcategoria = await Subcategoria.findByPk(servicio.subcategoriaId);
 
-        if (!categoria || categoria.tipo !== 'servicio') {
+        if (categoria?.tipo !== 'servicio') {
           throw new Error('La categoría no corresponde a servicios');
         }
 
-        if (!subcategoria || subcategoria.tipo !== 'servicio') {
+        if (subcategoria?.tipo !== 'servicio') {
           throw new Error('La subcategoría no corresponde a servicios');
         }
 

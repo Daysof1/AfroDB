@@ -188,7 +188,7 @@ export const exportarCitasAPDF = (citas) => {
  * Exportar servicios a PDF
  */
 export const exportarServiciosAPDF = (servicios) => {
-  const doc = new jsPDF('landscape'); // Modo horizontal para más columnas
+  const doc = new jsPDF('landscape');
   const startY = configurarPDF(doc, 'REPORTE DE SERVICIOS');
   
   const tableData = servicios.map(ser => [
@@ -213,10 +213,14 @@ export const exportarServiciosAPDF = (servicios) => {
   
   const finalY = doc.lastAutoTable.finalY + 10;
   doc.setFontSize(11);
-  const valorTotal = servicios.reduce((sum, s) => sum + (Number(s.precio) * s.stock), 0);
+  // ✅ Corregido: servicios no tienen stock, calcular valor de otra manera o eliminar
+  // Opción 1: Eliminar valorTotal si no es necesario
   doc.text(`Total de servicios: ${servicios.length}`, 14, finalY);
-  doc.text(`Activas: ${servicios.filter(s => s.activo).length}`, 14, finalY + 7);
-  doc.text(`Inactivas: ${servicios.filter(s => !s.activo).length}`, 14, finalY + 14);
+  doc.text(`Activos: ${servicios.filter(s => s.activo).length}`, 14, finalY + 7);
+  doc.text(`Inactivos: ${servicios.filter(s => !s.activo).length}`, 14, finalY + 14);
+  // ✅ Opción 2: Si quieres mantener, calcular con precio * duracion
+  const valorTotal = servicios.reduce((sum, s) => sum + (Number(s.precio) * Number(s.duracion || 0)), 0);
+  doc.text(`Valor total: $${valorTotal.toLocaleString('es-CO')}`, 14, finalY + 21);
 
   doc.save(`servicios_${Date.now()}.pdf`);
 };

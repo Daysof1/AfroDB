@@ -37,7 +37,7 @@ const DetallePedido = sequelize.define('DetallePedido', {
   // Indica A QUÉ pedido pertenece este detalle
   pedidoId: {
     type: DataTypes.INTEGER,           // Tipo INT, coincide con pedidos.id
-    allowNull: false,                  // Obligatorio: todo detalle pertenece a un pedido
+    allowNull: false,                  // Obligatorio: detalle pertenece a un pedido
     references: {                      // Define la relación FK en MySQL
       model: 'pedidos',               // Tabla referenciada → tabla 'pedidos'
       key: 'id'                       // Columna referenciada → pedidos.id
@@ -55,7 +55,7 @@ const DetallePedido = sequelize.define('DetallePedido', {
   // Indica QUÉ producto se compró en esta línea del pedido
   productoId: {
     type: DataTypes.INTEGER,           // Tipo INT, coincide con productos.id
-    allowNull: false,                  // Obligatorio: todo detalle tiene un producto
+    allowNull: false,                  // Obligatorio: detalle tiene un producto
     references: {
       model: 'productos',             // Tabla referenciada → tabla 'productos'
       key: 'id'                       // Columna referenciada → productos.id
