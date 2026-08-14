@@ -232,7 +232,21 @@ const parseResponsePayload = async (response) => {
       return null;
     }
 
-    const data = await response.json();
+  const parseResponsePayload = async (response) => {
+    try {
+      const contentType = response.headers.get('content-type') || '';
+
+      if (!contentType.includes('application/json')) {
+        return null;
+      }
+
+      const data = await response.json();  // ✅ Esto está correcto
+      return createSafePayload(data);
+
+    } catch {
+      return null;
+    }
+  };
     return createSafePayload(data);
 
   } catch {
@@ -272,7 +286,13 @@ export async function apiRequest(path, options = {}) {
 
   const headers = buildHeaders(options, token, isFormData);
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  // Validar que path solo contenga caracteres permitidos
+  const sanitizedPath = path.replace(/[^a-zA-Z0-9/_-]/g, '');
+  if (sanitizedPath !== path) {
+    console.warn(`⚠️ Path inválido detectado: ${path}`);
+    throw new ApiError('Path inválido', 400, null);
+  }
+  const response = await fetch(`${API_BASE_URL}${sanitizedPath}`, {
     ...options,
     headers,
   });

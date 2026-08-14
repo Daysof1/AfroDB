@@ -62,7 +62,13 @@ export default function AdminCitas() {
         citasIniciales.map(async (cita) => {
           try {
             console.log('Cargando detalles de la cita.');
-            const citaCompleta = await apiRequest(`/cliente/citas/${cita.id}`);
+            // Validar que el ID sea un número antes de usarlo
+            const citaId = Number(cita.id);
+            if (isNaN(citaId) || citaId <= 0) {
+              console.warn(`⚠️ ID de cita inválido: ${cita.id}`);
+              return cita;
+            }
+            const citaCompleta = await apiRequest(`/cliente/citas/${citaId}`);
             console.log('Detalles de la cita cargados correctamente.');
             return {
               ...cita,
