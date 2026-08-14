@@ -88,6 +88,7 @@ export default function ProfesionalPerfil() {
       <div className="page-header">
         <h1><FontAwesomeIcon icon={faUser} /> Mi Perfil Profesional</h1>
         <button 
+          type="button"
           className="btn btn-primary"
           onClick={() => setIsEditing(!isEditing)}
         >
@@ -107,15 +108,15 @@ export default function ProfesionalPerfil() {
               
               <div className="info-grid">
                 <div className="info-item">
-                  <label>Email:</label>
+                  <label htmlFor="email">Email:</label>
                   <p>{perfil.email}</p>
                 </div>
                 <div className="info-item">
-                  <label>Teléfono:</label>
+                  <label htmlFor="telefono">Teléfono:</label>
                   <p>{perfil.telefono}</p>
                 </div>
                 <div className="info-item">
-                  <label>Dirección:</label>
+                  <label htmlFor="direccion">Dirección:</label>
                   <p>{perfil.direccion || 'No registrada'}</p>
                 </div>
               </div>
@@ -128,9 +129,10 @@ export default function ProfesionalPerfil() {
           <h2>Editar Mi Perfil</h2>
           <form>
             <div className="form-group">
-              <label>Nombre Completo</label>
+              <label htmlFor="nombre">Nombre Completo</label>
               <input
                 type="text"
+                id="nombre"
                 name="nombre"
                 value={formData.nombre}
                 onChange={handleInputChange}
@@ -138,9 +140,10 @@ export default function ProfesionalPerfil() {
             </div>
 
             <div className="form-group">
-              <label>Especialidad</label>
+              <label htmlFor="especialidad">Especialidad</label>
               <input
                 type="text"
+                id="especialidad"
                 name="especialidad"
                 value={formData.especialidad}
                 onChange={handleInputChange}
@@ -149,9 +152,10 @@ export default function ProfesionalPerfil() {
             </div>
 
             <div className="form-group">
-              <label>Tipo Documento</label>
+              <label htmlFor="tipo_documento">Tipo Documento</label>
               <input
                 type="text"
+                id="tipo_documento"
                 name="tipo_documento"
                 value={formData.tipo_documento}
                 onChange={handleInputChange}
@@ -159,9 +163,10 @@ export default function ProfesionalPerfil() {
             </div>
 
             <div className="form-group">
-              <label>Documento</label>
+              <label htmlFor="documento">Documento</label>
               <input
                 type="text"
+                id="documento"
                 name="documento"
                 value={formData.documento}
                 onChange={handleInputChange}
@@ -169,9 +174,10 @@ export default function ProfesionalPerfil() {
             </div>
 
             <div className="form-group">
-              <label>Email</label>
+              <label htmlFor="email">Email</label>
               <input
                 type="email"
+                id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
@@ -179,9 +185,10 @@ export default function ProfesionalPerfil() {
             </div>
 
             <div className="form-group">
-              <label>Dirección</label>
+              <label htmlFor="direccion">Dirección</label>
               <input
                 type="text"
+                id="direccion"
                 name="direccion"
                 value={formData.direccion}
                 onChange={handleInputChange}
@@ -189,9 +196,10 @@ export default function ProfesionalPerfil() {
             </div>
 
             <div className="form-group">
-              <label>Teléfono</label>
+              <label htmlFor="telefono">Teléfono</label>
               <input
                 type="tel"
+                id="telefono"
                 name="telefono"
                 value={formData.telefono}
                 onChange={handleInputChange}

@@ -43,7 +43,7 @@ import ProfesionalMisCitas from './pages/profesional/ProfesionalMisCitas.js';
 import ProfesionalPerfil from './pages/profesional/ProfesionalPerfil.js';
 import ProfesionalEspecialidades from './pages/profesional/ProfesionalEspecialidades.js';
 
-//Paginas Auxiliar
+// Paginas Auxiliar
 import AuxiliarDashboard from './pages/auxiliar/AuxiliarDashboard.js';
 import AuxiliarProductos from './pages/auxiliar/AuxiliarProductos.js';
 import AuxiliarServicios from './pages/auxiliar/AuxiliarServicios.js';
@@ -56,28 +56,33 @@ import AuxiliarCitas from './pages/auxiliar/AuxiliarCitas.js';
 import AuxiliarMisCitas from './pages/auxiliar/AuxiliarMisCitas.js';
 import AuxiliarPedidos from './pages/auxiliar/AuxiliarPedidos.js';
 
+// ==========================================
+// FUNCIÓN COMPARTIDA PARA ACTUALIZAR ROL
+// ==========================================
+
+const updateUserRole = (setUserRole) => {
+  const token = getToken();
+  const savedRole = token ? getStoredRole() : null;
+  setUserRole(savedRole);
+};
+
+// ==========================================
+// COMPONENTE PRINCIPAL
+// ==========================================
+
 function App() {
   const [userRole, setUserRole] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [globalNotice, setGlobalNotice] = useState('');
 
+  // Sincronizar estado de sesión al montar
   useEffect(() => {
-    const syncSessionState = () => {
-      const token = getToken();
-      const savedRole = token ? getStoredRole() : null;
-      setUserRole(savedRole);
-    };
-
-    syncSessionState();
+    updateUserRole(setUserRole);
   }, []);
 
   // Escuchar evento personalizado de cambio de autenticación
   useEffect(() => {
-    const handleAuthChange = () => {
-      const token = getToken();
-      const savedRole = token ? getStoredRole() : null;
-      setUserRole(savedRole);
-    };
+    const handleAuthChange = () => updateUserRole(setUserRole);
     
     window.addEventListener('authChange', handleAuthChange);
     return () => window.removeEventListener('authChange', handleAuthChange);
@@ -85,16 +90,13 @@ function App() {
 
   // Escuchar cambios en localStorage desde otra pestaña/ventana
   useEffect(() => {
-    const handleStorageChange = () => {
-      const token = getToken();
-      const savedRole = token ? getStoredRole() : null;
-      setUserRole(savedRole);
-    };
+    const handleStorageChange = () => updateUserRole(setUserRole);
     
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  // Escuchar evento de sesión expirada
   useEffect(() => {
     const handleSessionExpired = (event) => {
       const message = event?.detail?.message || 'Tu sesion expiro. Inicia sesion nuevamente.';
@@ -109,10 +111,12 @@ function App() {
   const isAuthenticated = Boolean(getToken() && userRole);
 
   const getDefaultRouteByRole = () => {
-    if (userRole === 'admin') return '/admin/dashboard';
-    if (userRole === 'auxiliar') return '/auxiliar/dashboard';
-    if (userRole === 'profesional') return '/profesional/dashboard';
-    return '/cliente/catalogo';
+    const ROUTES = {
+      admin: '/admin/dashboard',
+      auxiliar: '/auxiliar/dashboard',
+      profesional: '/profesional/dashboard',
+    };
+    return ROUTES[userRole] || '/cliente/catalogo';
   };
 
   const canScheduleAppointments = isAuthenticated && ['cliente', 'admin', 'auxiliar', 'profesional'].includes(userRole);
@@ -133,7 +137,6 @@ function App() {
         <Navbar userRole={userRole} onLogout={handleLogout} />
         
         <div className="main-content">
-          {/* SIDEBAR SOLO CUANDO ESTÁ AUTENTICADO */}
           {isAuthenticated && <Sidebar userRole={userRole} onToggle={setSidebarOpen} />}
           
           <main className={`content ${isAuthenticated ? 'with-sidebar' : 'full-width'} ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
@@ -240,7 +243,6 @@ function App() {
               {isAuthenticated && userRole === 'cliente' && <Route path="*" element={<Navigate to="/cliente/catalogo" />} />}
               {isAuthenticated && userRole === 'profesional' && <Route path="*" element={<Navigate to="/profesional/dashboard" />} />}
               
-              {/* Si no está autenticado y trata de acceder a ruta privada, va a home */}
               {!isAuthenticated && <Route path="*" element={<Navigate to="/" />} />}
             </Routes>
           </main>
@@ -252,5 +254,3 @@ function App() {
 }
 
 export default App;
-
-

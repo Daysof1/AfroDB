@@ -9,7 +9,6 @@ export default function ProfesionalEspecialidades() {
   const [catalogoEspecialidades, setCatalogoEspecialidades] = useState([]);
 
   const [busqueda, setBusqueda] = useState('');
-  const [filtro, setFiltro] = useState('Todos');
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [newEsp, setNewEsp] = useState({ especialidadId: '' });
@@ -78,7 +77,7 @@ export default function ProfesionalEspecialidades() {
     <div className="profesional-page">
       <div className="page-header">
         <h1>⭐ Mis Especialidades</h1>
-        <button className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
+        <button type="button" className="btn btn-primary" onClick={() => setIsFormOpen(!isFormOpen)}>
           {isFormOpen ? 'Cancelar' : '➕ Agregar Especialidad'}
         </button>
       </div>
@@ -90,8 +89,9 @@ export default function ProfesionalEspecialidades() {
           <h2>Agregar Nueva Especialidad</h2>
           <form onSubmit={(e) => { e.preventDefault(); handleAddEspecialidad(); }}>
             <div className="form-group">
-              <label>Selecciona una especialidad</label>
+              <label htmlFor="especialidad">Selecciona una especialidad</label>
               <select
+                id="especialidad"
                 value={newEsp.especialidadId}
                 onChange={(e) => setNewEsp({ especialidadId: e.target.value })}
               >
@@ -125,6 +125,7 @@ export default function ProfesionalEspecialidades() {
             <p>{esp.descripcion || 'Sin descripción'}</p>
             <div className="esp-actions">
               <button 
+                type="button"
                 className="btn btn-sm btn-danger"
                 onClick={() => handleDeleteEspecialidad(esp.id)}
               >

@@ -1,7 +1,5 @@
 // Página: ProfesionalDashboard.js. panel principal del profesional.
 import { useState, useEffect } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendar, faChalkboard, faStar, faUsers, faCheck, faGear } from '@fortawesome/free-solid-svg-icons';
 import '../Profesional.css';
 import { apiRequest } from '../../api/client.js';
 

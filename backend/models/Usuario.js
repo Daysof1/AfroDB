@@ -72,7 +72,7 @@ const Usuario = sequelize.define('Usuario', {
   // Columna 'nombre' → Nombre del usuario
   nombre: {
     type: DataTypes.STRING(100),       // VARCHAR(100) en MySQL → máximo 100 caracteres
-    allowNull: false,                  // Obligatorio: todo usuario necesita nombre
+    allowNull: false,                  // Obligatorio: los usuarios necesita nombre
     validate: {                        // Validaciones de Sequelize (a nivel de aplicación)
       notEmpty: {                      // No permite cadena vacía ""
         msg: 'El nombre no puede estar vacío'
@@ -211,7 +211,7 @@ const Usuario = sequelize.define('Usuario', {
     // Se usa SOLO cuando se necesita la contraseña (ej: login para compararla)
     // Uso: Usuario.scope('withPassword').findOne({ where: { email } })
     withPassword: {
-      attributes: {}                   // attributes vacío = incluir todo
+      attributes: {}                   // attributes vacío = incluir 
     }
   },
   
@@ -279,7 +279,7 @@ Usuario.prototype.compararPassword = async function(passwordIngresado) {
 Usuario.prototype.toJSON = function() {
   // this.get() obtiene todos los valores de la instancia como objeto plano
   // Object.assign({}, ...) crea una COPIA (para no modificar el original)
-  const valores = Object.assign({}, this.get());
+  const valores = { ...this.get() };
   
   // Elimina la contraseña de la copia
   delete valores.password;

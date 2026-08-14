@@ -151,38 +151,32 @@
 }
 
 .btn-danger {
-  background: #d9534f;
+  background: #c9302c;
   color: white;
 }
 
 .btn-danger:hover {
-  background: #c9302c;
+  background: #a7231e;
 }
 
 .btn-warning {
-  background: #f0ad4e;
-  color: white;
+  background: #ec9110;
+  color: #1a1a1a;
+  font-weight: 700;
 }
 
 .btn-warning:hover {
-  background: #ec971f;
+  background: #b97617;
 }
 
 .btn-success {
-  background: #5cb85c;
-  color: white;
+  background: #2d7a2d;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .btn-success:hover {
-  background: #449d44;
-}
-.btn-success {
-  background: #5cb85c;
-  color: white;
-}
-
-.btn-success:hover {
-  background: #449d44;
+  background: #348334;
 }
 
 .btn-sm {
@@ -214,9 +208,6 @@
   font-size: 0.8rem;
   font-weight: 600;
   width: fit-content;
-}
-
-.activity-badge {
   background: var(--color-secondary);
   color: var(--color-text);
 }
@@ -325,22 +316,6 @@
   margin-bottom: 2rem;
   flex-wrap: wrap;
   align-items: center;
-}
-
-.search-input {
-  flex: 1;
-  min-width: 200px;
-  padding: 0.75rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-family: inherit;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(200, 162, 122, 0.1);
 }
 
 .filter-buttons {
@@ -491,7 +466,7 @@
   width: 100%;
   min-width: 0;
   white-space: normal;
-  word-break: break-word;
+  word-break: word-break;
   text-align: center;
 }
 
@@ -545,8 +520,9 @@
 }
 
 .badge-info {
-  background: #a1afee;
-  color: #394eaa;
+  background: #d6dfff;
+  color: #1a2a6a;
+  font-weight: 600;
 }
 
 /* BTN CLASS */

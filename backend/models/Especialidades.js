@@ -108,7 +108,7 @@ const Especialidad = sequelize.define('Especialidad', {
  * (útil si luego agregas más campos internos)
  */
 Especialidad.prototype.toJSON = function() {
-  const valores = Object.assign({}, this.get());
+  const valores = { ...this.get() };
   return valores;
 };
 

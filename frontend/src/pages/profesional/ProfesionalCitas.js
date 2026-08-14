@@ -5,6 +5,23 @@ import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 import '../Profesional.css';
 import { apiRequest } from '../../api/client.js';
 
+const getBadgeClass = (estado) => {
+  const estadoLower = (estado || '').toLowerCase();
+  
+  switch (estadoLower) {
+    case 'pendiente':
+      return 'badge-warning';
+    case 'confirmada':
+      return 'badge-info';
+    case 'completada':
+      return 'badge-success';
+    case 'cancelada':
+      return 'badge-danger';
+    default:
+      return 'badge-secondary';
+  }
+};
+
 // Renderiza la vista principal de este componente.
 export default function ProfesionalCitas() {
   const [citas, setCitas] = useState([]);
@@ -80,12 +97,14 @@ export default function ProfesionalCitas() {
         />
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Todos' ? 'active' : ''}`}
           onClick={() => setFiltro('Todos')}
         >
           Todas ({citas.length})
         </button>
          <button
+          type="button"
           className={`filter-btn ${filtro === 'Pendiente' ? 'active' : ''}`}
           onClick={() => setFiltro('Pendiente')}
         >
@@ -93,6 +112,7 @@ export default function ProfesionalCitas() {
         </button>
 
         <button
+          type="button"
           className={`filter-btn ${filtro === 'Confirmada' ? 'active' : ''}`}
           onClick={() => setFiltro('Confirmada')}
         >
@@ -100,6 +120,7 @@ export default function ProfesionalCitas() {
         </button>
 
          <button
+          type="button"
           className={`filter-btn ${filtro === 'Completada' ? 'active' : ''}`}
           onClick={() => setFiltro('Completada')}
         >
@@ -107,6 +128,7 @@ export default function ProfesionalCitas() {
         </button>
 
          <button
+          type="button"
           className={`filter-btn ${filtro === 'Cancelada' ? 'active' : ''}`}
           onClick={() => setFiltro('Cancelada')}
         >
@@ -125,21 +147,9 @@ export default function ProfesionalCitas() {
               <div key={cita.id} className="cita-card-prof">
                 <div className="cita-header-prof">
                   <h3>{cita?.cliente?.nombre || 'Cliente'}</h3>
-                  <span
-                className={`badge ${
-                  (cita.estado || '').toLowerCase() === 'pendiente'
-                  ? 'badge-warning'
-                  : (cita.estado || '').toLowerCase() === 'confirmada'
-                  ? 'badge-info'
-                  : (cita.estado || '').toLowerCase() === 'completada'
-                  ? 'badge-success'
-                  : (cita.estado || '').toLowerCase() === 'cancelada'
-                  ? 'badge-danger'
-                  : 'badge-secondary'
-                }`}
-              >
-              {cita.estado}
-              </span>
+                  <span className={`badge ${getBadgeClass(cita.estado)}`}>
+                    {cita.estado}
+                  </span>
                 </div>
 
                 <div className="cita-info-prof">
@@ -157,12 +167,14 @@ export default function ProfesionalCitas() {
                   {(cita.estado || '').toLowerCase() === 'pendiente' && (
                     <>
                       <button 
+                        type="button"
                         className="btn btn-sm btn-primary"
                         onClick={() => handleActualizarEstado(cita.id, 'Confirmada')}
                       >
                         ✅ Confirmar
                       </button>
                       <button 
+                        type="button"
                         className="btn btn-sm btn-danger"
                         onClick={() => handleActualizarEstado(cita.id, 'Cancelada')}
                       >
@@ -171,7 +183,7 @@ export default function ProfesionalCitas() {
                     </>
                   )}
                   {(cita.estado || '').toLowerCase() === 'confirmada' && (
-                    <button className="btn btn-sm btn-secondary" onClick={() => handleActualizarEstado(cita.id, 'Completada')}>
+                    <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleActualizarEstado(cita.id, 'Completada')}>
                       ✓ Completada
                     </button>
                   )}
