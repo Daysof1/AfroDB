@@ -138,6 +138,97 @@ const verificarDisponibilidadProfesional = async (profesionalesIds, fecha, inici
   return { valid: true };
 };
 
+const obtenerEspecialidadesRequeridas = async (serviciosDB, transaction) => {
+  const nombresRequeridos = Array.from(new Set(
+    serviciosDB
+      .map((servicio) => servicio.subcategoria?.nombre)
+      .filter(Boolean)
+      .map(normalizarTexto)
+  ));
+
+  if (nombresRequeridos.length === 0) {
+    return { valid: false, message: 'Los servicios seleccionados no tienen especialidad asociada' };
+  }
+
+  const especialidades = await Especialidad.findAll({ transaction });
+  const especialidadesPorNombre = new Map(
+    especialidades.map((especialidad) => [normalizarTexto(especialidad.nombre), especialidad])
+  );
+  const especialidadesRequeridas = nombresRequeridos.map((nombre) => especialidadesPorNombre.get(nombre));
+
+  if (especialidadesRequeridas.some((especialidad) => !especialidad)) {
+    return { valid: false, message: 'Uno o más servicios no tienen una especialidad configurada' };
+  }
+
+  return { valid: true, especialidadesRequeridas };
+};
+
+const obtenerProfesionalesPreferidos = async (profesionalesIds, profesionalesPorId, _transaction) => {
+  const ids = Array.isArray(profesionalesIds) ? profesionalesIds : [];
+  const profesionalesPreferidos = [];
+
+  for (const id of new Set(ids.map(Number))) {
+    const profesional = profesionalesPorId.get(id);
+    if (!profesional) {
+      return { valid: false, message: 'Uno o más profesionales seleccionados no existen o están inactivos' };
+    }
+    profesionalesPreferidos.push(profesional);
+  }
+
+  return { valid: true, profesionalesPreferidos };
+};
+
+const asignarProfesionalesAServicios = async (
+  serviciosDB,
+  especialidadPorNombreNormalizado,
+  profesionalSeleccionado,
+  profesionalesPreferidos,
+  profesionalesDisponibles,
+  _transaction
+) => {
+  const especialidadesDe = (profesional) => new Set(
+    (profesional.especialidades || []).map((especialidad) => normalizarTexto(especialidad.nombre))
+  );
+
+  if (profesionalSeleccionado) {
+    const especialidadesSeleccionado = especialidadesDe(profesionalSeleccionado);
+    const incompatibles = serviciosDB.filter((servicio) => (
+      !especialidadesSeleccionado.has(normalizarTexto(servicio.subcategoria.nombre))
+    ));
+
+    if (incompatibles.length > 0) {
+      return {
+        valid: false,
+        message: 'El profesional seleccionado no tiene la especialidad requerida para los servicios elegidos'
+      };
+    }
+  }
+
+  const serviciosAsignados = [];
+  for (const servicio of serviciosDB) {
+    const especialidadRequerida = especialidadPorNombreNormalizado.get(
+      normalizarTexto(servicio.subcategoria.nombre)
+    );
+    const candidatos = profesionalSeleccionado
+      ? [profesionalSeleccionado]
+      : [...profesionalesPreferidos, ...profesionalesDisponibles];
+    const profesional = candidatos.find((candidato) => (
+      especialidadesDe(candidato).has(normalizarTexto(especialidadRequerida.nombre))
+    ));
+
+    if (!profesional) {
+      return {
+        valid: false,
+        message: `No hay profesionales disponibles para la especialidad ${especialidadRequerida.nombre}`
+      };
+    }
+
+    serviciosAsignados.push({ servicio, profesionalId: profesional.id });
+  }
+
+  return { valid: true, serviciosAsignados };
+};
+
 // ==========================================
 // 📅 CREAR CITA - CLIENTE
 // ==========================================
