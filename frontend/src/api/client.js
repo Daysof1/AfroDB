@@ -232,8 +232,23 @@ const parseResponsePayload = async (response) => {
       return null;
     }
 
-    const data = await response.json();  // ✅ Esto está correcto
-    return createSafePayload(data);
+    const data = await response.json();
+
+    // ✅ Validar que los datos sean un objeto válido (no array)
+    if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+      return null;
+    }
+
+    // ✅ Validar que los campos existan y tengan el tipo correcto
+    const safePayload = {
+      success: typeof data.success === 'boolean' ? data.success : false,
+      message: typeof data.message === 'string' ? data.message : '',
+      data: data.data ?? null,
+      errors: Array.isArray(data.errors) ? data.errors : null,
+      token: typeof data.token === 'string' ? data.token : null,
+    };
+
+    return safePayload;
 
   } catch {
     return null;
@@ -263,21 +278,28 @@ const handleHttpError = (response, payload, hadToken, isAuthAction) => {
 // FUNCIÓN PRINCIPAL (REFACTORIZADA)
 // ==========================================
 
+const isValidApiPath = (value) => {
+  if (typeof value !== 'string') return false;
+  if (!value.startsWith('/')) return false;
+  if (value.includes(' ')) return false;
+  return /^\/?[A-Za-z0-9/_\-?&=%+:.]+$/.test(value);
+};
+
 export async function apiRequest(path, options = {}) {
   const token = getToken();
   const hadToken = Boolean(token);
-  const isAuthAction = path.startsWith('/auth/login') || path.startsWith('/auth/register');
+  const normalizedPath = typeof path === 'string' ? path : '';
+  const isAuthAction = normalizedPath.startsWith('/auth/login') || normalizedPath.startsWith('/auth/register');
   const isFormData = options.body instanceof FormData;
 
   const headers = buildHeaders(options, token, isFormData);
 
-  // Validar que path solo contenga caracteres permitidos
-  const sanitizedPath = path.replace(/[^a-zA-Z0-9/_-]/g, '');
-  if (sanitizedPath !== path) {
-    console.warn(`⚠️ Path inválido detectado: ${path}`);
+  if (!isValidApiPath(normalizedPath)) {
+    console.warn(`⚠️ Path inválido detectado: ${normalizedPath || path}`);
     throw new ApiError('Path inválido', 400, null);
   }
-  const response = await fetch(`${API_BASE_URL}${sanitizedPath}`, {
+
+  const response = await fetch(`${API_BASE_URL}${normalizedPath}`, {
     ...options,
     headers,
   });
