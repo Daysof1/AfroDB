@@ -44,146 +44,33 @@ export function isClientRole() {
   return getStoredRole() === 'cliente';
 }
 
-const normalizeSafeText = (value, fallback = '') => {
-  if (value === null || value === undefined) {
-    return fallback;
-  }
-
-  const text = String(value)
-    .replace(/[\u0000-\u001F\u007F]/g, '')
-    .replace(/[<>]/g, '')
-    .trim();
-
-  return text || fallback;
-};
-
-const normalizePositiveInteger = (value, fallback = 1) => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsed)) {
-    return fallback;
-  }
-
-  return parsed;
-};
-
-const normalizeNonNegativeNumber = (value, fallback = 0) => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return fallback;
-  }
-
-  return parsed;
-};
-
-export function sanitizeProductForCart(producto) {
-  if (!producto || typeof producto !== 'object') {
-    return null;
-  }
-
-  const rawId = producto?.id ?? producto?.productoId ?? '';
-  const productoId = normalizeSafeText(rawId, '').replace(/^local-/, '');
-
-  if (!productoId) {
-    return null;
-  }
-
-  const nombre = normalizeSafeText(producto?.nombre, 'Producto');
-  const imagen = normalizeSafeText(producto?.imagen, '');
-  const descripcion = normalizeSafeText(producto?.descripcion, '');
-  const precio = normalizeNonNegativeNumber(producto?.precio ?? producto?.precioUnitario ?? 0, 0);
-
-  return {
-    id: productoId,
-    productoId,
-    nombre,
-    imagen,
-    descripcion,
-    precio,
-  };
-}
-
-function sanitizeCartItemForStorage(item) {
-  if (!item || typeof item !== 'object') {
-    return null;
-  }
-
-  const productoId = normalizeSafeText(item?.productoId ?? item?.producto?.id ?? item?.id ?? '', '').replace(/^local-/, '');
-  if (!productoId) {
-    return null;
-  }
-
-  const cantidad = normalizePositiveInteger(item?.cantidad ?? item?.producto?.cantidad ?? 1, 1);
-  const precioUnitario = normalizeNonNegativeNumber(item?.precioUnitario ?? item?.producto?.precio ?? item?.producto?.precioUnitario ?? 0, 0);
-
-  if (!Number.isFinite(precioUnitario) || precioUnitario < 0) {
-    return null;
-  }
-
-  const nombre = normalizeSafeText(item?.producto?.nombre ?? item?.nombre ?? 'Producto', 'Producto');
-  const imagen = normalizeSafeText(item?.producto?.imagen ?? item?.imagen ?? '', '');
-  const descripcion = normalizeSafeText(item?.producto?.descripcion ?? item?.descripcion ?? '', '');
-
-  const cleanedItem = {
-    id: `local-${productoId}`,
-    productoId,
-    cantidad,
-    precioUnitario,
-    producto: {
-      id: productoId,
-      nombre,
-      imagen,
-      descripcion,
-    },
-  };
-
-  return Object.keys(cleanedItem).length > 0 ? cleanedItem : null;
-}
-
 function readLocalCart() {
   try {
     const raw = localStorage.getItem(LOCAL_CART_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    const safeItems = Array.isArray(parsed)
-      ? parsed.map((item) => sanitizeCartItemForStorage(item)).filter(Boolean)
-      : [];
-    return safeItems;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
 }
 
 function writeLocalCart(items) {
-  const safeItems = Array.isArray(items)
-    ? items.map((item) => sanitizeCartItemForStorage(item)).filter(Boolean)
-    : [];
-
-  localStorage.setItem(LOCAL_CART_STORAGE_KEY, JSON.stringify(safeItems));
+  localStorage.setItem(LOCAL_CART_STORAGE_KEY, JSON.stringify(items));
 }
 
 function buildLocalCartItem(producto, cantidad = 1) {
-  const safeProducto = sanitizeProductForCart(producto);
-  if (!safeProducto) {
-    return null;
-  }
-
-  const productoId = String(safeProducto.productoId || safeProducto.id || '');
-  if (!productoId) {
-    return null;
-  }
-
-  const cantidadFinal = normalizePositiveInteger(cantidad, 1);
-  const precioUnitario = normalizeNonNegativeNumber(safeProducto.precio, 0);
+  const productoId = String(producto?.id ?? producto?.productoId ?? '');
 
   return {
     id: `local-${productoId}`,
     productoId,
-    cantidad: cantidadFinal,
-    precioUnitario,
+    cantidad: Number(cantidad) || 1,
+    precioUnitario: Number(producto?.precio ?? producto?.precioUnitario ?? 0),
     producto: {
-      id: productoId,
-      nombre: normalizeSafeText(safeProducto.nombre, 'Producto'),
-      imagen: normalizeSafeText(safeProducto.imagen, ''),
-      descripcion: normalizeSafeText(safeProducto.descripcion, ''),
+      id: producto?.id ?? producto?.productoId ?? null,
+      nombre: producto?.nombre || 'Producto',
+      imagen: producto?.imagen || '',
+      descripcion: producto?.descripcion || '',
     },
   };
 }
@@ -193,23 +80,18 @@ export function getLocalCartItems() {
 }
 
 export function addItemToLocalCart(producto, cantidad = 1) {
-  const safeProducto = sanitizeProductForCart(producto);
-  const productoId = String(safeProducto?.productoId ?? safeProducto?.id ?? '');
+  const productoId = String(producto?.id ?? producto?.productoId ?? '');
   if (!productoId) return readLocalCart();
 
   const items = readLocalCart();
   const existingIndex = items.findIndex((item) => item?.productoId === productoId);
-  const nextItem = buildLocalCartItem(safeProducto, cantidad);
-
-  if (!nextItem) {
-    return items;
-  }
+  const nextItem = buildLocalCartItem(producto, cantidad);
 
   if (existingIndex >= 0) {
     items[existingIndex] = {
       ...items[existingIndex],
       ...nextItem,
-      cantidad: Number(items[existingIndex]?.cantidad || 0) + Number(nextItem.cantidad || 1),
+      cantidad: Number(items[existingIndex]?.cantidad || 0) + Number(cantidad || 1),
     };
   } else {
     items.push(nextItem);
