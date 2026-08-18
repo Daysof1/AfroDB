@@ -18,8 +18,6 @@ const { deleteFile, downloadImage, validarUrlSegura, safeLog } = require('../con
 // FUNCIONES AUXILIARES
 // ─────────────────────────────────────────────────────────────
 
-// NOSONAR: Validación exhaustiva de URL para prevenir SSRF
-// NOSONAR: Validación exhaustiva de URL para prevenir SSRF
 const validarUrlImagen = (url) => {
   if (!url || typeof url !== 'string') {
     throw new Error('URL inválida');
@@ -53,7 +51,6 @@ const validarUrlImagen = (url) => {
     throw new Error('La URL no apunta a una imagen con extensión válida');
   }
 
-  // ✅ Retorna la URL validada (es seguro porque ya pasó todas las validaciones)
   return url;
 };
 
@@ -158,24 +155,6 @@ const actualizarCamposServicio = (servicio, campos) => {
   if (parsedActivo !== undefined) servicio.activo = parsedActivo;
 };
 
-// NOSONAR: Función auxiliar para manejar descarga de imagen
-const descargarYAsignarImagen = async (req, servicio, imagenAnterior) => {
-  if (!req.body?.imagenUrl) return null;
-
-  const imagenUrl = req.body.imagenUrl;
-  if (!imagenUrl || typeof imagenUrl !== 'string') {
-    throw new Error('URL de imagen inválida');
-  }
-
-  const imagenUrlValidada = validarUrlImagen(imagenUrl);
-  if (imagenAnterior && imagenUrlValidada.includes(imagenAnterior)) {
-    return null;
-  }
-
-  const filename = await downloadImage(validarUrlSegura(imagenUrl), servicio.nombre || 'imagen');
-  return filename;
-};
-
 const manejarImagenServicio = async (req, servicio, imagenAnterior) => {
   let downloadedNewImageService = null;
 
@@ -186,8 +165,11 @@ const manejarImagenServicio = async (req, servicio, imagenAnterior) => {
     }
   } else if (req.body?.imagenUrl) {
     try {
-      const filename = await descargarYAsignarImagen(req, servicio, imagenAnterior);
-      if (filename) {
+      const imagenUrlStr = String(req.body.imagenUrl || '');
+      if (!imagenAnterior || !imagenUrlStr.includes(imagenAnterior)) {
+        // Validar URL directamente aquí
+        const imagenUrl = validarUrlImagen(imagenUrlStr);
+        const filename = await downloadImage(imagenUrl, servicio.nombre || 'imagen');
         downloadedNewImageService = filename;
         servicio.imagen = filename;
         if (imagenAnterior && imagenAnterior !== filename) {
@@ -195,7 +177,7 @@ const manejarImagenServicio = async (req, servicio, imagenAnterior) => {
         }
       }
     } catch (err) {
-      console.warn('No se pudo descargar la imagen remota:', safeLog(err.message));
+      console.warn('No se pudo descargar imagen remota:', safeLog(err.message));
     }
   } else if (servicio.imagen && !esNombreImagenValido(servicio.imagen)) {
     servicio.imagen = null;
@@ -326,13 +308,8 @@ const crearServicio = async (req, res) => {
     } else if (req.body?.imagenUrl) {
       try {
         // Validar URL directamente aquí para que SonarQube lo vea
-       // ✅ Validar y usar directamente
-      const imagenUrl = req.body.imagenUrl;
-      if (!imagenUrl || typeof imagenUrl !== 'string') {
-        throw new Error('URL de imagen inválida');
-      }
-      const imagenUrlValidada = validarUrlImagen(imagenUrl);
-      downloadedImagen = await downloadImage(imagenUrlValidada, nombre);
+       const imagenUrl = validarUrlImagen(req.body.imagenUrl);
+      downloadedImagen = await downloadImage(imagenUrl, nombre);
       imagen = downloadedImagen;
       } catch (err) {
         console.warn('No se pudo descargar la imagen remota:', safeLog(err.message));
