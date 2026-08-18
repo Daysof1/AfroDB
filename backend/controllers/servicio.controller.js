@@ -93,6 +93,42 @@ const validarCategoriaYSubcategoriaServicio = async (parsedCategoriaId, parsedSu
   }
 };
 
+const validarCategoriaServicio = async (categoriaId) => {
+  if (categoriaId === undefined || categoriaId === '') {
+    return undefined;
+  }
+
+  const parsedCategoriaId = Number.parseInt(categoriaId, 10);
+  const Categoria = require('../models/Categoria');
+  const categoria = await Categoria.findByPk(parsedCategoriaId);
+
+  if (!categoria?.activo || categoria?.tipo !== 'servicio') {
+    throw new Error('Categoría inválida o inactiva');
+  }
+
+  return parsedCategoriaId;
+};
+
+const validarSubcategoriaServicio = async (subcategoriaId, categoriaId) => {
+  if (subcategoriaId === undefined || subcategoriaId === '') {
+    return undefined;
+  }
+
+  const parsedSubcategoriaId = Number.parseInt(subcategoriaId, 10);
+  const Subcategoria = require('../models/Subcategoria');
+  const subcategoria = await Subcategoria.findByPk(parsedSubcategoriaId);
+
+  if (!subcategoria?.activo || subcategoria?.tipo !== 'servicio') {
+    throw new Error('Subcategoría inválida o inactiva');
+  }
+
+  if (categoriaId !== undefined && subcategoria.categoriaId !== Number.parseInt(categoriaId, 10)) {
+    throw new Error('La subcategoría no pertenece a la categoría seleccionada');
+  }
+
+  return parsedSubcategoriaId;
+};
+
 const validarPrecioServicio = (precio) => {
   const precioNum = Number.parseFloat(precio);
   if (Number.isNaN(precioNum) || precioNum <= 0) {
@@ -387,21 +423,25 @@ const actualizarServicio = async (req, res) => {
       });
     }
     
-    // Validar categoría y subcategoría
-    await validarCategoriaYSubcategoriaServicio(parsedCategoriaId, parsedSubcategoriaId, servicio);
-    
+    // Validar categoría y subcategoría conservando los valores actuales cuando el frontend no los envía
+    const categoriaFinal = parsedCategoriaId ?? servicio.categoriaId;
+    const subcategoriaFinal = parsedSubcategoriaId ?? servicio.subcategoriaId;
+
+    await validarCategoriaServicio(categoriaFinal);
+    await validarSubcategoriaServicio(subcategoriaFinal, categoriaFinal);
+
     // Manejar imagen
     const imagenAnterior = servicio.imagen;
     await manejarImagenServicio(req, servicio, imagenAnterior);
-    
+
     // Actualizar campos
     actualizarCamposServicio(servicio, {
       nombre,
       descripcion,
       parsedPrecio,
       parsedDuracion,
-      parsedCategoriaId,
-      parsedSubcategoriaId,
+      parsedCategoriaId: categoriaFinal,
+      parsedSubcategoriaId: subcategoriaFinal,
       parsedActivo
     });
     

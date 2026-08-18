@@ -495,6 +495,44 @@ describe('🧪 TESTS DE API E-COMMERCE', () => {
       expect(response.body.success).toBe(true);
     });
 
+    test('✅ Admin debe actualizar un producto con su categoría y subcategoría válidas', async () => {
+      const response = await request(app)
+        .put('/api/admin/productos/48')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          nombre: 'Producto prueba',
+          descripcion: 'Hidrata y suaviza la piel alrededor de la uña.',
+          precio: 1000,
+          stock: 21,
+          categoriaId: 11,
+          subcategoriaId: 31
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.producto).toHaveProperty('categoriaId', 11);
+      expect(response.body.data.producto).toHaveProperty('subcategoriaId', 31);
+    });
+
+    test('✅ Admin debe actualizar un servicio con categoría y subcategoría válidas', async () => {
+      const response = await request(app)
+        .put('/api/admin/servicios/57')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          nombre: 'Masaje corporal',
+          descripcion: 'Masaje relajante',
+          precio: 100000,
+          duracion: 60,
+          categoriaId: 24,
+          subcategoriaId: 67
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.servicio).toHaveProperty('categoriaId', 24);
+      expect(response.body.data.servicio).toHaveProperty('subcategoriaId', 67);
+    });
+
     // TODO: Test falla por validaciones
     // test('✅ Admin debe actualizar stock de producto', async () => {
     //   if (productoId) {

@@ -15,6 +15,27 @@ const { verificarAuth } = require('../middleware/auth');
 const { esAdministrador, esAdminOAuxiliar, soloAdministrador } = require('../middleware/checkRole');
 const { upload } = require('../config/multer');
 
+const uploadProductoImagen = (req, res, next) => {
+  upload.fields([
+    { name: 'imagen', maxCount: 1 },
+    { name: 'image', maxCount: 1 },
+    { name: 'file', maxCount: 1 }
+  ])(req, res, (err) => {
+    if (err) {
+      return next(err);
+    }
+
+    const files = req.files || {};
+    const uploadedFile = files.imagen?.[0] || files.image?.[0] || files.file?.[0];
+
+    if (uploadedFile) {
+      req.file = uploadedFile;
+    }
+
+    next();
+  });
+};
+
 // ==========================================
 // IMPORTACIÓN DE CONTROLADORES
 // ==========================================
@@ -67,8 +88,8 @@ router.delete('/subcategorias/:id', soloAdministrador, subcategoriaController.el
 
 router.get('/productos', productoController.getProductos);
 router.get('/productos/:id', productoController.getProductoById);
-router.post('/productos', productoController.crearProducto);
-router.put('/productos/:id', productoController.actualizarProducto);
+router.post('/productos', uploadProductoImagen, productoController.crearProducto);
+router.put('/productos/:id', uploadProductoImagen, productoController.actualizarProducto);
 router.patch('/productos/:id/toggle', productoController.toggleProducto);
 router.patch('/productos/:id/stock', productoController.actualizarStock);
 router.delete('/productos/:id', soloAdministrador, productoController.eliminarProducto);

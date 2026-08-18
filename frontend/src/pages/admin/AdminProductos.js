@@ -23,7 +23,6 @@ export default function AdminProductos() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
-  const [editingOriginal, setEditingOriginal] = useState(null);
   const [newProduct, setNewProduct] = useState({
     nombre: '',
     descripcion: '',
@@ -36,7 +35,6 @@ export default function AdminProductos() {
 
   const resetForm = () => {
     setEditingProductId(null);
-    setEditingOriginal(null);
     setNewProduct({ nombre: '', descripcion: '', precio: '', stock: '', categoriaId: '', subcategoriaId: '', imagenUrl: '' });
     setSubcategorias([]);
   };
@@ -138,8 +136,6 @@ export default function AdminProductos() {
       setError('');
       setSuccess('');
       const isEditing = Boolean(editingProductId);
-      const categoriaChanged = String(newProduct.categoriaId) !== String(editingOriginal?.categoriaId ?? '');
-      const subcategoriaChanged = String(newProduct.subcategoriaId) !== String(editingOriginal?.subcategoriaId ?? '');
       const payload = {
         nombre: newProduct.nombre,
         descripcion: newProduct.descripcion || '',
@@ -148,11 +144,15 @@ export default function AdminProductos() {
         imagenUrl: newProduct.imagenUrl || '',
       };
 
-      if (!isEditing || categoriaChanged) {
+      if (newProduct.categoriaId !== '' && newProduct.categoriaId !== null && newProduct.categoriaId !== undefined) {
         payload.categoriaId = Number(newProduct.categoriaId);
       }
-      if (!isEditing || subcategoriaChanged) {
+      if (newProduct.subcategoriaId !== '' && newProduct.subcategoriaId !== null && newProduct.subcategoriaId !== undefined) {
         payload.subcategoriaId = Number(newProduct.subcategoriaId);
+      }
+
+      if (!isEditing && (!payload.categoriaId || !payload.subcategoriaId)) {
+        throw new Error('Debes seleccionar una categoría y subcategoría válidas');
       }
 
       const response = await apiRequest(isEditing ? `/admin/productos/${editingProductId}` : '/admin/productos', {
@@ -195,10 +195,6 @@ export default function AdminProductos() {
     setError('');
     setSuccess('');
     setEditingProductId(producto.id);
-    setEditingOriginal({
-      categoriaId: String(producto.categoriaId ?? ''),
-      subcategoriaId: String(producto.subcategoriaId ?? ''),
-    });
     setNewProduct({
       nombre: producto.nombre || '',
       descripcion: producto.descripcion || '',

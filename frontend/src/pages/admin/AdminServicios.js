@@ -150,10 +150,14 @@ export default function AdminServicios() {
         descripcion: newServicio.descripcion || '',
         precio: newServicio.precio,
         duracion: newServicio.duracion,
-        categoriaId: newServicio.categoriaId,
-        subcategoriaId: newServicio.subcategoriaId,
+        categoriaId: newServicio.categoriaId || undefined,
+        subcategoriaId: newServicio.subcategoriaId || undefined,
         imagenUrl: newServicio.imagenUrl || '',
       };
+
+      if (!editingServicioId && (!payload.categoriaId || !payload.subcategoriaId)) {
+        throw new Error('Debes seleccionar una categoría y subcategoría válidas');
+      }
 
       await apiRequest(isEditing ? `/admin/servicios/${editingServicioId}` : '/admin/servicios', {
         method: isEditing ? 'PUT' : 'POST',
