@@ -102,25 +102,45 @@ export default function ClienteCatalogo() {
     setFiltroSubcategoria(event.target.value);
   };
 
-  const handleAgregarAlCarrito = async (productoId) => {
-    try {
-      const producto = productos.find((item) => String(item.id) === String(productoId));
-
-      if (useServerCart) {
-        await apiRequest('/cliente/carrito', {
-          method: 'POST',
-          body: JSON.stringify({ productoId, cantidad: 1 }),
-        });
-      } else {
-        addItemToLocalCart(producto, 1);
-      }
-
-      setMessage('Producto agregado al carrito');
-      setTimeout(() => setMessage(''), 1800);
-    } catch (err) {
-      setError(err.message || 'No se pudo agregar al carrito');
+ const handleAgregarAlCarrito = async (productoId) => {
+  try {
+    // ✅ Validar que el ID sea válido
+    const id = Number(productoId);
+    if (Number.isNaN(id) || id <= 0) {
+      setError('Producto inválido');
+      return;
     }
-  };
+
+    const producto = productos.find((item) => String(item.id) === String(id));
+    if (!producto) {
+      setError('Producto no encontrado');
+      return;
+    }
+
+    if (useServerCart) {
+      await apiRequest('/cliente/carrito', {
+        method: 'POST',
+        body: JSON.stringify({ productoId: id, cantidad: 1 }),
+      });
+    } else {
+      // ✅ Sanitizar el producto antes de guardarlo en localStorage
+      const safeProducto = {
+        id: Number(producto.id),
+        nombre: String(producto.nombre || 'Producto'),
+        precio: Number(producto.precio || 0),
+        imagen: String(producto.imagen || ''),
+        descripcion: String(producto.descripcion || ''),
+        stock: Number(producto.stock || 0),
+      };
+      addItemToLocalCart(safeProducto, 1);
+    }
+
+    setMessage('Producto agregado al carrito');
+    setTimeout(() => setMessage(''), 1800);
+  } catch (err) {
+    setError(err.message || 'No se pudo agregar al carrito');
+  }
+};
 
   return (
     <div className="cliente-page">

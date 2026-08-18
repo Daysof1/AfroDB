@@ -54,8 +54,38 @@ function readLocalCart() {
   }
 }
 
+// ✅ writeLocalCart con validación y sanitización
 function writeLocalCart(items) {
-  localStorage.setItem(LOCAL_CART_STORAGE_KEY, JSON.stringify(items));
+  // ✅ Validar que items sea un array
+  if (!Array.isArray(items)) {
+    console.warn('⚠️ Intento de guardar items no válidos en localStorage');
+    return;
+  }
+
+  // ✅ Sanitizar cada item antes de guardar
+  const safeItems = items
+    .filter(item => item && typeof item === 'object')
+    .map(item => ({
+      id: String(item.id || ''),
+      productoId: String(item.productoId || ''),
+      cantidad: Math.max(1, Number(item.cantidad || 1)),
+      precioUnitario: Math.max(0, Number(item.precioUnitario || 0)),
+      producto: {
+        id: String(item.producto?.id || ''),
+        nombre: String(item.producto?.nombre || 'Producto'),
+        imagen: String(item.producto?.imagen || ''),
+        descripcion: String(item.producto?.descripcion || ''),
+      },
+    }))
+    .filter(item => item.productoId && item.cantidad > 0);
+
+  // ✅ Si no hay items válidos, eliminar del localStorage
+  if (safeItems.length === 0) {
+    localStorage.removeItem(LOCAL_CART_STORAGE_KEY);
+    return;
+  }
+
+  localStorage.setItem(LOCAL_CART_STORAGE_KEY, JSON.stringify(safeItems));
 }
 
 function buildLocalCartItem(producto, cantidad = 1) {
@@ -232,7 +262,21 @@ const parseResponsePayload = async (response) => {
       return null;
     }
 
-    const data = await response.json();
+    // ✅ Validar que la respuesta tenga contenido antes de parsear
+    const text = await response.text();
+    
+    // ✅ Verificar que no esté vacío
+    if (!text || text.trim() === '') {
+      return null;
+    }
+
+    // ✅ Intentar parsear de forma segura
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return null;
+    }
 
     // ✅ Validar que los datos sean un objeto válido (no array)
     if (data === null || typeof data !== 'object' || Array.isArray(data)) {
