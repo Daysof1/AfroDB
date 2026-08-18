@@ -8,6 +8,12 @@ import { exportarCitasAPDF, exportarCitasAExcel } from '../../utils/exportUtils.
 // FUNCIÓN AUXILIAR (fuera del componente)
 // ==========================================
 
+const safeLog = (value) => {
+  if (value === null || value === undefined) return 'null';
+  return String(value).replace(/[^a-zA-Z0-9_.-]/g, '_');
+};
+
+
 const getBadgeClass = (estado) => {
   const estadoLower = (estado || '').toLowerCase();
   
@@ -51,11 +57,14 @@ export default function AdminCitas() {
         apiRequest('/profesionales')
       ]);
       
-      const citasIniciales = citasRes?.data?.citas || [];
+
+      const citasIniciales = Array.isArray(citasRes?.data?.citas) ? citasRes.data.citas : [];
       const profesionalesData = profesionalesRes?.data?.profesionales || [];
       setProfesionales(profesionalesData);
       
-      console.log('Citas iniciales:', citasIniciales);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Citas iniciales:', citasIniciales);
+      }
       
       // Cargar servicios para cada cita usando el endpoint /cliente/citas/:id
       const citasConServicios = await Promise.all(
@@ -65,7 +74,7 @@ export default function AdminCitas() {
             // Validar que el ID sea un número antes de usarlo
             const citaId = Number(cita.id);
             if (Number.isNaN(citaId) || citaId <= 0) {
-              console.warn(`⚠️ ID de cita inválido: ${cita.id}`);
+              console.warn(`⚠️ ID de cita inválido: ${safeLog(cita.id)}`);
               return cita;
             }
             const citaCompleta = await apiRequest(`/cliente/citas/${citaId}`);
