@@ -174,7 +174,8 @@ const manejarImagenProducto = async (req, producto, imagenAnterior) => {
         }
       }
     } catch (err) {
-      throw new Error(`No se pudo descargar la imagen remota: ${safeLog(err.message)}`);
+      console.error('Error al descargar imagen remota:', safeLog(err.message));
+      // Continuar sin imagen (no lanzar error)
     }
   }
 

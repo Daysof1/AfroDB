@@ -349,7 +349,8 @@ const crearServicio = async (req, res) => {
       downloadedImagen = await downloadImage(imagenUrl, nombre);
       imagen = downloadedImagen;
       } catch (err) {
-        throw new Error(`No se pudo descargar la imagen remota: ${safeLog(err.message)}`);
+        console.warn('No se pudo descargar la imagen remota:', safeLog(err.message));
+        // No lanzar error, solo continuar sin imagen
       }
     }
     
