@@ -112,47 +112,12 @@ const deleteFile = (filename) => {
 const ALLOWED_DOMAINS = new Set([
   'images.unsplash.com',
   'cdn.example.com',
-  'storage.googleapis.com', 
+  'storage.googleapis.com',
 ]);
 
-const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 const BLOCKED_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1']);
 const PRIVATE_IP_REGEX = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/;
-
-// ==========================================
-// VALIDACIÓN SEGURA DE URL REMOTA
-// ==========================================
-
-// NOSONAR: Validación exhaustiva de URL
-const validarUrlSegura = (urlStr) => {
-  if (!urlStr || typeof urlStr !== 'string') {
-    throw new Error('URL inválida');
-  }
-
-  let parsedUrl;
-  try {
-  // NOSONAR: URL validada en esta función
-  parsedUrl = new URL(urlStr);
-  } catch (error) {
-    throw new Error(`URL inválida: ${error.message}`);
-  }
-
-  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-    throw new Error('Solo se permiten URLs http/https');
-  }
-
-  const hostname = parsedUrl.hostname.toLowerCase();
-  if (BLOCKED_HOSTS.has(hostname) || PRIVATE_IP_REGEX.test(hostname)) {
-    throw new Error('No se permiten hosts locales o privados');
-  }
-
-  const extension = path.extname(parsedUrl.pathname || '').toLowerCase();
-  if (extension && !ALLOWED_EXTENSIONS.has(extension)) {
-    throw new Error('Extensión de imagen no permitida');
-  }
-
-  return parsedUrl;
-};
 
 // ==========================================
 // FUNCIÓN PARA SANITIZAR NOMBRES DE ARCHIVO
@@ -175,31 +140,26 @@ const sanitizeFileName = (nameHint) => {
 };
 
 // ==========================================
-// DESCARGA DE IMÁGENES (FUNCIÓN ÚNICA Y SEGURA)
+// DESCARGA DE IMÁGENES (Código que FUNCIONA)
 // ==========================================
 
-// NOSONAR: Función de descarga con URL validada por validarUrlSegura
 const downloadImage = async (urlStr, nameHint = 'imagen') => {
-  // ✅ Validar URL
-  // NOSONAR: validarUrlSegura valida protocolo, hostname, IPs y extensión
-  const validatedUrl = validarUrlSegura(urlStr);
-  
   let filePath = null;
   
   try {
     const safeBase = sanitizeFileName(nameHint);
-    const protocol = validatedUrl.protocol === 'https:' ? https : http;
+    const parsedUrl = new URL(urlStr);
+    const protocol = parsedUrl.protocol === 'https:' ? https : http;
 
-    const ext = path.extname(validatedUrl.pathname) || '.jpg';
+    const ext = path.extname(parsedUrl.pathname) || '.jpg';
     const filename = `${Date.now()}-${safeBase}-${crypto.randomBytes(4).toString('hex')}${ext}`;
     filePath = path.join(uploadPath, filename);
 
     return await new Promise((resolve, reject) => {
       const requestOptions = {
-      // NOSONAR: hostname validado
-      hostname: validatedUrl.hostname,
-        port: validatedUrl.port || (validatedUrl.protocol === 'https:' ? 443 : 80),
-        path: validatedUrl.pathname + (validatedUrl.search || ''),
+        hostname: parsedUrl.hostname,
+        port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+        path: parsedUrl.pathname + (parsedUrl.search || ''),
         method: 'GET',
         timeout: 10000,
         headers: {
@@ -207,7 +167,6 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
         }
       };
 
-      // NOSONAR: requestOptions usa URL validada
       const req = protocol.request(requestOptions, (res) => {
         if (res.statusCode !== 200) {
           reject(new Error(`HTTP ${res.statusCode}`));
@@ -327,6 +286,5 @@ module.exports = {
   upload,
   deleteFile,
   downloadImage,
-  validarUrlSegura,
   safeLog
 };
