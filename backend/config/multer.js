@@ -123,7 +123,7 @@ const PRIVATE_IP_REGEX = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/;
 // VALIDACIÓN SEGURA DE URL REMOTA
 // ==========================================
 
-// NOSONAR
+// NOSONAR: Validación exhaustiva de URL
 const validarUrlSegura = (urlStr) => {
   if (!urlStr || typeof urlStr !== 'string') {
     throw new Error('URL inválida');
@@ -131,8 +131,8 @@ const validarUrlSegura = (urlStr) => {
 
   let parsedUrl;
   try {
-    // NOSONAR
-    parsedUrl = new URL(urlStr);
+  // NOSONAR: URL validada en esta función
+  parsedUrl = new URL(urlStr);
   } catch (error) {
     throw new Error(`URL inválida: ${error.message}`);
   }
@@ -179,10 +179,9 @@ const sanitizeFileName = (nameHint) => {
 // ==========================================
 
 // NOSONAR: Función de descarga con URL validada por validarUrlSegura
-// NOSONAR
 const downloadImage = async (urlStr, nameHint = 'imagen') => {
   // ✅ Validar URL
-  // NOSONAR
+  // NOSONAR: validarUrlSegura valida protocolo, hostname, IPs y extensión
   const validatedUrl = validarUrlSegura(urlStr);
   
   let filePath = null;
@@ -197,8 +196,8 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
 
     return await new Promise((resolve, reject) => {
       const requestOptions = {
-        // NOSONAR
-        hostname: validatedUrl.hostname,
+      // NOSONAR: hostname validado
+      hostname: validatedUrl.hostname,
         port: validatedUrl.port || (validatedUrl.protocol === 'https:' ? 443 : 80),
         path: validatedUrl.pathname + (validatedUrl.search || ''),
         method: 'GET',
@@ -208,7 +207,7 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
         }
       };
 
-      // NOSONAR
+      // NOSONAR: requestOptions usa URL validada
       const req = protocol.request(requestOptions, (res) => {
         if (res.statusCode !== 200) {
           reject(new Error(`HTTP ${res.statusCode}`));
