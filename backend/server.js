@@ -68,7 +68,11 @@ app.use(express.urlencoded({extended: true}));
  * servir archivos estaticos iamgenes desdde la capeta raiz
  */
 
-app.use('/uploads', express.static(path.join(__dirname, 'UPLOADS')));
+const uploadPath = process.env.UPLOAD_PATH || './UPLOADS';
+const absoluteUploadPath = path.isAbsolute(uploadPath)
+    ? uploadPath
+    : path.resolve(__dirname, uploadPath);
+app.use('/uploads', express.static(absoluteUploadPath));
 
 // middleware para logging de peticiones 
 // muestra en consola las peticiones que llega el servidor 

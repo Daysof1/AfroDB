@@ -115,9 +115,42 @@ const ALLOWED_DOMAINS = new Set([
   'storage.googleapis.com',
 ]);
 
-const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
 const BLOCKED_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1']);
 const PRIVATE_IP_REGEX = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/;
+
+// ==========================================
+// VALIDACIÓN SEGURA DE URL REMOTA
+// ==========================================
+
+const validarUrlSegura = (urlStr) => {
+  if (!urlStr || typeof urlStr !== 'string') {
+    throw new Error('URL inválida');
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(urlStr);
+  } catch (error) {
+    throw new Error(`URL inválida: ${error.message}`);
+  }
+
+  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+    throw new Error('Solo se permiten URLs http/https');
+  }
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+  if (BLOCKED_HOSTS.has(hostname) || PRIVATE_IP_REGEX.test(hostname)) {
+    throw new Error('No se permiten hosts locales o privados');
+  }
+
+  const extension = path.extname(parsedUrl.pathname || '').toLowerCase();
+  if (extension && !ALLOWED_EXTENSIONS.has(extension)) {
+    throw new Error('Extensión de imagen no permitida');
+  }
+
+  return parsedUrl;
+};
 
 // ==========================================
 // FUNCIÓN PARA SANITIZAR NOMBRES DE ARCHIVO
@@ -289,5 +322,6 @@ module.exports = {
   upload,
   deleteFile,
   downloadImage,
+  validarUrlSegura,
   safeLog
 };

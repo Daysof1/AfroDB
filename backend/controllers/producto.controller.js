@@ -48,7 +48,8 @@ const validarUrlImagen = (url) => {
 
   const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
   const pathname = parsedUrl.pathname.toLowerCase();
-  if (!validExtensions.some(ext => pathname.endsWith(ext))) {
+  const tieneExtension = pathname.includes('.') && pathname.lastIndexOf('.') > pathname.lastIndexOf('/');
+  if (tieneExtension && !validExtensions.some(ext => pathname.endsWith(ext))) {
     throw new Error('La URL no apunta a una imagen con extensión válida');
   }
 
@@ -173,7 +174,7 @@ const manejarImagenProducto = async (req, producto, imagenAnterior) => {
         }
       }
     } catch (err) {
-      console.warn('No se pudo descargar la imagen remota:', safeLog(err.message));
+      throw new Error(`No se pudo descargar la imagen remota: ${safeLog(err.message)}`);
     }
   }
 
@@ -329,8 +330,7 @@ const crearProducto = async (req, res) => {
         downloadedImagen = await downloadImage(imagenUrl, nombre);
         imagen = downloadedImagen;
       } catch (err) {
-        console.warn('No se pudo descargar la imagen remota:', err.message);
-        imagen = null;
+        throw new Error(`No se pudo descargar la imagen remota: ${safeLog(err.message)}`);
       }
     }
     
