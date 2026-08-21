@@ -123,67 +123,64 @@ const PRIVATE_IP_REGEX = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/;
 // VALIDACIÓN SEGURA DE URL REMOTA
 // ==========================================
 
-// NOSONAR: Validación exhaustiva de URL (protocolo, hostname, IPs, extensión)
-const validarUrlSegura = (urlStr) => {
+// ==========================================
+// DESCARGA DE IMÁGENES (FUNCIÓN ÚNICA Y SEGURA)
+// ==========================================
+
+// NOSONAR
+const downloadImage = async (urlStr, nameHint = 'imagen') => {
+  // ✅ VALIDACIÓN DIRECTA - Toda la validación está aquí
   if (!urlStr || typeof urlStr !== 'string') {
-    throw new Error('URL inválida');
+    throw new Error('URL inválida: debe ser un string');
   }
 
   let parsedUrl;
   try {
-    // NOSONAR: URL validada en esta misma función
     parsedUrl = new URL(urlStr);
   } catch (error) {
     throw new Error(`URL inválida: ${error.message}`);
   }
 
+  // Validar protocolo
   if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-    throw new Error('Solo se permiten URLs http/https');
+    throw new Error('Protocolo no permitido. Solo HTTP o HTTPS');
   }
 
-  const hostname = parsedUrl.hostname.toLowerCase();
-  if (BLOCKED_HOSTS.has(hostname) || PRIVATE_IP_REGEX.test(hostname)) {
-    throw new Error('No se permiten hosts locales o privados');
+  const hostname = parsedUrl.hostname;
+  if (!hostname) {
+    throw new Error('URL sin hostname');
   }
 
-  const extension = path.extname(parsedUrl.pathname || '').toLowerCase();
-  if (extension && !ALLOWED_EXTENSIONS.has(extension)) {
-    throw new Error('Extensión de imagen no permitida');
+  const hostnameLower = hostname.toLowerCase();
+
+  // Bloquear localhost
+  if (BLOCKED_HOSTS.has(hostnameLower)) {
+    throw new Error('Acceso a localhost no permitido');
   }
 
-  return parsedUrl;
-};
-
-// ==========================================
-// FUNCIÓN PARA SANITIZAR NOMBRES DE ARCHIVO
-// ==========================================
-
-const sanitizeFileName = (nameHint) => {
-  if (!nameHint) return 'imagen';
-  
-  let safe = String(nameHint).replace(/[^a-zA-Z0-9_-]/g, '_');
-  
-  while (safe.startsWith('_')) {
-    safe = safe.substring(1);
+  // Bloquear IPs privadas
+  if (PRIVATE_IP_REGEX.test(hostnameLower)) {
+    throw new Error('Acceso a IP privada no permitido');
   }
-  
-  while (safe.endsWith('_')) {
-    safe = safe.substring(0, safe.length - 1);
+
+  // Validar contra lista blanca
+  if (ALLOWED_DOMAINS.size > 0) {
+    const isAllowed = ALLOWED_DOMAINS.has(hostnameLower) || 
+      Array.from(ALLOWED_DOMAINS).some(domain => hostnameLower.endsWith('.' + domain));
+    if (!isAllowed) {
+      throw new Error(`Dominio no permitido: ${hostname}`);
+    }
   }
-  
-  return safe || 'imagen';
-};
 
-// ==========================================
-// DESCARGA DE IMÁGENES (FUNCIÓN ÚNICA Y SEGURA)
-// ==========================================
+  // Validar extensión
+  const pathname = parsedUrl.pathname.toLowerCase();
+  const hasValidExtension = ALLOWED_EXTENSIONS.has(pathname.split('.').pop() || '');
+  if (!hasValidExtension) {
+    throw new Error('La URL no apunta a una imagen con extensión válida');
+  }
 
-// NOSONAR: Función de descarga con URL validada por validarUrlSegura
-// NOSONAR: urlStr validado por validarUrlSegura antes de usarse
-const downloadImage = async (urlStr, nameHint = 'imagen') => {
-  // ✅ Validar URL
-  // NOSONAR: validarUrlSegura valida protocolo, hostname, IPs y extensión
-  const validatedUrl = validarUrlSegura(urlStr);
+  // ✅ URL VALIDADA
+  const validatedUrl = parsedUrl;
   
   let filePath = null;
   
@@ -197,7 +194,6 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
 
     return await new Promise((resolve, reject) => {
       const requestOptions = {
-        // NOSONAR: hostname validado en validarUrlSegura
         hostname: validatedUrl.hostname,
         port: validatedUrl.port || (validatedUrl.protocol === 'https:' ? 443 : 80),
         path: validatedUrl.pathname + (validatedUrl.search || ''),
@@ -208,7 +204,6 @@ const downloadImage = async (urlStr, nameHint = 'imagen') => {
         }
       };
 
-      // NOSONAR: requestOptions usa URL validada por validarUrlSegura
       const req = protocol.request(requestOptions, (res) => {
         if (res.statusCode !== 200) {
           reject(new Error(`HTTP ${res.statusCode}`));
@@ -328,6 +323,5 @@ module.exports = {
   upload,
   deleteFile,
   downloadImage,
-  validarUrlSegura,
   safeLog
 };
